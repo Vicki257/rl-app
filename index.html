@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="今天">
+<meta name="theme-color" content="#1A1815">
+<title>强化学习系统</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#1A1815; --paper:#24211D; --ink:#EDE6DA; --ink2:#CFC6B8; --ink3:#8C8474;
+  --line:#37322B; --soft:#2D2924; --accent:#E8B866; --accentSoft:#3A3122; --bad:#E58B73; --badSoft:#3A2520; --onAccent:#1C1A17;
+  --sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  --serif:"Noto Serif SC","Songti SC",serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(120% 40% at 50% 0%,#3A3226 0%,var(--ground) 60%) fixed,var(--ground);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+#app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+.body{flex:1;padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 24px;display:flex;flex-direction:column;gap:12px}
+.nav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:rgba(26,24,21,.94);backdrop-filter:blur(10px);padding:8px 0 calc(env(safe-area-inset-bottom,0px) + 10px)}
+.nav button{font:inherit;font-size:12px;background:none;border:0;color:var(--ink3);padding:6px 0;cursor:pointer}
+.nav button[aria-current="true"]{color:var(--accent);font-weight:700}
+button{font:inherit}
+button:focus-visible,.tap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px}
+.back{font-size:15px;color:var(--accent);background:none;border:0;padding:0;cursor:pointer}
+.h1{font-family:var(--serif);font-size:30px;font-weight:900;margin:0}
+.h2{font-size:12px;letter-spacing:.14em;color:var(--ink3);font-weight:700;margin:6px 0 0}
+.card{background:rgba(255,240,210,.05);border:1px solid rgba(255,230,190,.12);border-radius:14px;padding:14px}
+.tap{cursor:pointer}
+.row{display:flex;align-items:center;gap:10px}
+.chev{margin-left:auto;color:var(--ink3);flex:none}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--ink)}
+.meta{font-size:12px;color:var(--ink3);font-family:var(--mono)}
+.pill{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600;white-space:nowrap}
+.ok{background:var(--accentSoft);color:var(--accent)} .bd{background:var(--badSoft);color:var(--bad)}
+.q{font-family:var(--serif);color:#FFF6E6;font-size:23px;font-weight:700;line-height:1.45;margin:0;text-wrap:balance}
+.lbl{font-size:12px;color:var(--accent);font-weight:700;width:34px;flex:none}
+.line3{display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.6}
+.line3:first-child{border-top:0}
+.line3 .txt{flex:1;min-width:0}
+.btn{font-weight:700;font-size:16px;background:var(--accent);color:var(--onAccent);border:0;border-radius:12px;padding:13px;cursor:pointer;width:100%}
+.btn.ghost{background:var(--paper);color:var(--ink);border:1px solid var(--line);font-weight:500;font-size:14px;padding:10px}
+.btn:disabled{opacity:.5}
+.banner{border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.6}
+.small{font-size:13px;color:var(--ink2);line-height:1.6}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+.tbl table{border-collapse:collapse;font-size:12px;min-width:620px;width:100%}
+.tbl th,.tbl td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+.tbl th{color:var(--ink3);background:var(--soft);white-space:nowrap}
+.tbl tr.sel td{background:var(--accentSoft)}
+.tbl tbody tr{cursor:pointer}
+.kv{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-top:1px solid var(--line)}
+.kv:first-child{border-top:0}
+.kv .k{font-size:12px;color:var(--accent);font-weight:700}
+.kv .v{font-size:14px;line-height:1.65;white-space:pre-line}
+.step{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:14px;cursor:pointer}
+.step .n{font-family:var(--mono);width:20px;height:20px;border-radius:6px;background:var(--soft);display:grid;place-items:center;font-size:11px;flex:none}
+.arrow{padding-left:5px;color:var(--ink3);font-size:12px}
+.sub{margin:2px 0 6px 30px;padding:10px;background:var(--soft);border-radius:10px;font-size:13px;line-height:1.7;color:var(--ink2);white-space:pre-line}
+.recall{display:flex;flex-direction:column;gap:4px;padding:12px 0;border-top:1px solid var(--line)}
+.recall:first-child{border-top:0}
+.recall .t{font-weight:700;font-size:15px}
+.recall .w{font-size:13px;color:var(--ink2);line-height:1.6}
+.tag{font-size:11px;font-weight:700;color:var(--accent)}
+.evi{margin-top:6px;padding:10px;background:var(--soft);border-radius:10px;font-size:13px;line-height:1.7;color:var(--ink2);white-space:pre-line}
+.cmp{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.cmp td,.cmp th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
+.cmp th{color:var(--ink3);font-size:11px}
+textarea,input{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px;line-height:1.6}
+textarea{min-height:70px;resize:vertical}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:5}
+.sheet .in{background:var(--paper);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;flex-direction:column;gap:8px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--ground);font-size:13px;padding:8px 14px;border-radius:999px;z-index:9;max-width:90%;text-align:center}
+.center{display:grid;place-items:center;min-height:60vh;color:var(--ink3);font-size:14px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ============ 配置与 GitHub 读写 ============ */
+const LS="rl.cfg";
+const cfg=(()=>{try{return JSON.parse(localStorage.getItem(LS)||"{}")}catch(e){return{}}})();
+function saveCfg(){try{localStorage.setItem(LS,JSON.stringify(cfg))}catch(e){}}
+const b64e=s=>{const b=new TextEncoder().encode(s);let x="";b.forEach(c=>x+=String.fromCharCode(c));return btoa(x)};
+const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
+const SHA={};
+async function gh(path,opt={}){
+  const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/data/${path}`,{...opt,headers:{Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json",...(opt.headers||{})},cache:"no-store"});
+  if(!r.ok){const t=await r.text();throw new Error(`${r.status} ${path}：${t.slice(0,120)}`)}
+  return r.json();
+}
+async function get(path){const j=await gh(path);SHA[path]=j.sha;return JSON.parse(b64d(j.content))}
+async function put(path,obj,msg){
+  const body={message:msg||`更新 ${path}`,content:b64e(JSON.stringify(obj,null,2)+"\n")};
+  if(SHA[path]) body.sha=SHA[path];
+  try{const j=await gh(path,{method:"PUT",body:JSON.stringify(body)});SHA[path]=j.content.sha;}
+  catch(e){if(String(e.message).startsWith("409")) throw new Error("数据在别处被改过了，请下拉刷新后再改"); throw e}
+}
+
+/* ============ 状态 ============ */
+const D={global:null,index:[],status:null,p:{}};
+const S={screen:"today",arg:null,stack:[],open:{},sheet:false,edit:false,loading:true,err:"",toast:""};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const cur=()=>D.global?.current;
+async function loadProject(id,force){
+  if(D.p[id]&&!force) return D.p[id];
+  const [project,rows,current,iteration]=await Promise.all(["project","rows","current","iteration"].map(n=>get(`projects/${id}/${n}.json`)));
+  return D.p[id]={project,rows,current,iteration};
+}
+async function loadAll(){
+  S.loading=true;S.err="";render();
+  try{
+    [D.global,D.index,D.status]=await Promise.all([get("global.json"),get("projects/index.json"),get("status.json").catch(()=>null)]);
+    await loadProject(cur(),true);
+  }catch(e){S.err=e.message}
+  S.loading=false;render();
+}
+function toast(t){S.toast=t;render();setTimeout(()=>{S.toast="";render()},2200)}
+
+/* ============ 工具 ============ */
+function rel(iso){if(!iso)return"";const d=(Date.now()-new Date(iso))/864e5;if(d<1)return"今天";return Math.floor(d)+"天前"}
+function nightState(c){
+  const n=c.night||{};
+  if(n.status==="done") return "done";
+  if(n.status==="fail") return "fail";
+  if(n.deadline&&Date.now()>new Date(n.deadline)) return "fail";
+  return n.status||"wait";
+}
+function next7(){const d=new Date();const jst=new Date(d.getTime()+9*36e5);if(jst.getUTCHours()>=7)jst.setUTCDate(jst.getUTCDate()+1);jst.setUTCHours(7,0,0,0);return new Date(jst.getTime()-9*36e5).toISOString()}
+const nightPill=st=>({done:'<span class="pill ok">夜间分析已完成</span>',wait:'<span class="pill ok">等待 AI 分析</span>',run:'<span class="pill ok">AI 分析中</span>',fail:'<span class="pill bd">夜间分析未完成</span>'}[st]);
+function curRow(P){return P.rows.find(r=>r.date===P.current.rowDate)||P.rows[P.rows.length-1]}
+function widgetFrom(id,P){
+  const row=curRow(P),n=row?.night||{};
+  return {project:id,name:P.project.name,q:P.current.q,writtenAt:P.current.writtenAt,
+    night:{status:P.current.night?.status||"wait",deadline:P.current.night?.deadline||null,error:P.current.night?.error||null,
+      c:n.cs||"",r:n.r||"",x:n.recall?.[0]?.t||""}};
+}
+
+/* ============ 导航 ============ */
+function go(screen,arg){S.stack.push({screen:S.screen,arg:S.arg});S.screen=screen;S.arg=arg;S.open={};S.edit=false;render();window.scrollTo(0,0)}
+function back(){const b=S.stack.pop()||{screen:"today"};S.screen=b.screen;S.arg=b.arg;S.open={};S.edit=false;render()}
+function tab(s){S.stack=[];S.screen=s;S.arg=null;S.open={};S.edit=false;render();window.scrollTo(0,0)}
+const nav=a=>`<nav class="nav">${[["today","今天"],["plist","项目"],["ilist","迭代"],["system","系统"]].map(([k,l])=>`<button data-tab="${k}" aria-current="${a===k}">${l}</button>`).join("")}</nav>`;
+const topBar=(title,right="")=>`<div class="top"><button class="back" data-back>‹ 返回</button><span class="meta">${esc(right)}</span></div>${title?`<h2 class="h1" style="font-size:24px">${esc(title)}</h2>`:""}`;
+
+/* ============ 页面 ============ */
+function settings(){
+  return `<div class="body"><h1 class="h1">连接数据</h1>
+  <p class="small">第一次使用需要填写存数据的 GitHub 私有仓库。令牌只保存在这台手机的浏览器里。</p>
+  <div class="card" style="display:flex;flex-direction:column;gap:10px">
+    <label class="small" for="owner">GitHub 用户名</label><input id="owner" value="${esc(cfg.owner||"")}" autocapitalize="off">
+    <label class="small" for="repo">数据仓库名</label><input id="repo" value="${esc(cfg.repo||"rl-data")}" autocapitalize="off">
+    <label class="small" for="token">令牌（需要该仓库 Contents 读写权限）</label><input id="token" type="password" value="${esc(cfg.token||"")}">
+  </div>
+  <button class="btn" data-savecfg>保存并连接</button></div>`;
+}
+function today(){
+  const id=cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
+  const st=nightState(P.current),row=curRow(P),n=row?.night||{};
+  let lines;
+  if(st==="done") lines=[["矛盾",n.cs,"c"],["结果",n.r,"r"],["召回",(n.recall?.[0]?.t||"")+(n.recall?.length?`<span class="meta">（共 ${n.recall.length} 条）</span>`:""),"x"]]
+    .map(([l,t,k])=>`<div class="line3 tap" data-go="detail" data-arg="${k}" tabindex="0"><span class="lbl">${l}</span><span class="txt">${t||'<span class="meta">—</span>'}</span><span class="chev">›</span></div>`).join("");
+  else if(st==="fail") lines=`<div class="line3 tap" data-tab="system" tabindex="0"><span class="lbl" style="color:var(--bad)">⚠</span><span class="txt" style="color:var(--bad)">AI 夜间分析未完成${P.current.night?.error?"："+esc(P.current.night.error):"（7:00 前没有收到结果）"}。点击查看</span><span class="chev">›</span></div>`;
+  else lines=["矛盾","结果","召回"].map(l=>`<div class="line3"><span class="lbl">${l}</span><span class="txt" style="color:var(--ink3)">${st==="run"?"AI 分析中…":"等待 AI 分析"}</span></div>`).join("");
+  const gates=(P.iteration.gates||[]).filter(g=>!g.decision).length;
+  return `<div class="body">
+    <h1 class="h1">今天</h1>
+    <div class="row" style="flex-wrap:wrap"><span class="chip" data-go="project" tabindex="0">${esc(P.project.name)} ›</span><span class="meta">${rel(P.current.writtenAt)}写入</span>${nightPill(st)}</div>
+    <div class="card"><div class="h2" style="margin:0 0 6px">今天从这里开始</div><p class="q">${esc(P.current.q)}</p></div>
+    <div class="card" style="padding:4px 14px">${lines}</div>
+    <button class="btn" data-go="row" data-arg="${esc(P.current.rowDate)}">开始 →</button>
+    <div class="card tap row" data-go="gate" tabindex="0"><b>需要你判断</b>${gates?`<span class="pill ok">${gates}</span>`:'<span class="meta">无</span>'}<span class="chev">›</span></div>
+    <div class="card tap row" data-sheet tabindex="0"><b>其他项目</b><span class="meta">${D.index.length-1}</span><span class="chev">›</span></div>
+  </div>${nav("today")}`;
+}
+function sheet(){
+  return `<div class="sheet" data-closesheet><div class="in" data-stop><b style="font-size:16px">切换项目</b><span class="small">切换后今天页和小组件都会换成这个项目</span>
+  ${D.index.filter(x=>x.state!=="archived").map(x=>`<div class="card tap row" data-pick="${x.id}" style="${x.id===cur()?"border-color:var(--accent)":""}"><span>${esc(x.name)}</span><span class="chev">${x.id===cur()?"当前":"›"}</span></div>`).join("")}</div></div>`;
+}
+function nightBlock(P,row){
+  const n=row.night;
+  if(!n||!n.c) return `<div class="small" style="padding:10px 0">${row.date===P.current.rowDate?({wait:"等待 AI 分析",run:"AI 分析中…",fail:"夜间分析未完成"}[nightState(P.current)]||""):"这一行没有夜间分析"}</div>`;
+  return `${n.note?`<div class="meta" style="padding-top:8px">${esc(n.note)}</div>`:""}
+  <div class="line3 tap" data-go="detail" data-arg="c|${row.date}"><span class="lbl">矛盾</span><span class="txt">${esc(n.cs)}</span><span class="chev">›</span></div>
+  <div class="line3 tap" data-go="detail" data-arg="r|${row.date}"><span class="lbl">结果</span><span class="txt">${esc(n.r)}</span><span class="chev">›</span></div>
+  <div class="line3 tap" data-go="detail" data-arg="x|${row.date}"><span class="lbl">召回</span><span class="txt">${n.recall?.length||0} 条</span><span class="chev">›</span></div>`;
+}
+function rowPage(){
+  const P=D.p[cur()];const row=P.rows.find(r=>r.date===S.arg)||curRow(P);
+  const cols=P.project.columns||[];
+  const view=`<div class="card">
+      <div class="kv"><span class="k">今日发现</span><span class="v" style="font-weight:700">${esc(row.f)}</span></div>
+      <div class="kv"><span class="k">留给明天的问题</span><span class="v">${esc(row.q)}</span></div>
+      ${cols.filter(c=>row.cols?.[c]).map(c=>`<div class="kv"><span class="k">${esc(c)}</span><span class="v">${esc(row.cols[c])}</span></div>`).join("")}
+    </div>`;
+  const edit=`<div class="card" style="display:flex;flex-direction:column;gap:8px">
+      <label class="small" for="e_f">今日发现</label><textarea id="e_f">${esc(row.f)}</textarea>
+      <label class="small" for="e_q">留给明天的问题</label><textarea id="e_q">${esc(row.q)}</textarea>
+      ${cols.map((c,i)=>`<label class="small" for="e_c${i}">${esc(c)}</label><textarea id="e_c${i}">${esc(row.cols?.[c]||"")}</textarea>`).join("")}
+      <button class="btn" data-saverow="${esc(row.date)}">保存</button><button class="btn ghost" data-canceledit>取消</button></div>`;
+  const rows=[...P.rows].sort((a,b)=>b.date.localeCompare(a.date));
+  return `<div class="body">${topBar("",P.project.name)}
+    <div class="row"><span class="meta">${row.date} 的记录${row.date===P.current.rowDate?" · 今天的问题来自这一行":""}</span>${S.edit?"":`<button class="back" style="margin-left:auto" data-edit>编辑</button>`}</div>
+    ${S.edit?edit:view}
+    <div class="h2">夜间分析</div>
+    <div class="card" style="padding:4px 14px">${nightBlock(P,row)}</div>
+    <div class="h2">复盘表 · 全部记录</div>
+    <div class="tbl"><table><thead><tr><th>日期</th><th>今日发现</th><th>留给明天的问题</th>${cols.slice(0,3).map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>
+      ${rows.map(x=>`<tr class="${x.date===row.date?"sel":""}" data-go="row" data-arg="${x.date}"><td class="meta">${x.date.slice(5).replace("-","/")}</td><td>${esc(x.f)}</td><td>${esc(x.q)}</td>${cols.slice(0,3).map(c=>`<td>${esc(x.cols?.[c]||"")}</td>`).join("")}</tr>`).join("")}
+    </tbody></table></div>
+  </div>`;
+}
+function eviBox(E,title){
+  if(!E) return "";
+  return `<div class="card">${title?`<div class="h2" style="margin:0 0 4px">${title}</div>`:""}
+    <div class="kv"><span class="k">结论</span><span class="v" style="font-weight:700">${esc(E.concl)}</span></div>
+    <div class="kv"><span class="k">证据</span><span class="v">${(E.items||[]).map(x=>`<div style="margin-top:4px"><span class="meta">${esc(x[0])}</span> ${esc(x[1])}<span class="meta">（${esc(x[2])}）</span></div>`).join("")}</span></div>
+    <div class="kv"><span class="k">放在一起看</span><span class="v">${esc(E.why)}<span class="meta">（AI 的推理）</span></span></div></div>`;
+}
+function detail(){
+  const P=D.p[cur()];const [k,date]=String(S.arg).split("|");
+  const row=date?P.rows.find(r=>r.date===date):curRow(P);const n=row?.night||{};
+  if(k==="x") return `<div class="body">${topBar("召回",P.project.name)}
+      <div class="small">当前问题：${esc(row.q)}</div>
+      <div class="card" style="padding:4px 14px">${(n.recall||[]).map((x,i)=>`<div class="recall tap" data-toggle="rc${i}"><span class="tag">${esc(x.tag)}</span><span class="t">${"①②③"[i]} ${esc(x.t)}</span><span class="w">${esc(x.w)}</span>${S.open["rc"+i]?`<div class="evi">${esc(x.e)}</div>`:""}</div>`).join("")||'<div class="small" style="padding:10px 0">没有召回内容</div>'}</div>
+      <button class="btn ghost" data-toggle="all">${S.open.all?"收起全部依据":"展开全部依据"}</button>
+      ${S.open.all?`<div class="evi">${(n.recall||[]).map(x=>x.e).join("\n\n")}</div>`:""}
+    </div>`;
+  const head=k==="c"
+   ?`<div class="card"><div class="kv"><span class="k">当前矛盾</span><span class="v">${esc(n.c)}</span></div><div class="kv"><span class="k">整体项目矛盾</span><span class="v">${esc(n.cw)}</span></div></div>`
+   :`<div class="card"><div class="kv"><span class="k">已经走到</span><span class="v">${esc(n.r)}</span></div><div class="kv"><span class="k">还没开始</span><span class="v">${esc(n.rn)}</span></div></div>`;
+  const evi=S.open.all?(k==="c"?eviBox(n.cEvi,"当前矛盾的依据")+eviBox(n.cwEvi,"整体项目矛盾的依据"):eviBox(n.rEvi,"")):"";
+  return `<div class="body">${topBar(k==="c"?"矛盾":"结果",P.project.name)}${head}
+    <button class="btn ghost" data-toggle="all">${k==="c"?"AI 的理解 · ":""}依据 ${S.open.all?"▴":"▾"}</button>${evi}</div>`;
+}
+function plist(mode){
+  return `<div class="body"><h1 class="h1">${mode==="i"?"迭代":"项目"}</h1>
+    ${D.index.map(x=>`<div class="card tap" data-open="${x.id}" data-target="${mode==="i"?"iter":"project"}"><div class="row"><b style="font-size:16px">${esc(x.name)}</b>${x.id===cur()?'<span class="pill ok">小组件显示中</span>':""}<span class="chev">›</span></div></div>`).join("")}
+    ${mode==="i"?"":'<p class="small">新建项目：在和 Claude 的对话里说“新建项目”，它会问你目标、奖励的行为、初始 SOP、主线和复盘表的列。</p>'}
+    <p class="small">在这里选项目不会切换小组件。</p>
+  </div>${nav(mode==="i"?"ilist":"plist")}`;
+}
+function project(){
+  const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
+  const pj=P.project,m=pj.mainline||{};
+  return `<div class="body">${topBar(pj.name,"")}
+    <div class="card"><div class="kv"><span class="k">目标</span><span class="v">${esc(pj.goal)}</span></div>
+      <div class="kv"><span class="k">奖励的行为</span><span class="v">${esc(pj.reward)}</span></div></div>
+    <div class="card"><b>当前最佳 SOP · ${esc(pj.sop?.version||"")}</b>
+      ${(pj.sop?.steps||[]).map((s,i)=>`${i?'<div class="arrow">↓</div>':""}<div class="step" data-toggle="s${i}"><span class="n">${i}</span>${esc(s.n)}<span class="chev">${S.open["s"+i]?"⌄":"›"}</span></div>${S.open["s"+i]?`<div class="sub">${esc(s.d||"还没有写这一步的细则")}</div>`:""}`).join("")||'<div class="small" style="margin-top:6px">还没有 SOP</div>'}</div>
+    <div class="card"><b>① 当前进行</b>
+      <div class="kv"><span class="k">现在在做什么</span><span class="v">${esc(pj.doing?.what)}</span></div>
+      <div class="kv"><span class="k">什么才算“碰到现实”</span><span class="v">${esc(pj.reality)}</span></div>
+      <div class="kv"><span class="k">现实进展到哪</span><span class="v">${esc(pj.doing?.reality||"—")}</span></div>
+      <div class="kv"><span class="k">这个判断靠什么</span><span class="v">${esc(pj.doing?.evidence||"—")}</span></div></div>
+    <div class="card"><b>② 主线与支线</b>
+      <div class="kv"><span class="k">主线</span><span class="v">${esc(m.main)}</span></div>
+      <div class="kv"><span class="k">从主线长出来的</span><span class="v">${esc((m.evolved||[]).join("；")||"—")}</span></div>
+      <div class="kv"><span class="k">支线${(m.branches||[]).length>(m.limit||2)?"（超过上限，可能分心了）":""}</span><span class="v">${esc((m.branches||[]).join("；")||"—")}</span></div></div>
+  </div>${nav("plist")}`;
+}
+function iter(){
+  const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
+  const it=P.iteration,cmp=it.compare;
+  return `<div class="body">${topBar("迭代 › "+P.project.name,"")}
+    <div class="card"><b>① Reflection</b>
+      <div class="kv"><span class="k">现在站在哪里</span><span class="v">${esc(it.stand)}</span></div>
+      <div class="kv"><span class="k">跑偏检查</span><span class="v">${it.drift?.ok?'<span class="pill ok">'+esc(it.drift.text)+'</span>':'<span class="pill bd">⚠ '+esc(it.drift?.text)+'</span>'}</span></div>
+      ${it.map?`<button class="btn ghost" data-toggle="map" style="margin-top:8px">${S.open.map?"收起演化地图":"查看完整演化地图"}</button>${S.open.map?`<div class="evi">${esc(it.map)}</div>`:""}`:""}</div>
+    <div class="card"><b>② Compare · 版本比较</b>
+      ${cmp?`<div class="small" style="margin:4px 0 8px">${esc(cmp.from)} → ${esc(cmp.to)} 只改了：${esc(cmp.change)} · 测试期 ${esc(cmp.period)}</div>
+      <table class="cmp"><thead><tr><th>指标</th><th>${esc(cmp.from)}</th><th>${esc(cmp.to)}</th><th>变化</th></tr></thead><tbody>
+      ${(cmp.metrics||[]).map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.a)}</td><td>${esc(m.b)}</td><td>${esc(m.delta)}</td></tr>`).join("")}</tbody></table>
+      <span class="meta">只计算当前项目</span>`:'<div class="small" style="margin-top:6px">目前没有进行中的版本测试</div>'}</div>
+    <div class="card tap row" data-go="gate" data-arg="${id}"><b>③ Human Gate · 需要你判断</b><span class="pill ok">${(it.gates||[]).filter(g=>!g.decision).length}</span><span class="chev">›</span></div>
+  </div>${nav("ilist")}`;
+}
+function gate(){
+  const id=S.arg||cur(),P=D.p[id];const open=(P.iteration.gates||[]).map((g,i)=>[g,i]).filter(([g])=>!g.decision);
+  const it=P.iteration;
+  return `<div class="body">${topBar("需要你判断",P.project.name)}
+    ${open.length?open.map(([g,i])=>`<div class="card">
+      <div style="font-weight:700;font-size:17px;margin-bottom:6px">${esc(g.title)}</div>
+      <div class="kv"><span class="k">一句话背景</span><span class="v">${esc(g.context)}</span></div>
+      <div class="kv"><span class="k">AI 为什么不能替你决定</span><span class="v">${esc(g.why)}</span></div>
+      ${(g.options||[]).map(o=>`<div class="kv"><span class="k">方案 ${esc(o.id)} · ${esc(o.name)}</span><span class="v">→ 后果：${esc(o.result)}</span></div>`).join("")}
+      <div class="kv"><span class="k">AI 建议</span><span class="v">${esc(g.suggest)}</span></div>
+      <label class="small" for="reason${i}">理由（可选）</label><input id="reason${i}">
+      <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">${(g.options||[]).map(o=>`<button class="btn" style="flex:1" data-decide="${id}|${i}|${esc(o.id)}">选 ${esc(o.id)}</button>`).join("")}</div>
+    </div>`).join(""):'<div class="card small">目前没有需要你判断的事项</div>'}
+    <div class="h2">决定前参考</div>
+    <div class="card"><div class="kv"><span class="k">跑偏检查</span><span class="v">${esc(it.drift?.text)}</span></div>
+      <div class="kv"><span class="k">AI 对项目的其他建议</span><span class="v">${esc((it.advice||[]).join("\n")||"—")}</span></div></div>
+  </div>`;
+}
+function system(){
+  const q=D.status?.nightQueue;
+  return `<div class="body"><h1 class="h1">系统</h1>
+    <div class="card row"><b>数据仓库</b><span class="meta">${esc(cfg.owner)}/${esc(cfg.repo)}</span><button class="back" style="margin-left:auto" data-tab="settings">修改</button></div>
+    <div class="card"><div class="row"><b>夜间分析队列</b><span class="meta" style="margin-left:auto">${esc(q?.date||"还没有运行过")}</span></div>
+      ${Object.entries(q?.projects||{}).map(([k,v])=>`<div class="line3"><span class="txt">${esc(D.index.find(x=>x.id===k)?.name||k)}</span><span class="meta">${esc(v.status)}${v.retries?" · 重试 "+v.retries:""}${v.error?" · "+esc(v.error):""}</span></div>`).join("")||'<div class="small" style="margin-top:6px">暂无记录</div>'}</div>
+    <div class="card"><b>备份</b><div class="small" style="margin-top:4px">每次写入都是一次 GitHub 提交，历史自动保存，可以回到任意一次修改。</div></div>
+    <button class="btn ghost" data-reload>重新读取数据</button>
+  </div>${nav("system")}`;
+}
+
+/* ============ 渲染 ============ */
+function render(){
+  const a=$("#app");let h;
+  if(!cfg.token||S.screen==="settings") h=settings();
+  else if(S.loading&&!D.global) h=`<div class="center">读取数据中…</div>`;
+  else if(S.err&&!D.global) h=`<div class="body"><h1 class="h1">读取失败</h1><div class="banner bd">${esc(S.err)}</div><p class="small">检查令牌是否过期、仓库名是否正确，或网络是否正常。</p><button class="btn" data-reload>重试</button><button class="btn ghost" data-tab="settings">修改连接</button></div>`;
+  else h=({today,row:rowPage,detail,project,iter,gate,system,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
+  a.innerHTML=h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
+}
+
+/* ============ 操作 ============ */
+async function pick(id){
+  S.sheet=false;render();
+  try{
+    const P=await loadProject(id,true);
+    D.global.current=id;
+    await put("global.json",D.global,`切换当前项目：${P.project.name}`);
+    await put("widget.json",widgetFrom(id,P),`小组件：${P.project.name}`);
+    toast("已切换，小组件下次刷新时显示「"+P.project.name+"」");
+  }catch(e){toast("切换失败："+e.message)}
+}
+async function saveRow(date){
+  const id=cur(),P=D.p[id];const row=P.rows.find(r=>r.date===date);
+  const oldQ=row.q;row.f=$("#e_f").value.trim();row.q=$("#e_q").value.trim();row.cols=row.cols||{};
+  (P.project.columns||[]).forEach((c,i)=>{const v=$("#e_c"+i).value.trim();if(v)row.cols[c]=v;else delete row.cols[c]});
+  (row.history=row.history||[]).push({at:new Date().toISOString(),by:"用户"});
+  try{
+    await put(`projects/${id}/rows.json`,P.rows,`编辑 ${date} 的记录`);
+    if(date===P.current.rowDate&&oldQ!==row.q){
+      P.current.voided=[...(P.current.voided||[]),{q:oldQ,at:new Date().toISOString()}];
+      P.current.q=row.q;P.current.writtenAt=new Date().toISOString();
+      P.current.night={status:"wait",deadline:next7(),retries:0,error:null,requestedBy:"用户改问题"};
+      row.night=null;
+      await put(`projects/${id}/rows.json`,P.rows,`原问题作废，清空夜间分析`);
+      await put(`projects/${id}/current.json`,P.current,`改问题：${row.q}`);
+      if(id===cur()) await put("widget.json",widgetFrom(id,P),"小组件：问题已更新");
+      toast("原问题已作废。在和 Claude 的对话里说“重新分析”即可马上开始");
+    }else toast("已保存");
+    S.edit=false;render();
+  }catch(e){toast("保存失败："+e.message)}
+}
+async function decide(id,i,opt){
+  const P=D.p[id];const g=P.iteration.gates[i];
+  g.decision={option:opt,reason:($("#reason"+i)?.value||"").trim(),at:new Date().toISOString()};
+  try{await put(`projects/${id}/iteration.json`,P.iteration,`Human Gate：${g.title} → ${opt}`);toast("已记录你的决定");render()}
+  catch(e){toast("保存失败："+e.message)}
+}
+document.addEventListener("click",async e=>{
+  if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-saverow],[data-decide],[data-savecfg],[data-reload]");
+  if(!t) return;const d=t.dataset;
+  if(d.go){if((d.go==="project"||d.go==="iter")&&!d.arg){go(d.go,cur())}else go(d.go,d.arg);return}
+  if("back" in d) return back();
+  if(d.tab) return tab(d.tab);
+  if("sheet" in d){S.sheet=true;return render()}
+  if("closesheet" in d){S.sheet=false;return render()}
+  if(d.pick) return pick(d.pick);
+  if(d.open){try{await loadProject(d.open)}catch(err){return toast(err.message)}return go(d.target,d.open)}
+  if(d.toggle){S.open[d.toggle]=!S.open[d.toggle];return render()}
+  if("edit" in d){S.edit=true;return render()}
+  if("canceledit" in d){S.edit=false;return render()}
+  if(d.saverow) return saveRow(d.saverow);
+  if(d.decide){const [id,i,o]=d.decide.split("|");return decide(id,+i,o)}
+  if("savecfg" in d){cfg.owner=$("#owner").value.trim();cfg.repo=$("#repo").value.trim();cfg.token=$("#token").value.trim();saveCfg();S.screen="today";return loadAll()}
+  if("reload" in d){D.p={};return loadAll()}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches(".tap")) e.target.click()});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&cfg.token){D.p={};loadAll()}});
+render(); if(cfg.token) loadAll();
+</script>
+</body>
+</html>
