@@ -87,6 +87,16 @@ textarea{min-height:70px;resize:vertical}
 .pw{display:inline-flex;align-items:center;gap:6px;color:var(--ink3);font-size:13.5px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 12px}
 .pw .pin{width:44px}
 .fold{display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--ink);font-weight:600;font-size:15.5px}
+.fold.sm{font-size:15px;padding:10px 0}
+.fold.sm .meta{margin-left:auto}
+.mg{border-top:1px solid var(--soft)}
+.mg:first-child{border-top:0}
+.mg .line3{padding-left:10px;font-size:15px}
+.chip.on{background:var(--accentSoft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.tag.m{color:var(--ink);background:var(--accentSoft);border-radius:5px;padding:2px 7px}
+.how{margin-top:8px;padding:11px 12px;background:var(--accentSoft);border-radius:10px;font-size:15px;line-height:1.65;color:var(--ink2)}
+.how b{display:block;color:var(--accent);font-size:13px;margin-bottom:3px}
+.btn.ghost.bd{color:var(--bad);border-color:var(--bad)}
 .center{display:grid;place-items:center;min-height:60vh;color:var(--ink3);font-size:16px}
 /* SOP 白板 */
 .board{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;touch-action:none;background-image:radial-gradient(#312C25 1px,transparent 1px);background-size:20px 20px}
@@ -163,7 +173,7 @@ async function put(path,obj,msg){
 }
 
 /* ============ 状态 ============ */
-const D={global:null,index:[],status:null,p:{}};
+const D={global:null,index:[],status:null,p:{},shared:null,hist:null};
 const S={screen:"today",arg:null,stack:[],open:{},sheet:false,edit:false,loading:true,err:"",toast:""};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -176,7 +186,7 @@ async function loadProject(id,force){
 async function loadAll(){
   S.loading=true;S.err="";render();
   try{
-    [D.global,D.index,D.status]=await Promise.all([get("global.json"),get("projects/index.json"),get("status.json").catch(()=>null)]);
+    [D.global,D.index,D.status,D.shared]=await Promise.all([get("global.json"),get("projects/index.json"),get("status.json").catch(()=>null),get("shared/methods.json").catch(()=>({name:"工具箱",methods:[]}))]);
     await loadProject(cur(),true);
   }catch(e){S.err=e.message}
   S.loading=false;render();
@@ -235,8 +245,9 @@ function today(){
   const headline=isList?(row?.q||"清单里还没有内容"):P.current.q;
   const cnt={};P.rows.forEach(r=>cnt[r.f]=(cnt[r.f]||0)+1);
   let lines;
+  const ri0=P.rows.indexOf(row);
   if(st==="done") lines=[["矛盾",n.cs,"c"],["结果",n.r,"r"],["召回",(n.recall?.[0]?.t||"")+(n.recall?.length?`<span class="meta">（共 ${n.recall.length} 条）</span>`:""),"x"]]
-    .map(([l,t,k])=>`<div class="line3 tap" data-go="detail" data-arg="${k}" tabindex="0"><span class="lbl">${l}</span><span class="txt">${t||'<span class="meta">—</span>'}</span><span class="chev">›</span></div>`).join("");
+    .map(([l,t,k])=>`<div class="line3 tap" data-go="detail" data-arg="${k}|${esc(row?.date||"")}|${ri0}" tabindex="0"><span class="lbl">${l}</span><span class="txt">${t||'<span class="meta">—</span>'}</span><span class="chev">›</span></div>`).join("");
   else if(st==="fail") lines=`<div class="line3 tap" data-tab="system" tabindex="0"><span class="lbl" style="color:var(--bad)">⚠</span><span class="txt" style="color:var(--bad)">AI 夜间分析未完成${P.current.night?.error?"："+esc(P.current.night.error):"（7:00 前没有收到结果）"}。点击查看</span><span class="chev">›</span></div>`;
   else lines=["矛盾","结果","召回"].map(l=>`<div class="line3"><span class="lbl">${l}</span><span class="txt" style="color:var(--ink3)">${st==="run"?"AI 分析中…":"等待 AI 分析"}</span></div>`).join("");
   const gates=(P.iteration.gates||[]).filter(g=>!g.decision).length;
@@ -259,13 +270,13 @@ function sheet(){
   return `<div class="sheet" data-closesheet><div class="in" data-stop><b style="font-size:16px">切换项目</b><span class="small">切换后今天页和小组件都会换成这个项目</span>
   ${D.index.filter(x=>x.state!=="archived").map(x=>`<div class="card tap row" data-pick="${x.id}" style="${x.id===cur()?"border-color:var(--accent)":""}"><span>${esc(x.name)}</span><span class="chev">${x.id===cur()?"当前":"›"}</span></div>`).join("")}</div></div>`;
 }
-function nightBlock(P,row){
+function nightBlock(P,row,ri){
   const n=row.night;
   if(!n||!n.c) return `<div class="small" style="padding:10px 0">${row.date===P.current.rowDate?({wait:"等待 AI 分析",run:"AI 分析中…",fail:"夜间分析未完成"}[nightState(P.current)]||""):"这一行没有夜间分析"}</div>`;
   return `${n.note?`<div class="meta" style="padding-top:8px">${esc(n.note)}</div>`:""}
-  <div class="line3 tap" data-go="detail" data-arg="c|${row.date}"><span class="lbl">矛盾</span><span class="txt">${esc(n.cs)}</span><span class="chev">›</span></div>
-  <div class="line3 tap" data-go="detail" data-arg="r|${row.date}"><span class="lbl">结果</span><span class="txt">${esc(n.r)}</span><span class="chev">›</span></div>
-  <div class="line3 tap" data-go="detail" data-arg="x|${row.date}"><span class="lbl">召回</span><span class="txt">${n.recall?.length||0} 条</span><span class="chev">›</span></div>`;
+  <div class="line3 tap" data-go="detail" data-arg="c|${row.date}|${ri}"><span class="lbl">矛盾</span><span class="txt">${esc(n.cs)}</span><span class="chev">›</span></div>
+  <div class="line3 tap" data-go="detail" data-arg="r|${row.date}|${ri}"><span class="lbl">结果</span><span class="txt">${esc(n.r)}</span><span class="chev">›</span></div>
+  <div class="line3 tap" data-go="detail" data-arg="x|${row.date}|${ri}"><span class="lbl">召回</span><span class="txt">${n.recall?.length||0} 条</span><span class="chev">›</span></div>`;
 }
 function rowIdx(P){
   const parts=String(S.arg||"").split("|");
@@ -297,7 +308,7 @@ function rowPage(){
       ${cols.map(c=>edr(i,c,row.cols?.[c],"")).join("")}
     </div>
     <div class="h2">夜间分析</div>
-    <div class="card" style="padding:4px 14px">${nightBlock(P,row)}</div>
+    <div class="card" style="padding:4px 14px">${nightBlock(P,row,i)}</div>
     <div class="h2">${esc(pj.tableName||"复盘表")} · 全部记录</div>
     ${filterBar(id,P)}
     ${rowsTable(id,P,i)}
@@ -347,13 +358,23 @@ function eviBox(E,title){
     <div class="kv"><span class="k">放在一起看</span><span class="v">${esc(E.why)}<span class="meta">（AI 的推理）</span></span></div></div>`;
 }
 function detail(){
-  const P=D.p[cur()];const [k,date]=String(S.arg).split("|");
-  const row=date?P.rows.find(r=>r.date===date):curRow(P);const n=row?.night||{};
+  const P=D.p[cur()];const [k,date,idx]=String(S.arg).split("|");
+  const row=(idx!=null&&P.rows[+idx])?P.rows[+idx]:(date?P.rows.find(r=>r.date===date):curRow(P));
+  if(!row) return `<div class="body">${topBar("这一条不在了",P.project.name)}</div>`;
+  const n=row.night||{};
   if(k==="x") return `<div class="body">${topBar("召回",P.project.name)}
       <div class="small">当前问题：${esc(row.q)}</div>
-      <div class="card" style="padding:4px 14px">${(n.recall||[]).map((x,i)=>`<div class="recall tap" data-toggle="rc${i}"><span class="tag">${esc(x.tag)}</span><span class="t">${"①②③"[i]} ${esc(x.t)}</span><span class="w">${esc(x.w)}</span>${S.open["rc"+i]?`<div class="evi">${esc(x.e)}</div>`:""}</div>`).join("")||'<div class="small" style="padding:10px 0">没有召回内容</div>'}</div>
+      <div class="card" style="padding:4px 14px">${(n.recall||[]).map((x,i)=>{
+        if(x.k==="方法"){const pid=x.from||cur();
+          return `<div class="recall"><span class="tag m">方法</span>
+            <span class="t">${"①②③"[i]} ${esc(x.t)}</span>
+            <span class="w">${esc(x.w)}</span>
+            ${x.how?`<div class="how"><b>今天怎么用</b>${esc(x.how)}</div>`:""}
+            <div class="line3 tap" data-go="method" data-arg="${esc(pid)}|${esc(x.ref||"")}" style="border:0;padding:8px 0 4px"><span class="txt" style="color:var(--accent)">打开这条方法${pid==="shared"?"（工具箱）":""}</span><span class="chev">›</span></div></div>`}
+        return `<div class="recall tap" data-toggle="rc${i}"><span class="tag">${esc(x.tag)}</span><span class="t">${"①②③"[i]} ${esc(x.t)}</span><span class="w">${esc(x.w)}</span>${S.open["rc"+i]?`<div class="evi">${esc(x.e)}</div>`:""}</div>`;
+      }).join("")||'<div class="small" style="padding:10px 0">没有召回内容</div>'}</div>
       <button class="btn ghost" data-toggle="all">${S.open.all?"收起全部依据":"展开全部依据"}</button>
-      ${S.open.all?`<div class="evi">${(n.recall||[]).map(x=>x.e).join("\n\n")}</div>`:""}
+      ${S.open.all?`<div class="evi">${(n.recall||[]).map(x=>x.e||x.how).filter(Boolean).join("\n\n")}</div>`:""}
     </div>`;
   const head=k==="c"
    ?`<div class="card"><div class="kv"><span class="k">当前矛盾</span><span class="v">${esc(n.c)}</span></div><div class="kv"><span class="k">整体项目矛盾</span><span class="v">${esc(n.cw)}</span></div></div>`
@@ -395,6 +416,56 @@ function flowHTML(pj){
       <div class="t"><span>${esc(n.name)}</span>${n.kind==="plain"?"":"<span>›</span>"}</div>
       ${(n.q||n.sub)?`<div class="q">${esc(n.q||n.sub)}</div>`:""}</div>`).join("")}</div>`).join("");
 }
+/* ---- 方法库 ---- */
+function mlist(pid){return pid==="shared"?(D.shared?.methods||[]):(D.p[pid]?.project?.methods||[])}
+function findM(pid,mid){return mlist(pid).find(m=>m.id===mid)}
+function mOwner(pid){return pid==="shared"?"工具箱":(D.p[pid]?.project?.name||pid)}
+function nodesList(pid){return pid==="shared"?[]:((D.p[pid]?.project?.sop?.nodes)||[])}
+function nodeName(pid,nid){return nodesList(pid).find(n=>n.id===nid)?.name||""}
+async function saveMethods(pid,msg){
+  if(pid!=="shared") return saveProject(pid,msg,true);
+  try{await put("shared/methods.json",D.shared,msg);S.toast="已保存";render();setTimeout(()=>{S.toast="";render()},1500)}
+  catch(e){toast("保存失败："+e.message)}
+}
+function methodsFold(pid){
+  const ms=mlist(pid),ns=nodesList(pid);
+  const groups=ns.map(n=>[n.id,n.name,ms.filter(m=>m.node===n.id)]);
+  const loose=ms.filter(m=>!m.node||!ns.some(n=>n.id===m.node));
+  if(loose.length) groups.push(["_",ns.length?"还没挂到任何一环":"全部方法",loose]);
+  const inner=groups.filter(g=>g[2].length).map(([nid,nm,arr])=>{
+    const k="mg_"+pid+"_"+nid,on=!!S.open[k];
+    return `<div class="mg"><div class="fold sm" data-toggle="${k}"><b>${esc(nm)}</b><span class="meta">${arr.length} 条</span><span class="chev">${on?"⌄":"›"}</span></div>
+      ${on?arr.map(m=>`<div class="line3 tap" data-go="method" data-arg="${esc(pid)}|${esc(m.id)}"><span class="txt">${esc(m.name)}</span><span class="chev">›</span></div>`).join(""):""}</div>`;
+  }).join("")||'<div class="small" style="padding:8px 0">还没有方法</div>';
+  return fold("meth_"+pid,"从 Notion 沉淀的方法",ms.length+" 条"+(ns.length?"，按 SOP 的环分组":""),
+    inner+`<button class="btn ghost" data-addm="${esc(pid)}" style="margin-top:10px">＋ 加一条方法</button>`);
+}
+function methodPage(){
+  const [pid,mid]=String(S.arg).split("|");
+  const m=findM(pid,mid);
+  if(!m) return `<div class="body">${topBar("找不到这条方法","")}<p class="small">它可能已经被删掉了，或者在别的项目里。</p></div>`;
+  const ns=nodesList(pid);
+  if(S.edit) return `<div class="body">${topBar(m.name,"编辑")}
+    <div class="card" style="display:flex;flex-direction:column;gap:8px">
+      <label class="small" for="m_name">名字</label><textarea id="m_name" style="min-height:52px">${esc(m.name)}</textarea>
+      <label class="small" for="m_what">它说的是什么</label><textarea id="m_what" style="min-height:150px">${esc(m.what||"")}</textarea>
+      <label class="small" for="m_when">什么时候用得上</label><textarea id="m_when">${esc(m.when||"")}</textarea>
+      <label class="small" for="m_src">来源（几月几号，逗号或顿号隔开）</label><textarea id="m_src" style="min-height:52px">${esc(m.src||"")}</textarea>
+      ${ns.length?`<div class="small">挂在哪一环</div><div class="row" style="gap:6px;flex-wrap:wrap">
+        ${ns.map(n=>`<button class="chip${m.node===n.id?" on":""}" data-setnode="${esc(pid)}|${esc(mid)}|${esc(n.id)}">${esc(n.name)}</button>`).join("")}
+        <button class="chip${m.node?"":" on"}" data-setnode="${esc(pid)}|${esc(mid)}|">还没挂上</button></div>`:""}
+      <button class="btn" data-savem="${esc(pid)}|${esc(mid)}">保存</button>
+      <button class="btn ghost" data-canceledit>取消</button>
+      <button class="btn ghost bd" data-delm="${esc(pid)}|${esc(mid)}">删除这条方法</button></div>
+  </div>`;
+  return `<div class="body">${topBar(m.name,mOwner(pid))}
+    <div class="row"><span class="meta">${m.node?esc(nodeName(pid,m.node))+" 这一环":"还没挂到任何一环"}</span>
+      <button class="back" style="margin-left:auto" data-edit>编辑</button></div>
+    <div class="card"><b>它说的是什么</b><div class="kv"><span class="v">${esc(m.what)}</span></div></div>
+    <div class="card"><b>什么时候用得上</b><div class="kv"><span class="v">${esc(m.when)}</span></div></div>
+    <div class="card"><div class="kv"><span class="k">哪一天总结出来的</span><span class="v">${esc(m.src||"—")}</span></div></div>
+  </div>`;
+}
 function fold(key,title,preview,inner){
   const on=!!S.open[key];
   return `<div class="card"><div class="fold" data-toggle="${key}">
@@ -426,7 +497,9 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-23i</div>
+    ${methodsFold(id)}
+    ${methodsFold("shared")}
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-24a</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
@@ -461,6 +534,9 @@ function nodePage(){
         <p>${esc(p.solved?p.fix:p.gap)}</p></div>`).join("")||'<div class="small">还没写</div>'}</div>
       ${n.so?`<div class="kv"><span class="k">所以</span><span class="v">${esc(n.so)}</span></div>`:""}</div>
     <div class="card"><b>做完的判据</b><div class="kv"><span class="v">${esc(n.judge||"还没写")}</span></div></div>
+    ${(()=>{const ms=mlist(pid).filter(m=>m.node===nid);
+      return `<div class="card"><b>这一环用什么方法</b><span class="meta" style="margin-left:8px">${ms.length} 条</span>
+        ${ms.map(m=>`<div class="line3 tap" data-go="method" data-arg="${esc(pid)}|${esc(m.id)}"><span class="txt">${esc(m.name)}</span><span class="chev">›</span></div>`).join("")||'<div class="small" style="margin-top:6px">还没有方法挂在这一环</div>'}</div>`})()}
   </div>`;
 }
 function iter(){
@@ -514,7 +590,7 @@ function render(){
   if(!cfg.token||S.screen==="settings") h=settings();
   else if(S.loading&&!D.global) h=`<div class="center">读取数据中…</div>`;
   else if(S.err&&!D.global) h=`<div class="body"><h1 class="h1">读取失败</h1><div class="banner bd">${esc(S.err)}</div><p class="small">检查令牌是否过期、仓库名是否正确，或网络是否正常。</p><button class="btn" data-reload>重试</button><button class="btn ghost" data-tab="settings">修改连接</button></div>`;
-  else h=({today,row:rowPage,detail,project,node:nodePage,list:listPage,iter,gate,system,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
+  else h=({today,row:rowPage,detail,project,node:nodePage,method:methodPage,list:listPage,iter,gate,system,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
   a.innerHTML=h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
   if(S.screen==="project"&&!S.edit){drawEdges();fitBoard()}
 }
@@ -673,6 +749,38 @@ function saveNode(pid,nid){
   });
   return saveProject(pid,`修改 SOP 节点：${n.name}`);
 }
+function addMethod(pid){
+  const arr=pid==="shared"?(D.shared.methods=D.shared.methods||[]):(D.p[pid].project.methods=D.p[pid].project.methods||[]);
+  const pre=pid==="shared"?"sh":pid;
+  let n=1;while(arr.some(m=>m.id===pre+"-"+String(n).padStart(3,"0"))) n++;
+  const today=new Date(Date.now()+9*36e5).toISOString().slice(0,10);
+  const m={id:pre+"-"+String(n).padStart(3,"0"),node:"",name:"新方法",what:"",when:"",
+           src:(+today.slice(5,7))+"/"+(+today.slice(8,10)),refs:[today]};
+  arr.push(m);S.edit=true;go("method",pid+"|"+m.id);
+}
+function saveMethod(pid,mid){
+  const m=findM(pid,mid);if(!m) return;
+  m.name=$("#m_name").value.trim()||"未命名";
+  m.what=$("#m_what").value.trim();
+  m.when=$("#m_when").value.trim();
+  m.src=$("#m_src").value.trim();
+  m.refs=[...new Set((m.src.match(/(\d{1,2})\/(\d{1,2})/g)||[]).map(t=>{
+    const [a,b]=t.split("/");return `2026-${String(+a).padStart(2,"0")}-${String(+b).padStart(2,"0")}`}))];
+  S.edit=false;
+  return saveMethods(pid,`方法：${m.name}`);
+}
+async function delMethod(pid,mid){
+  if(!confirmDel){confirmDel=true;toast("再点一次「删除这条方法」才真的删");setTimeout(()=>confirmDel=false,4000);return}
+  confirmDel=false;
+  const arr=pid==="shared"?D.shared.methods:D.p[pid].project.methods;
+  const i=arr.findIndex(m=>m.id===mid);if(i<0) return;
+  const [m]=arr.splice(i,1);
+  try{
+    if(pid==="shared") await put("shared/methods.json",D.shared,`删除方法：${m.name}`);
+    else await put(`projects/${pid}/project.json`,D.p[pid].project,`删除方法：${m.name}`);
+    S.edit=false;toast("已删除");back();
+  }catch(e){arr.splice(i,0,m);toast("删除失败："+e.message)}
+}
 async function decide(id,i,opt){
   const P=D.p[id];const g=P.iteration.gates[i];
   g.decision={option:opt,reason:($("#reason"+i)?.value||"").trim(),at:new Date().toISOString()};
@@ -681,8 +789,12 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow],[data-tofilter],[data-setst],[data-delrow]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-addm],[data-savem],[data-delm],[data-setnode]");
   if(!t) return;const d=t.dataset;
+  if(d.addm) return addMethod(d.addm);
+  if(d.savem){const [pid,mid]=d.savem.split("|");return saveMethod(pid,mid)}
+  if(d.delm){const [pid,mid]=d.delm.split("|");return delMethod(pid,mid)}
+  if(d.setnode!=null){const [pid,mid,nid]=d.setnode.split("|");const m=findM(pid,mid);if(m){m.node=nid||"";render()}return}
   if(d.zoom){ZOOM=d.zoom==="fit"?1:(d.zoom==="+"?Math.min(3,ZOOM*1.3):Math.max(.6,ZOOM/1.3));return fitBoard()}
   if(d.node) return go("node",(S.arg||cur())+"|"+d.node);
   if(d.filter!=null){S.filter=S.filter===d.filter?null:d.filter;return render()}
