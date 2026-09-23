@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="今天">
 <meta name="theme-color" content="#0D0D0C">
 <title>强化学习系统</title>
+<!-- build 2026-09-23d -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -80,6 +81,7 @@ textarea{min-height:70px;resize:vertical}
 .ed:hover{background:var(--soft)}
 .ed:focus{outline:none;background:var(--soft);box-shadow:0 0 0 1px var(--accent)}
 .ed:empty::before{content:attr(data-ph);color:#5B554A}
+.prev{color:var(--ink3);font-size:14.5px;line-height:1.55;margin-top:6px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .fold{display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--ink);font-weight:600;font-size:16px}
 .center{display:grid;place-items:center;min-height:60vh;color:var(--ink3);font-size:16px}
 /* SOP 白板 */
@@ -146,7 +148,14 @@ async function put(path,obj,msg){
   const body={message:msg||`更新 ${path}`,content:b64e(JSON.stringify(obj,null,2)+"\n")};
   if(SHA[path]) body.sha=SHA[path];
   try{const j=await gh(path,{method:"PUT",body:JSON.stringify(body)});SHA[path]=j.content.sha;}
-  catch(e){if(String(e.message).startsWith("409")) throw new Error("数据在别处被改过了，请下拉刷新后再改"); throw e}
+  catch(e){
+    const m=String(e.message);
+    if(m.startsWith("422")||m.startsWith("409")){
+      try{const cur=await gh(path);body.sha=SHA[path]=cur.sha;
+          const j2=await gh(path,{method:"PUT",body:JSON.stringify(body)});SHA[path]=j2.content.sha;return}
+      catch(e2){throw new Error("数据在别处被改过了，下拉刷新后再试")}
+    }
+    throw e}
 }
 
 /* ============ 状态 ============ */
@@ -348,6 +357,12 @@ function flowHTML(pj){
       <div class="t"><span>${esc(n.name)}</span>${n.kind==="plain"?"":"<span>›</span>"}</div>
       ${(n.q||n.sub)?`<div class="q">${esc(n.q||n.sub)}</div>`:""}</div>`).join("")}</div>`).join("");
 }
+function fold(key,title,preview,inner){
+  const on=!!S.open[key];
+  return `<div class="card"><div class="fold" data-toggle="${key}">
+    <b>${esc(title)}</b><span class="chev">${on?"⌄":"›"}</span></div>
+    ${on?inner:`<div class="prev">${preview||""}</div>`}</div>`;
+}
 function edv(k,v,ph){return `<div class="kv"><span class="k">${esc(k)}</span><div class="v ed" contenteditable data-ph="${esc(ph||"")}" data-p="${esc(k)}">${esc(v||"")}</div></div>`}
 function project(){
   const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
@@ -356,22 +371,24 @@ function project(){
   return `<div class="body">${topBar(pj.name,"点任意一行就能改")}
     <div class="card">${edv("目标",pj.goal,"一句话")}${edv("奖励的行为",pj.reward,"持续做什么行为，能复利到这个目标")}</div>
     <div class="card"><b>当前最佳 SOP · ${esc(pj.sop?.version||"")}</b>${boardHTML(pj)}</div>
-    <div class="card tap row" data-go="list" data-arg="${esc(id)}"><b>${esc(pj.tableName||"复盘表")}</b><span class="meta">${
-      ["待改","改了未验","够用了","不做"].map(k=>{const n=P.rows.filter(r=>r.f===k).length;return n?n+" "+k:""}).filter(Boolean).join(" · ")
-    }</span><span class="chev">›</span></div>
-    <div class="card"><b>① 当前进行</b>
-      ${edv("在做的事",d.what,"跑一遍 SOP / 验证假设 / 比较参数……写具体做的事")}
-      ${edv("什么才算“碰到现实”",pj.reality,"以及什么不算。AI 自己说有效不算")}
-      ${edv("现实进展到哪",d.reality,"还没接触 / 已接触等待反馈 / 已收到真实反馈 / 已归因并改变行动")}
-      ${edv("这个判断靠什么",d.evidence,"证据来源")}</div>
-    <div class="card"><b>② 主线与支线${over?'　<span class="pill bd">⚠ 支线超过上限</span>':""}</b>
-      ${edv("主线",m.main,"一句话")}
-      ${edv("由主线演化出来的",(m.evolved||[]).join("；"),"分号隔开")}
-      ${edv("支线",(m.branches||[]).join("；"),"分号隔开")}</div>
-    <div class="card"><div class="fold" data-toggle="ins"><b>沉淀的认知</b><span class="meta">${(pj.insights||[]).length} 条</span><span class="chev">${S.open.ins?"⌄":"›"}</span></div>
-      ${S.open.ins?(pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""):""}</div>
-    ${pj.metrics?`<div class="card"><div class="fold" data-toggle="met"><b>指标</b><span class="chev">${S.open.met?"⌄":"›"}</span></div>
-      ${S.open.met?`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`:""}</div>`:""}
+    <div class="card tap" data-go="list" data-arg="${esc(id)}">
+      <div class="row"><b style="font-size:17px">${esc(pj.tableName||"复盘表")}</b><span class="chev">›</span></div>
+      <div class="meta" style="margin-top:6px">${
+      ["待改","改了未验","够用了","不做"].map(k=>{const n=P.rows.filter(r=>r.f===k).length;return n?n+" "+k:""}).filter(Boolean).join("　")
+    }</div></div>
+    ${fold("doing","① 当前进行",esc(d.what||"还没写"),
+      edv("在做的事",d.what,"跑一遍 SOP / 验证假设 / 比较参数……写具体做的事")+
+      edv("什么才算“碰到现实”",pj.reality,"以及什么不算。AI 自己说有效不算")+
+      edv("现实进展到哪",d.reality,"还没接触 / 已接触等待反馈 / 已收到真实反馈 / 已归因并改变行动")+
+      edv("这个判断靠什么",d.evidence,"证据来源"))}
+    ${fold("main","② 主线与支线",(over?"⚠ 支线超过上限 · ":"")+esc(m.main||"还没写"),
+      edv("主线",m.main,"一句话")+
+      edv("由主线演化出来的",(m.evolved||[]).join("；"),"分号隔开")+
+      edv("支线",(m.branches||[]).join("；"),"分号隔开"))}
+    ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
+      (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
+    ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-23d</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
