@@ -366,15 +366,12 @@ function detail(){
   const n=row.night||{};
   if(k==="x") return `<div class="body">${topBar("召回",P.project.name)}
       <div class="small">当前问题：${esc(row.q)}</div>
-      <div class="card" style="padding:4px 14px">${(n.recall||[]).map((x,i)=>{
-        if(x.k==="方法"){
-          return `<div class="recall"><span class="tag m">方法</span>
-            <span class="t">${"①②③"[i]} ${esc(x.t)}</span>
-            <span class="w">${esc(x.w)}</span>
-            ${x.how?`<div class="how"><b>今天怎么用</b>${esc(x.how)}</div>`:""}
-            <div class="line3 tap" data-go="method" data-arg="${esc(x.ref||"")}" style="border:0;padding:8px 0 4px"><span class="txt" style="color:var(--accent)">打开这条方法</span><span class="chev">›</span></div></div>`}
-        return `<div class="recall tap" data-toggle="rc${i}"><span class="tag">${esc(x.tag)}</span><span class="t">${"①②③"[i]} ${esc(x.t)}</span><span class="w">${esc(x.w)}</span>${S.open["rc"+i]?`<div class="evi">${esc(x.e)}</div>`:""}</div>`;
-      }).join("")||'<div class="small" style="padding:10px 0">没有召回内容</div>'}</div>
+      <div class="card" style="padding:4px 14px">${(n.recall||[]).map((x,i)=>`<div class="recall tap" data-toggle="rc${i}">
+        <span class="tag${x.k==="方法"?" m":""}">${esc(x.tag)}</span>
+        <span class="t">${"①②③"[i]} ${esc(x.t)}</span>
+        <span class="w">${esc(x.w)}</span>
+        ${S.open["rc"+i]?`<div class="evi">${esc(x.e||x.how||"")}</div>${x.k==="方法"&&x.ref?`<div class="line3 tap" data-go="method" data-arg="${esc(x.ref)}" style="border:0;padding:10px 0 2px"><span class="txt" style="color:var(--accent)">打开这条方法</span><span class="chev">›</span></div>`:""}`:""}
+      </div>`).join("")||'<div class="small" style="padding:10px 0">没有召回内容</div>'}</div>
       <button class="btn ghost" data-toggle="all">${S.open.all?"收起全部依据":"展开全部依据"}</button>
       ${S.open.all?`<div class="evi">${(n.recall||[]).map(x=>x.e||x.how).filter(Boolean).join("\n\n")}</div>`:""}
     </div>`;
@@ -508,7 +505,7 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-24b</div>
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-24c</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
