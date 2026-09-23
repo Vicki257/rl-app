@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="今天">
 <meta name="theme-color" content="#0D0D0C">
 <title>强化学习系统</title>
-<!-- build 2026-09-23f -->
+<!-- build 2026-09-23g -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -19,7 +19,7 @@
 }
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:radial-gradient(130% 42% at 50% 0%,#2A2416 0%,var(--ground) 62%) fixed,var(--ground);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased}
+body{margin:0;background:radial-gradient(130% 42% at 50% 0%,#2A2416 0%,var(--ground) 62%) fixed,var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
 #app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
 .body{flex:1;padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 24px;display:flex;flex-direction:column;gap:12px}
 .nav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:rgba(13,13,12,.96);backdrop-filter:blur(10px);padding:8px 0 calc(env(safe-area-inset-bottom,0px) + 10px)}
@@ -29,7 +29,7 @@ button{font:inherit}
 button:focus-visible,.tap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px}
 .back{font-size:16px;color:var(--accent);background:none;border:0;padding:0;cursor:pointer}
-.h1{font-family:var(--serif);font-size:30px;font-weight:900;margin:0}
+.h1{font-family:var(--serif);font-size:27px;font-weight:900;margin:0}
 .h2{font-size:13px;letter-spacing:.14em;color:var(--ink3);font-weight:700;margin:6px 0 0}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:15px 16px}
 .tap{cursor:pointer}
@@ -39,36 +39,36 @@ button:focus-visible,.tap:focus-visible{outline:2px solid var(--accent);outline-
 .meta{font-size:13px;color:var(--ink3);font-family:var(--mono)}
 .pill{font-size:12.5px;padding:3px 10px;border-radius:999px;font-weight:600;white-space:nowrap}
 .ok{background:var(--accentSoft);color:var(--accent)} .bd{background:var(--badSoft);color:var(--bad)}
-.q{font-family:var(--serif);color:#FFF6E6;font-size:23px;font-weight:700;line-height:1.45;margin:0;text-wrap:balance}
+.q{font-family:var(--serif);color:#FFF6E6;font-size:21px;font-weight:700;line-height:1.45;margin:0;text-wrap:balance}
 .lbl{font-size:13.5px;color:var(--accent);font-weight:700;width:38px;flex:none}
-.line3{display:flex;gap:11px;align-items:flex-start;padding:13px 0;border-top:1px solid var(--line);font-size:16px;line-height:1.65}
+.line3{display:flex;gap:11px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line);font-size:15.5px;line-height:1.65}
 .line3:first-child{border-top:0}
 .line3 .txt{flex:1;min-width:0}
-.btn{font-weight:700;font-size:17px;background:var(--accent);color:var(--onAccent);border:0;border-radius:12px;padding:13px;cursor:pointer;width:100%}
+.btn{font-weight:700;font-size:16.5px;background:var(--accent);color:var(--onAccent);border:0;border-radius:12px;padding:13px;cursor:pointer;width:100%}
 .btn.ghost{background:var(--paper);color:var(--ink);border:1px solid var(--line);font-weight:600;font-size:15.5px;padding:12px}
 .btn:disabled{opacity:.5}
 .banner{border-radius:12px;padding:12px 14px;font-size:15px;line-height:1.6}
-.small{font-size:14.5px;color:var(--ink2);line-height:1.6}
-.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--paper);font-size:15px}
-.tbl table{border-collapse:collapse;font-size:15px;min-width:620px;width:100%}
-.tbl th,.tbl td{text-align:left;padding:10px 11px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+.small{font-size:14px;color:var(--ink2);line-height:1.6}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--paper);font-size:14px}
+.tbl table{border-collapse:collapse;font-size:14px;min-width:620px;width:100%}
+.tbl th,.tbl td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
 .tbl th{color:var(--ink3);background:var(--soft);white-space:nowrap}
 .tbl tr.sel td{background:var(--accentSoft)}
 .tbl tbody tr{cursor:pointer}
 .kv{display:flex;flex-direction:column;gap:4px;padding:12px 0;border-top:1px solid var(--line)}
 .kv:first-child{border-top:0}
 .kv .k{font-size:13.5px;color:var(--accent);font-weight:700}
-.kv .v{font-size:16.5px;line-height:1.7;white-space:pre-line}
+.kv .v{font-size:16px;line-height:1.7;white-space:pre-line}
 .step{display:flex;align-items:center;gap:10px;padding:11px 0;font-size:16px;cursor:pointer}
 .step .n{font-family:var(--mono);width:20px;height:20px;border-radius:6px;background:var(--soft);display:grid;place-items:center;font-size:11px;flex:none}
 .arrow{padding-left:5px;color:var(--accent);opacity:.6;font-size:14px}
-.sub{margin:2px 0 6px 30px;padding:12px;background:var(--soft);border-radius:10px;font-size:15px;line-height:1.7;color:var(--ink2);white-space:pre-line}
+.sub{margin:2px 0 6px 30px;padding:12px;background:var(--soft);border-radius:10px;font-size:14.5px;line-height:1.7;color:var(--ink2);white-space:pre-line}
 .recall{display:flex;flex-direction:column;gap:4px;padding:12px 0;border-top:1px solid var(--line)}
 .recall:first-child{border-top:0}
-.recall .t{font-weight:700;font-size:17px}
+.recall .t{font-weight:700;font-size:16px}
 .recall .w{font-size:15px;color:var(--ink2);line-height:1.6}
 .tag{font-size:12.5px;font-weight:700;color:var(--accent)}
-.evi{margin-top:8px;padding:12px;background:var(--soft);border-radius:10px;font-size:15px;line-height:1.7;color:var(--ink2);white-space:pre-line}
+.evi{margin-top:8px;padding:12px;background:var(--soft);border-radius:10px;font-size:14.5px;line-height:1.7;color:var(--ink2);white-space:pre-line}
 .cmp{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
 .cmp td,.cmp th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
 .cmp th{color:var(--ink3);font-size:12.5px}
@@ -84,7 +84,7 @@ textarea{min-height:70px;resize:vertical}
 .prev{color:var(--ink3);font-size:14.5px;line-height:1.55;margin-top:6px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .pw{display:inline-flex;align-items:center;gap:6px;color:var(--ink3);font-size:13.5px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 12px}
 .pw .pin{width:44px}
-.fold{display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--ink);font-weight:600;font-size:16px}
+.fold{display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--ink);font-weight:600;font-size:15.5px}
 .center{display:grid;place-items:center;min-height:60vh;color:var(--ink3);font-size:16px}
 /* SOP 白板 */
 .board{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;touch-action:none;background-image:radial-gradient(#312C25 1px,transparent 1px);background-size:20px 20px}
@@ -97,9 +97,9 @@ textarea{min-height:70px;resize:vertical}
 .fl{display:flex;gap:8px;justify-content:center}
 .fn{flex:1;min-width:0;background:var(--soft);border:1px solid #4A4636;border-radius:11px;padding:13px 12px;cursor:pointer}
 .fn.plain{border-style:dashed;background:transparent;cursor:default;text-align:center}
-.fn .t{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--accent);display:flex;justify-content:space-between;gap:4px}
+.fn .t{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent);display:flex;justify-content:space-between;gap:4px}
 .fn.plain .t{color:var(--ink);justify-content:center}
-.fn .q{color:var(--ink2);font-size:13px;line-height:1.5;margin-top:3px}
+.fn .q{color:var(--ink2);font-size:12.5px;line-height:1.5;margin-top:3px}
 .fa{text-align:center;color:var(--accent);opacity:.65;font-size:15px;line-height:1;padding:8px 0}
 .fp{font:inherit;font-size:14px;color:var(--ink3);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 14px;cursor:pointer}
 .fp b{color:var(--ink);margin-right:6px;font-weight:700}
@@ -125,8 +125,8 @@ textarea{min-height:70px;resize:vertical}
 .pain.un .pp{color:var(--ink3)}
 .pain .fx{font-size:11px;letter-spacing:.06em;color:#8FB489;margin:7px 0 3px}
 .pain.un .fx{color:var(--ink3)}
-.pain p{margin:0;font-size:16px;line-height:1.65;color:var(--ink2)}
-.whole{font-size:18px;line-height:1.7;color:var(--accent);margin:12px 0 14px;padding-left:11px;border-left:2px solid var(--accentSoft)}
+.pain p{margin:0;font-size:15.5px;line-height:1.65;color:var(--ink2)}
+.whole{font-size:17px;line-height:1.7;color:var(--accent);margin:12px 0 14px;padding-left:11px;border-left:2px solid var(--accentSoft)}
 </style>
 </head>
 <body>
@@ -419,7 +419,7 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-23f</div>
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-23g</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
