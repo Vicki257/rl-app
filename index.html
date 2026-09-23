@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="今天">
 <meta name="theme-color" content="#0D0D0C">
 <title>强化学习系统</title>
-<!-- build 2026-09-23d -->
+<!-- build 2026-09-23f -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -82,6 +82,8 @@ textarea{min-height:70px;resize:vertical}
 .ed:focus{outline:none;background:var(--soft);box-shadow:0 0 0 1px var(--accent)}
 .ed:empty::before{content:attr(data-ph);color:#5B554A}
 .prev{color:var(--ink3);font-size:14.5px;line-height:1.55;margin-top:6px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.pw{display:inline-flex;align-items:center;gap:6px;color:var(--ink3);font-size:13.5px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 12px}
+.pw .pin{width:44px}
 .fold{display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--ink);font-weight:600;font-size:16px}
 .center{display:grid;place-items:center;min-height:60vh;color:var(--ink3);font-size:16px}
 /* SOP 白板 */
@@ -216,21 +218,34 @@ function settings(){
   </div>
   <button class="btn" data-savecfg>保存并连接</button></div>`;
 }
+function focusRow(P){
+  if(!P.project.labels) return curRow(P);           // 每天一行的项目：当前那一行
+  const open=sortRows(P.rows).filter(r=>r.f!=="够用了"&&r.f!=="不做");
+  return open[0]||sortRows(P.rows)[0]||P.rows[0];   // 清单型项目：优先分最高的未完成那一条
+}
 function today(){
   const id=cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
-  const st=nightState(P.current),row=curRow(P),n=row?.night||{};
+  const isList=!!P.project.labels;
+  const st=nightState(P.current),row=focusRow(P),n=row?.night||{};
+  const headline=isList?(row?.q||"清单里还没有内容"):P.current.q;
+  const cnt={};P.rows.forEach(r=>cnt[r.f]=(cnt[r.f]||0)+1);
   let lines;
   if(st==="done") lines=[["矛盾",n.cs,"c"],["结果",n.r,"r"],["召回",(n.recall?.[0]?.t||"")+(n.recall?.length?`<span class="meta">（共 ${n.recall.length} 条）</span>`:""),"x"]]
     .map(([l,t,k])=>`<div class="line3 tap" data-go="detail" data-arg="${k}" tabindex="0"><span class="lbl">${l}</span><span class="txt">${t||'<span class="meta">—</span>'}</span><span class="chev">›</span></div>`).join("");
   else if(st==="fail") lines=`<div class="line3 tap" data-tab="system" tabindex="0"><span class="lbl" style="color:var(--bad)">⚠</span><span class="txt" style="color:var(--bad)">AI 夜间分析未完成${P.current.night?.error?"："+esc(P.current.night.error):"（7:00 前没有收到结果）"}。点击查看</span><span class="chev">›</span></div>`;
   else lines=["矛盾","结果","召回"].map(l=>`<div class="line3"><span class="lbl">${l}</span><span class="txt" style="color:var(--ink3)">${st==="run"?"AI 分析中…":"等待 AI 分析"}</span></div>`).join("");
   const gates=(P.iteration.gates||[]).filter(g=>!g.decision).length;
+  const ri=P.rows.indexOf(row);
   return `<div class="body">
     <h1 class="h1">今天</h1>
     <div class="row" style="flex-wrap:wrap"><span class="chip" data-go="project" tabindex="0">${esc(P.project.name)} ›</span><span class="meta">${rel(P.current.writtenAt)}写入</span>${nightPill(st)}</div>
-    <div class="card"><div class="h2" style="margin:0 0 6px">今天从这里开始</div><p class="q">${esc(P.current.q)}</p></div>
+    <div class="card"><div class="h2" style="margin:0 0 6px">${isList?"优先级最高的一条":"今天从这里开始"}</div>
+      <p class="q">${esc(headline)}</p>
+      ${isList&&row?`<div class="row" style="margin-top:10px;gap:8px"><span class="pill ${row.f==="够用了"?"ok":"bd"}">${esc(row.f)}</span><span class="meta">优先 ${esc(row.cols?.[PRI]||"–")}</span></div>`:""}</div>
+    ${isList?`<div class="row" style="flex-wrap:wrap;gap:8px">
+      ${STS.filter(k=>cnt[k]).map(k=>`<button class="fp" data-tofilter="${id}|${k}"><b>${cnt[k]}</b>${k}</button>`).join("")}</div>`:""}
     <div class="card" style="padding:4px 14px">${lines}</div>
-    <button class="btn" data-go="row" data-arg="${esc(P.current.rowDate)}">开始 →</button>
+    <button class="btn" data-go="row" data-arg="${esc(row?.date||"")}|${ri}">开始 →</button>
     <div class="card tap row" data-go="gate" tabindex="0"><b>需要你判断</b>${gates?`<span class="pill ok">${gates}</span>`:'<span class="meta">无</span>'}<span class="chev">›</span></div>
     <div class="card tap row" data-sheet tabindex="0"><b>其他项目</b><span class="meta">${D.index.length-1}</span><span class="chev">›</span></div>
   </div>${nav("today")}`;
@@ -247,58 +262,74 @@ function nightBlock(P,row){
   <div class="line3 tap" data-go="detail" data-arg="r|${row.date}"><span class="lbl">结果</span><span class="txt">${esc(n.r)}</span><span class="chev">›</span></div>
   <div class="line3 tap" data-go="detail" data-arg="x|${row.date}"><span class="lbl">召回</span><span class="txt">${n.recall?.length||0} 条</span><span class="chev">›</span></div>`;
 }
+function rowIdx(P){
+  const parts=String(S.arg||"").split("|");
+  if(parts.length>1){const i=+parts[1];if(P.rows[i])return i}
+  const j=P.rows.findIndex(r=>r.date===parts[0]);
+  if(j>=0) return j;
+  const k=P.rows.findIndex(r=>r.date===P.current.rowDate);
+  return k>=0?k:P.rows.length-1;
+}
+function edr(i,k,v,ph,big){
+  return `<div class="kv"><span class="k">${esc(k)}</span><div class="v ed${big?" big":""}" contenteditable data-ph="${esc(ph||"")}" data-rk="${i}|${esc(k)}">${esc(v||"")}</div></div>`;
+}
 function rowPage(){
-  const P=D.p[cur()];const row=P.rows.find(r=>r.date===S.arg)||curRow(P);
-  const cols=P.project.columns||[];
-  const LF=P.project.labels?.f||"今日发现",LQ=P.project.labels?.q||"留给明天的问题";
-  const view=`<div class="card">
-      <div class="kv"><span class="k">${esc(LF)}</span><span class="v" style="font-weight:700">${esc(row.f)}</span></div>
-      <div class="kv"><span class="k">${esc(LQ)}</span><span class="v">${esc(row.q)}</span></div>
-      ${cols.filter(c=>row.cols?.[c]).map(c=>`<div class="kv"><span class="k">${esc(c)}</span><span class="v">${esc(row.cols[c])}</span></div>`).join("")}
-    </div>`;
-  const edit=`<div class="card" style="display:flex;flex-direction:column;gap:8px">
-      <label class="small" for="e_f">${esc(LF)}</label><textarea id="e_f">${esc(row.f)}</textarea>
-      <label class="small" for="e_q">${esc(LQ)}</label><textarea id="e_q">${esc(row.q)}</textarea>
-      ${cols.map((c,i)=>`<label class="small" for="e_c${i}">${esc(c)}</label><textarea id="e_c${i}">${esc(row.cols?.[c]||"")}</textarea>`).join("")}
-      <button class="btn" data-saverow="${esc(row.date)}">保存</button><button class="btn ghost" data-canceledit>取消</button></div>`;
-  const rows=[...P.rows].sort((a,b)=>b.date.localeCompare(a.date));
-  return `<div class="body">${topBar("",P.project.name)}
-    <div class="row"><span class="meta">${row.date} 的记录${row.date===P.current.rowDate?" · 今天的问题来自这一行":""}</span>${S.edit?"":`<button class="back" style="margin-left:auto" data-edit>编辑</button>`}</div>
-    ${S.edit?edit:view}
+  const id=cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
+  const i=rowIdx(P),row=P.rows[i];if(!row) return `<div class="center">这一条不在了</div>`;
+  const pj=P.project,cols=(pj.columns||[]).filter(c=>c!==PRI);
+  const LF=pj.labels?.f||"今日发现",LQ=pj.labels?.q||"留给明天的问题";
+  const isSt=(pj.labels?.f||"")==="状态";
+  return `<div class="body">${topBar("",pj.name)}
+    <div class="row" style="flex-wrap:wrap;gap:8px">
+      <span class="meta">${row.date}${row.date===P.current.rowDate?" · 当前问题来自这一条":""}</span>
+      <span class="pw" style="margin-left:auto">优先 <input class="pin" value="${esc(row.cols?.[PRI]||"")}" placeholder="–" data-pri="${i}" inputmode="decimal"> / 10</span>
+    </div>
+    <div class="card">
+      ${isSt?`<div class="kv"><span class="k">${esc(LF)}</span><div class="row" style="flex-wrap:wrap;gap:7px;margin-top:3px">
+        ${STS.map(k=>`<button class="fp${row.f===k?" on":""}" data-setst="${i}|${k}">${k}</button>`).join("")}</div></div>`
+        :edr(i,LF,row.f,"",true)}
+      ${edr(i,LQ,row.q,"",true)}
+      ${cols.map(c=>edr(i,c,row.cols?.[c],"")).join("")}
+    </div>
     <div class="h2">夜间分析</div>
     <div class="card" style="padding:4px 14px">${nightBlock(P,row)}</div>
-    <div class="h2">复盘表 · 全部记录</div>
-    <div class="tbl"><table><thead><tr><th>日期</th><th>${esc(LF)}</th><th>${esc(LQ)}</th>${cols.slice(0,3).map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>
-      ${rows.map(x=>`<tr class="${x.date===row.date?"sel":""}" data-go="row" data-arg="${x.date}"><td class="meta">${x.date.slice(5).replace("-","/")}</td><td>${esc(x.f)}</td><td>${esc(x.q)}</td>${cols.slice(0,3).map(c=>`<td>${esc(x.cols?.[c]||"")}</td>`).join("")}</tr>`).join("")}
-    </tbody></table></div>
+    <div class="h2">${esc(pj.tableName||"复盘表")} · 全部记录</div>
+    ${filterBar(id,P)}
+    ${rowsTable(id,P,i)}
+    <button class="btn ghost" data-delrow="${i}" style="color:var(--bad)">删除这一条</button>
   </div>`;
 }
 const PRI="优先程度";
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 function sortRows(rows){return [...rows].sort((a,b)=>(priNum(b)-priNum(a))||b.date.localeCompare(a.date))}
 const STS=["待改","改了未验","够用了","不做"];
+function rowsTable(id,P,selIdx){
+  const pj=P.project,LQ=pj.labels?.q||"留给明天的问题",cols=(pj.columns||[]).filter(c=>c!==PRI);
+  const list=sortRows(P.rows).filter(r=>!S.filter||r.f===S.filter);
+  const ix=r=>P.rows.indexOf(r);
+  return `<div class="tbl"><table class="nowrap"><thead><tr><th>优先</th><th>状态</th><th>日期</th><th>${esc(LQ)}</th>${cols.slice(0,2).map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>
+    ${list.map(r=>`<tr class="${ix(r)===selIdx?"sel":""}">
+      <td><input class="pin" value="${esc(r.cols?.[PRI]||"")}" placeholder="–" data-pri="${ix(r)}" inputmode="decimal"></td>
+      <td data-go="row" data-arg="${r.date}|${ix(r)}"><span class="pill ${r.f==="够用了"?"ok":r.f==="待改"?"bd":""}">${esc(r.f)}</span></td>
+      <td class="meta" data-go="row" data-arg="${r.date}|${ix(r)}">${r.date.slice(5).replace("-","/")}</td>
+      <td data-go="row" data-arg="${r.date}|${ix(r)}"><span class="cell">${esc(r.q)}</span></td>
+      ${cols.slice(0,2).map(c=>`<td data-go="row" data-arg="${r.date}|${ix(r)}"><span class="cell">${esc(r.cols?.[c]||"—")}</span></td>`).join("")}</tr>`).join("")
+      ||'<tr><td colspan="6" class="meta" style="padding:14px 10px">这一类现在没有</td></tr>'}
+  </tbody></table></div>
+  ${S.priDirty?`<button class="btn ghost" data-savepri="${esc(id)}">保存优先分</button>`:""}`;
+}
+function filterBar(id,P){
+  const cnt={};P.rows.forEach(r=>cnt[r.f]=(cnt[r.f]||0)+1);
+  return `<div class="row" style="flex-wrap:wrap;gap:8px">
+    ${STS.filter(k=>cnt[k]).map(k=>`<button class="fp${S.filter===k?" on":""}" data-filter="${k}"><b>${cnt[k]}</b>${k}</button>`).join("")}
+    <button class="fp" style="margin-left:auto" data-addrow>＋ 新增</button></div>`;
+}
 function listPage(){
   const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
-  const pj=P.project,LQ=pj.labels?.q||"留给明天的问题",cols=(pj.columns||[]).filter(c=>c!==PRI);
-  const cnt={};P.rows.forEach(r=>cnt[r.f]=(cnt[r.f]||0)+1);
-  const list=sortRows(P.rows).filter(r=>!S.filter||r.f===S.filter);
-  const idx=r=>P.rows.indexOf(r);
-  return `<div class="body">${topBar(pj.tableName||"复盘表",pj.name)}
-    <div class="row" style="flex-wrap:wrap;gap:8px">
-      ${STS.filter(k=>cnt[k]).map(k=>`<button class="fp${S.filter===k?" on":""}" data-filter="${k}"><b>${cnt[k]}</b>${k}</button>`).join("")}
-      <button class="fp" style="margin-left:auto" data-addrow>＋ 新增</button>
-    </div>
-    ${S.priDirty?`<button class="btn ghost" data-savepri="${esc(id)}">保存优先分</button>`:""}
-    <div class="tbl"><table class="nowrap"><thead><tr><th>优先</th><th>状态</th><th>日期</th><th>${esc(LQ)}</th>${cols.slice(0,2).map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>
-      ${list.map(r=>`<tr data-go="row" data-arg="${r.date}|${idx(r)}">
-        <td><input class="pin" value="${esc(r.cols?.[PRI]||"")}" placeholder="–" data-pri="${idx(r)}" inputmode="decimal"></td>
-        <td><span class="pill ${r.f==="够用了"?"ok":r.f==="待改"?"bd":""}">${esc(r.f)}</span></td>
-        <td class="meta">${r.date.slice(5).replace("-","/")}</td>
-        <td><span class="cell">${esc(r.q)}</span></td>
-        ${cols.slice(0,2).map(c=>`<td><span class="cell">${esc(r.cols?.[c]||"—")}</span></td>`).join("")}</tr>`).join("")
-        ||'<tr><td colspan="6" class="meta" style="padding:14px 10px">这一类现在没有</td></tr>'}
-    </tbody></table></div>
-    <p class="small">优先程度 0～10，高的排前面。改完点「保存优先分」写回仓库。</p>
+  return `<div class="body">${topBar(P.project.tableName||"复盘表",P.project.name)}
+    ${filterBar(id,P)}
+    ${rowsTable(id,P,-1)}
+    <p class="small">优先程度 0～10，高的排前面。点任意一行打开，里面每格都能改。</p>
   </div>`;
 }
 function eviBox(E,title){
@@ -388,7 +419,7 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-23d</div>
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-23f</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
@@ -552,29 +583,48 @@ async function pick(id){
     toast("已切换，小组件下次刷新时显示「"+P.project.name+"」");
   }catch(e){toast("切换失败："+e.message)}
 }
-async function saveRow(date){
-  const id=cur(),P=D.p[id];const row=P.rows.find(r=>r.date===date);
-  const oldQ=row.q;row.f=$("#e_f").value.trim();row.q=$("#e_q").value.trim();row.cols=row.cols||{};
-  (P.project.columns||[]).forEach((c,i)=>{const v=$("#e_c"+i).value.trim();if(v)row.cols[c]=v;else delete row.cols[c]});
-  (row.history=row.history||[]).push({at:new Date().toISOString(),by:"用户"});
-  try{
-    await put(`projects/${id}/rows.json`,P.rows,`编辑 ${date} 的记录`);
-    if(date===P.current.rowDate&&oldQ!==row.q){
-      P.current.voided=[...(P.current.voided||[]),{q:oldQ,at:new Date().toISOString()}];
-      P.current.q=row.q;P.current.writtenAt=new Date().toISOString();
-      P.current.night={status:"wait",deadline:next7(),retries:0,error:null,requestedBy:"用户改问题"};
-      row.night=null;
-      await put(`projects/${id}/rows.json`,P.rows,`原问题作废，清空夜间分析`);
-      await put(`projects/${id}/current.json`,P.current,`改问题：${row.q}`);
-      if(id===cur()) await put("widget.json",widgetFrom(id,P),"小组件：问题已更新");
-      toast("原问题已作废。在和 Claude 的对话里说“重新分析”即可马上开始");
-    }else toast("已保存");
-    S.edit=false;render();
-  }catch(e){toast("保存失败："+e.message)}
+async function setStatus(i,st){
+  const id=cur(),P=D.p[id];P.rows[i].f=st;render();
+  await saveRows(id,`改状态：${st}`);
 }
-async function saveRows(id,msg){
+async function delRow(i){
+  const id=cur(),P=D.p[id];const r=P.rows[i];
+  if(!confirmDel){confirmDel=true;toast("再点一次「删除这一条」才真的删");setTimeout(()=>confirmDel=false,4000);return}
+  confirmDel=false;P.rows.splice(i,1);
+  try{await put(`projects/${id}/rows.json`,P.rows,`删除一条：${(r.q||"").slice(0,20)}`);toast("已删除");go("list",id)}
+  catch(e){toast("删除失败："+e.message);P.rows.splice(i,0,r)}
+}
+let confirmDel=false;
+document.addEventListener("blur",e=>{
+  const t=e.target,k=t?.dataset?.rk;if(!k) return;
+  const [is,key]=k.split("|"),i=+is,id=cur(),P=D.p[id];if(!P||!P.rows[i]) return;
+  const row=P.rows[i],pj=P.project,v=t.innerText.trim();
+  const LF=pj.labels?.f||"今日发现",LQ=pj.labels?.q||"留给明天的问题";
+  let changed=false;
+  if(key===LF){if(row.f!==v){row.f=v;changed=true}}
+  else if(key===LQ){if(row.q!==v){row.q=v;changed=true}}
+  else{row.cols=row.cols||{};if((row.cols[key]||"")!==v){row.cols[key]=v;changed=true}}
+  if(!changed) return;
+  const daily=!pj.labels;                       // 没自定义标签的是每天一行的项目
+  if(daily&&key===LQ&&row.date===P.current.rowDate){
+    P.current.voided=[...(P.current.voided||[]),{q:P.current.q,at:new Date().toISOString()}];
+    P.current.q=v;P.current.writtenAt=new Date().toISOString();
+    P.current.night={status:"wait",deadline:next7(),retries:0,error:null,requestedBy:"用户改问题"};
+    row.night=null;
+    (async()=>{try{
+      await put(`projects/${id}/rows.json`,P.rows,`改问题：${v}`);
+      await put(`projects/${id}/current.json`,P.current,`改问题：${v}`);
+      if(id===cur()) await put("widget.json",widgetFrom(id,P),"小组件：问题已更新");
+      toast("原问题已作废。在对话里说「重新分析」即可马上开始");
+    }catch(e){toast("保存失败："+e.message)}})();
+    return;
+  }
+  saveRows(id,`修改 ${key}`);
+},true);
+async function saveRows(id,msg,loud){
   const P=D.p[id];
-  try{await put(`projects/${id}/rows.json`,P.rows,msg);toast("已保存");render()}
+  try{await put(`projects/${id}/rows.json`,P.rows,msg);
+      if(loud){toast("已保存");render()}else{S.toast="已保存";render();setTimeout(()=>{S.toast="";render()},1500)}}
   catch(e){toast("保存失败："+e.message)}
 }
 document.addEventListener("input",e=>{
@@ -624,12 +674,15 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-saverow],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow],[data-tofilter],[data-setst],[data-delrow]");
   if(!t) return;const d=t.dataset;
   if(d.zoom){ZOOM=d.zoom==="fit"?1:(d.zoom==="+"?Math.min(3,ZOOM*1.3):Math.max(.6,ZOOM/1.3));return fitBoard()}
   if(d.node) return go("node",(S.arg||cur())+"|"+d.node);
   if(d.filter!=null){S.filter=S.filter===d.filter?null:d.filter;return render()}
-  if(d.savepri){S.priDirty=false;return saveRows(d.savepri,"更新优先程度")}
+  if(d.tofilter){const [pid,k]=d.tofilter.split("|");S.filter=k;return go("list",pid)}
+  if(d.savepri){S.priDirty=false;return saveRows(d.savepri,"更新优先程度",true)}
+  if(d.setst){const [i,st]=d.setst.split("|");return setStatus(+i,st)}
+  if(d.delrow!=null) return delRow(+d.delrow);
   if("addrow" in d){
     const id=S.arg||cur(),P=D.p[id],c={};(P.project.columns||[]).forEach(k=>c[k]="");
     P.rows.push({date:new Date().toISOString().slice(0,10),f:"待改",q:"",cols:c,night:null});
@@ -645,7 +698,6 @@ document.addEventListener("click",async e=>{
   if(d.toggle){S.open[d.toggle]=!S.open[d.toggle];return render()}
   if("edit" in d){S.edit=true;return render()}
   if("canceledit" in d){S.edit=false;return render()}
-  if(d.saverow) return saveRow(d.saverow);
   if(d.savenode){const [pid,nid]=d.savenode.split("|");return saveNode(pid,nid)}
   if("saveboard" in d) return saveProject(S.arg||cur(),"调整 SOP 图的节点位置");
   if(d.decide){const [id,i,o]=d.decide.split("|");return decide(id,+i,o)}
