@@ -419,31 +419,31 @@ function flowHTML(pj){
 function ML(){return D.meth?.methods||[]}
 function findM(id){return ML().find(m=>m.id===id)}
 function methPage(){
-  const all=ML(),q=(S.q||"").trim().toLowerCase();
-  const pf=S.mproj||"";
-  let hit=all;
-  if(pf) hit=hit.filter(m=>m.proj===pf);
-  if(q) hit=hit.filter(m=>(m.name+" "+m.when+" "+m.what).toLowerCase().includes(q));
-  const projs=[...new Set(all.map(m=>m.proj))];
-  const PN={};all.forEach(m=>PN[m.proj]=m.projName);
-  const body=q
-    ? (hit.length?hit.map(m=>mRow(m,true)).join(""):'<div class="card small">没有找到。换个词试试，搜的是名字和「什么时候用得上」。</div>')
-    : (D.meth?.cats||[]).map(c=>{
-        const arr=hit.filter(m=>m.cat===c);if(!arr.length) return "";
-        const k="mc_"+c,on=!!S.open[k];
-        return `<div class="card"><div class="fold" data-toggle="${esc(k)}"><b>${esc(c)}</b><span class="meta" style="margin-left:auto">${arr.length} 条</span><span class="chev">${on?"⌄":"›"}</span></div>
-          ${on?arr.map(m=>mRow(m,false)).join(""):""}</div>`;
-      }).join("");
+  const all=ML(),projs=[...new Set(all.map(m=>m.proj))],PN={};
+  all.forEach(m=>PN[m.proj]=m.projName);
   return `<div class="body">
     <h1 class="h1">方法</h1>
     <p class="small" style="margin:0 0 10px">${all.length} 条，从 6/27–9/22 的复盘里抽出来的。要做一件事之前，先来这儿看有没有做过类似的。</p>
-    <input class="srch" id="msrch" placeholder="搜一下，比如「卡住」「界面」「假设」" value="${esc(S.q||"")}">
+    <input class="srch" id="msrch" placeholder="搜一下，比如「卡住」「界面」「假设」" value="${esc(S.q||"")}" autocomplete="off" autocorrect="off">
     <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:4px">
-      <button class="chip${pf?"":" on"}" data-mproj="">全部</button>
-      ${projs.map(pid=>`<button class="chip${pf===pid?" on":""}" data-mproj="${esc(pid)}">${esc(PN[pid])}</button>`).join("")}</div>
-    ${q?`<div class="small">找到 ${hit.length} 条</div>`:""}
-    ${body}
+      <button class="chip${S.mproj?"":" on"}" data-mproj="">全部</button>
+      ${projs.map(pid=>`<button class="chip${S.mproj===pid?" on":""}" data-mproj="${esc(pid)}">${esc(PN[pid])}</button>`).join("")}</div>
+    <div id="mbody">${methBody()}</div>
   </div>${nav("meth")}`;
+}
+function methBody(){
+  const q=(S.q||"").trim().toLowerCase(),pf=S.mproj||"";
+  let hit=ML();
+  if(pf) hit=hit.filter(m=>m.proj===pf);
+  if(q) hit=hit.filter(m=>(m.name+" "+m.when+" "+m.what).toLowerCase().includes(q));
+  if(q) return `<div class="small">找到 ${hit.length} 条</div>`+
+    (hit.length?hit.map(m=>mRow(m,true)).join(""):'<div class="card small">没有找到。换个词试试，搜的是名字和「什么时候用得上」。</div>');
+  return (D.meth?.cats||[]).map(c=>{
+    const arr=hit.filter(m=>m.cat===c);if(!arr.length) return "";
+    const k="mc_"+c,on=!!S.open[k];
+    return `<div class="card"><div class="fold" data-toggle="${esc(k)}"><b>${esc(c)}</b><span class="meta" style="margin-left:auto">${arr.length} 条</span><span class="chev">${on?"⌄":"›"}</span></div>
+      ${on?arr.map(m=>mRow(m,false)).join(""):""}</div>`;
+  }).join("");
 }
 function mRow(m,showCat){
   return `<div class="line3 tap" data-go="method" data-arg="${esc(m.id)}">
@@ -505,7 +505,7 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-24c</div>
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-24d</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
@@ -680,7 +680,12 @@ async function delRow(i){
   try{await put(`projects/${id}/rows.json`,P.rows,`删除一条：${(r.q||"").slice(0,20)}`);toast("已删除");go("list",id)}
   catch(e){toast("删除失败："+e.message);P.rows.splice(i,0,r)}
 }
-let confirmDel=false;
+let confirmDel=false,IME=false;
+document.addEventListener("compositionstart",e=>{if(e.target.id==="msrch")IME=true});
+document.addEventListener("compositionend",e=>{
+  if(e.target.id!=="msrch") return;
+  IME=false;S.q=e.target.value;const b=$("#mbody");if(b)b.innerHTML=methBody();
+});
 document.addEventListener("blur",e=>{
   const t=e.target,k=t?.dataset?.rk;if(!k) return;
   const [is,key]=k.split("|"),i=+is,id=cur(),P=D.p[id];if(!P||!P.rows[i]) return;
@@ -714,8 +719,9 @@ async function saveRows(id,msg,loud){
   catch(e){toast("保存失败："+e.message)}
 }
 document.addEventListener("input",e=>{
-  if(e.target.id==="msrch"){S.q=e.target.value;const c=e.target.selectionStart;render();
-    const el=$("#msrch");if(el){el.focus();try{el.setSelectionRange(c,c)}catch(_){}}return}
+  if(e.target.id==="msrch"){
+    if(IME) return;                      // 中文拼音还在拼，先别动
+    S.q=e.target.value;const b=$("#mbody");if(b)b.innerHTML=methBody();return}
   const i=e.target.dataset?.pri;if(i==null) return;
   const P=D.p[S.arg||cur()];if(!P) return;
   P.rows[+i].cols=P.rows[+i].cols||{};P.rows[+i].cols[PRI]=e.target.value.trim();
