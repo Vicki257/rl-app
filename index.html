@@ -24,7 +24,7 @@ body{overflow-x:hidden}
 body{margin:0;background:radial-gradient(130% 42% at 50% 0%,#2A2416 0%,var(--ground) 62%) fixed,var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
 #app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;overflow-x:hidden}
 .body{flex:1;min-width:0;max-width:100%;padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 24px;display:flex;flex-direction:column;gap:12px}
-.nav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:rgba(13,13,12,.96);backdrop-filter:blur(10px);padding:8px 0 calc(env(safe-area-inset-bottom,0px) + 10px)}
+.nav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:rgba(13,13,12,.96);backdrop-filter:blur(10px);padding:8px 0 calc(env(safe-area-inset-bottom,0px) + 10px)}
 .nav button{font:inherit;font-size:14px;font-weight:600;background:none;border:0;color:var(--ink3);padding:6px 0;cursor:pointer}
 .nav button[aria-current="true"]{color:var(--accent);font-weight:700}
 button{font:inherit}
@@ -92,6 +92,8 @@ textarea{min-height:70px;resize:vertical}
 .mg{border-top:1px solid var(--soft)}
 .mg:first-child{border-top:0}
 .mg .line3{padding-left:10px;font-size:15px}
+.srch{width:100%;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:13px 14px;font-size:16px;color:var(--ink);margin-bottom:10px;-webkit-appearance:none}
+.srch:focus{outline:none;border-color:var(--accent)}
 .chip.on{background:var(--accentSoft);border-color:var(--accent);color:var(--accent);font-weight:600}
 .tag.m{color:var(--ink);background:var(--accentSoft);border-radius:5px;padding:2px 7px}
 .how{margin-top:8px;padding:11px 12px;background:var(--accentSoft);border-radius:10px;font-size:15px;line-height:1.65;color:var(--ink2)}
@@ -173,7 +175,7 @@ async function put(path,obj,msg){
 }
 
 /* ============ 状态 ============ */
-const D={global:null,index:[],status:null,p:{},shared:null,hist:null};
+const D={global:null,index:[],status:null,p:{},meth:null};
 const S={screen:"today",arg:null,stack:[],open:{},sheet:false,edit:false,loading:true,err:"",toast:""};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -186,7 +188,7 @@ async function loadProject(id,force){
 async function loadAll(){
   S.loading=true;S.err="";render();
   try{
-    [D.global,D.index,D.status,D.shared]=await Promise.all([get("global.json"),get("projects/index.json"),get("status.json").catch(()=>null),get("shared/methods.json").catch(()=>({name:"工具箱",methods:[]}))]);
+    [D.global,D.index,D.status,D.meth]=await Promise.all([get("global.json"),get("projects/index.json"),get("status.json").catch(()=>null),get("methods.json").catch(()=>({name:"方法库",cats:[],methods:[]}))]);
     await loadProject(cur(),true);
   }catch(e){S.err=e.message}
   S.loading=false;render();
@@ -218,8 +220,8 @@ function widgetFrom(id,P){
 /* ============ 导航 ============ */
 function go(screen,arg){S.stack.push({screen:S.screen,arg:S.arg});S.screen=screen;S.arg=arg;S.open={};S.edit=false;render();window.scrollTo(0,0)}
 function back(){const b=S.stack.pop()||{screen:"today"};S.screen=b.screen;S.arg=b.arg;S.open={};S.edit=false;render()}
-function tab(s){S.stack=[];S.screen=s;S.arg=null;S.open={};S.edit=false;render();window.scrollTo(0,0)}
-const nav=a=>`<nav class="nav">${[["today","今天"],["plist","项目"],["ilist","迭代"],["system","系统"]].map(([k,l])=>`<button data-tab="${k}" aria-current="${a===k}">${l}</button>`).join("")}</nav>`;
+function tab(s){S.stack=[];S.screen=s;S.arg=null;S.open={};S.edit=false;if(s!=="meth"){S.q="";S.mproj=""}render();window.scrollTo(0,0)}
+const nav=a=>`<nav class="nav">${[["today","今天"],["plist","项目"],["meth","方法"],["ilist","迭代"],["system","系统"]].map(([k,l])=>`<button data-tab="${k}" aria-current="${a===k}">${l}</button>`).join("")}</nav>`;
 const topBar=(title,right="")=>`<div class="top"><button class="back" data-back>‹ 返回</button><span class="meta">${esc(right)}</span></div>${title?`<h2 class="h1" style="font-size:24px">${esc(title)}</h2>`:""}`;
 
 /* ============ 页面 ============ */
@@ -365,12 +367,12 @@ function detail(){
   if(k==="x") return `<div class="body">${topBar("召回",P.project.name)}
       <div class="small">当前问题：${esc(row.q)}</div>
       <div class="card" style="padding:4px 14px">${(n.recall||[]).map((x,i)=>{
-        if(x.k==="方法"){const pid=x.from||cur();
+        if(x.k==="方法"){
           return `<div class="recall"><span class="tag m">方法</span>
             <span class="t">${"①②③"[i]} ${esc(x.t)}</span>
             <span class="w">${esc(x.w)}</span>
             ${x.how?`<div class="how"><b>今天怎么用</b>${esc(x.how)}</div>`:""}
-            <div class="line3 tap" data-go="method" data-arg="${esc(pid)}|${esc(x.ref||"")}" style="border:0;padding:8px 0 4px"><span class="txt" style="color:var(--accent)">打开这条方法${pid==="shared"?"（工具箱）":""}</span><span class="chev">›</span></div></div>`}
+            <div class="line3 tap" data-go="method" data-arg="${esc(x.ref||"")}" style="border:0;padding:8px 0 4px"><span class="txt" style="color:var(--accent)">打开这条方法</span><span class="chev">›</span></div></div>`}
         return `<div class="recall tap" data-toggle="rc${i}"><span class="tag">${esc(x.tag)}</span><span class="t">${"①②③"[i]} ${esc(x.t)}</span><span class="w">${esc(x.w)}</span>${S.open["rc"+i]?`<div class="evi">${esc(x.e)}</div>`:""}</div>`;
       }).join("")||'<div class="small" style="padding:10px 0">没有召回内容</div>'}</div>
       <button class="btn ghost" data-toggle="all">${S.open.all?"收起全部依据":"展开全部依据"}</button>
@@ -416,53 +418,62 @@ function flowHTML(pj){
       <div class="t"><span>${esc(n.name)}</span>${n.kind==="plain"?"":"<span>›</span>"}</div>
       ${(n.q||n.sub)?`<div class="q">${esc(n.q||n.sub)}</div>`:""}</div>`).join("")}</div>`).join("");
 }
-/* ---- 方法库 ---- */
-function mlist(pid){return pid==="shared"?(D.shared?.methods||[]):(D.p[pid]?.project?.methods||[])}
-function findM(pid,mid){return mlist(pid).find(m=>m.id===mid)}
-function mOwner(pid){return pid==="shared"?"工具箱":(D.p[pid]?.project?.name||pid)}
-function nodesList(pid){return pid==="shared"?[]:((D.p[pid]?.project?.sop?.nodes)||[])}
-function nodeName(pid,nid){return nodesList(pid).find(n=>n.id===nid)?.name||""}
-async function saveMethods(pid,msg){
-  if(pid!=="shared") return saveProject(pid,msg,true);
-  try{await put("shared/methods.json",D.shared,msg);S.toast="已保存";render();setTimeout(()=>{S.toast="";render()},1500)}
-  catch(e){toast("保存失败："+e.message)}
+/* ---- 方法库：一个库、一个入口、按「我要做什么」分类、可搜 ---- */
+function ML(){return D.meth?.methods||[]}
+function findM(id){return ML().find(m=>m.id===id)}
+function methPage(){
+  const all=ML(),q=(S.q||"").trim().toLowerCase();
+  const pf=S.mproj||"";
+  let hit=all;
+  if(pf) hit=hit.filter(m=>m.proj===pf);
+  if(q) hit=hit.filter(m=>(m.name+" "+m.when+" "+m.what).toLowerCase().includes(q));
+  const projs=[...new Set(all.map(m=>m.proj))];
+  const PN={};all.forEach(m=>PN[m.proj]=m.projName);
+  const body=q
+    ? (hit.length?hit.map(m=>mRow(m,true)).join(""):'<div class="card small">没有找到。换个词试试，搜的是名字和「什么时候用得上」。</div>')
+    : (D.meth?.cats||[]).map(c=>{
+        const arr=hit.filter(m=>m.cat===c);if(!arr.length) return "";
+        const k="mc_"+c,on=!!S.open[k];
+        return `<div class="card"><div class="fold" data-toggle="${esc(k)}"><b>${esc(c)}</b><span class="meta" style="margin-left:auto">${arr.length} 条</span><span class="chev">${on?"⌄":"›"}</span></div>
+          ${on?arr.map(m=>mRow(m,false)).join(""):""}</div>`;
+      }).join("");
+  return `<div class="body">
+    <h1 class="h1">方法</h1>
+    <p class="small" style="margin:0 0 10px">${all.length} 条，从 6/27–9/22 的复盘里抽出来的。要做一件事之前，先来这儿看有没有做过类似的。</p>
+    <input class="srch" id="msrch" placeholder="搜一下，比如「卡住」「界面」「假设」" value="${esc(S.q||"")}">
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:4px">
+      <button class="chip${pf?"":" on"}" data-mproj="">全部</button>
+      ${projs.map(pid=>`<button class="chip${pf===pid?" on":""}" data-mproj="${esc(pid)}">${esc(PN[pid])}</button>`).join("")}</div>
+    ${q?`<div class="small">找到 ${hit.length} 条</div>`:""}
+    ${body}
+  </div>${nav("meth")}`;
 }
-function methodsFold(pid){
-  const ms=mlist(pid),ns=nodesList(pid);
-  const groups=ns.map(n=>[n.id,n.name,ms.filter(m=>m.node===n.id)]);
-  const loose=ms.filter(m=>!m.node||!ns.some(n=>n.id===m.node));
-  if(loose.length) groups.push(["_",ns.length?"还没挂到任何一环":"全部方法",loose]);
-  const inner=groups.filter(g=>g[2].length).map(([nid,nm,arr])=>{
-    const k="mg_"+pid+"_"+nid,on=!!S.open[k];
-    return `<div class="mg"><div class="fold sm" data-toggle="${k}"><b>${esc(nm)}</b><span class="meta">${arr.length} 条</span><span class="chev">${on?"⌄":"›"}</span></div>
-      ${on?arr.map(m=>`<div class="line3 tap" data-go="method" data-arg="${esc(pid)}|${esc(m.id)}"><span class="txt">${esc(m.name)}</span><span class="chev">›</span></div>`).join(""):""}</div>`;
-  }).join("")||'<div class="small" style="padding:8px 0">还没有方法</div>';
-  return fold("meth_"+pid,"从 Notion 沉淀的方法",ms.length+" 条"+(ns.length?"，按 SOP 的环分组":""),
-    inner+`<button class="btn ghost" data-addm="${esc(pid)}" style="margin-top:10px">＋ 加一条方法</button>`);
+function mRow(m,showCat){
+  return `<div class="line3 tap" data-go="method" data-arg="${esc(m.id)}">
+    <span class="txt"><b style="font-weight:600">${esc(m.name)}</b>
+      <div class="meta" style="margin-top:2px">${showCat?esc(m.cat)+"　":""}${esc(m.when)}</div></span><span class="chev">›</span></div>`;
 }
 function methodPage(){
-  const [pid,mid]=String(S.arg).split("|");
-  const m=findM(pid,mid);
-  if(!m) return `<div class="body">${topBar("找不到这条方法","")}<p class="small">它可能已经被删掉了，或者在别的项目里。</p></div>`;
-  const ns=nodesList(pid);
+  const m=findM(S.arg);
+  if(!m) return `<div class="body">${topBar("找不到这条方法","")}<p class="small">它可能已经被删掉了。</p>${nav("meth")}</div>`;
+  const cats=D.meth?.cats||[];
   if(S.edit) return `<div class="body">${topBar(m.name,"编辑")}
     <div class="card" style="display:flex;flex-direction:column;gap:8px">
       <label class="small" for="m_name">名字</label><textarea id="m_name" style="min-height:52px">${esc(m.name)}</textarea>
-      <label class="small" for="m_what">它说的是什么</label><textarea id="m_what" style="min-height:150px">${esc(m.what||"")}</textarea>
       <label class="small" for="m_when">什么时候用得上</label><textarea id="m_when">${esc(m.when||"")}</textarea>
-      <label class="small" for="m_src">来源（几月几号，逗号或顿号隔开）</label><textarea id="m_src" style="min-height:52px">${esc(m.src||"")}</textarea>
-      ${ns.length?`<div class="small">挂在哪一环</div><div class="row" style="gap:6px;flex-wrap:wrap">
-        ${ns.map(n=>`<button class="chip${m.node===n.id?" on":""}" data-setnode="${esc(pid)}|${esc(mid)}|${esc(n.id)}">${esc(n.name)}</button>`).join("")}
-        <button class="chip${m.node?"":" on"}" data-setnode="${esc(pid)}|${esc(mid)}|">还没挂上</button></div>`:""}
-      <button class="btn" data-savem="${esc(pid)}|${esc(mid)}">保存</button>
+      <label class="small" for="m_what">它说的是什么</label><textarea id="m_what" style="min-height:160px">${esc(m.what||"")}</textarea>
+      <label class="small" for="m_src">来源（几月几号）</label><textarea id="m_src" style="min-height:52px">${esc(m.src||"")}</textarea>
+      <div class="small">放在哪一类</div><div class="row" style="gap:6px;flex-wrap:wrap">
+        ${cats.map(c=>`<button class="chip${m.cat===c?" on":""}" data-setcat="${esc(m.id)}|${esc(c)}">${esc(c)}</button>`).join("")}</div>
+      <button class="btn" data-savem="${esc(m.id)}">保存</button>
       <button class="btn ghost" data-canceledit>取消</button>
-      <button class="btn ghost bd" data-delm="${esc(pid)}|${esc(mid)}">删除这条方法</button></div>
+      <button class="btn ghost bd" data-delm="${esc(m.id)}">删除这条方法</button></div>
   </div>`;
-  return `<div class="body">${topBar(m.name,mOwner(pid))}
-    <div class="row"><span class="meta">${m.node?esc(nodeName(pid,m.node))+" 这一环":"还没挂到任何一环"}</span>
+  return `<div class="body">${topBar(m.name,m.cat)}
+    <div class="row"><span class="meta">${esc(m.projName||"")}</span>
       <button class="back" style="margin-left:auto" data-edit>编辑</button></div>
-    <div class="card"><b>它说的是什么</b><div class="kv"><span class="v">${esc(m.what)}</span></div></div>
     <div class="card"><b>什么时候用得上</b><div class="kv"><span class="v">${esc(m.when)}</span></div></div>
+    <div class="card"><b>它说的是什么</b><div class="kv"><span class="v">${esc(m.what)}</span></div></div>
     <div class="card"><div class="kv"><span class="k">哪一天总结出来的</span><span class="v">${esc(m.src||"—")}</span></div></div>
   </div>`;
 }
@@ -497,9 +508,7 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    ${methodsFold(id)}
-    ${methodsFold("shared")}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-24a</div>
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-24b</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
@@ -534,9 +543,6 @@ function nodePage(){
         <p>${esc(p.solved?p.fix:p.gap)}</p></div>`).join("")||'<div class="small">还没写</div>'}</div>
       ${n.so?`<div class="kv"><span class="k">所以</span><span class="v">${esc(n.so)}</span></div>`:""}</div>
     <div class="card"><b>做完的判据</b><div class="kv"><span class="v">${esc(n.judge||"还没写")}</span></div></div>
-    ${(()=>{const ms=mlist(pid).filter(m=>m.node===nid);
-      return `<div class="card"><b>这一环用什么方法</b><span class="meta" style="margin-left:8px">${ms.length} 条</span>
-        ${ms.map(m=>`<div class="line3 tap" data-go="method" data-arg="${esc(pid)}|${esc(m.id)}"><span class="txt">${esc(m.name)}</span><span class="chev">›</span></div>`).join("")||'<div class="small" style="margin-top:6px">还没有方法挂在这一环</div>'}</div>`})()}
   </div>`;
 }
 function iter(){
@@ -590,7 +596,7 @@ function render(){
   if(!cfg.token||S.screen==="settings") h=settings();
   else if(S.loading&&!D.global) h=`<div class="center">读取数据中…</div>`;
   else if(S.err&&!D.global) h=`<div class="body"><h1 class="h1">读取失败</h1><div class="banner bd">${esc(S.err)}</div><p class="small">检查令牌是否过期、仓库名是否正确，或网络是否正常。</p><button class="btn" data-reload>重试</button><button class="btn ghost" data-tab="settings">修改连接</button></div>`;
-  else h=({today,row:rowPage,detail,project,node:nodePage,method:methodPage,list:listPage,iter,gate,system,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
+  else h=({today,row:rowPage,detail,project,node:nodePage,meth:methPage,method:methodPage,list:listPage,iter,gate,system,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
   a.innerHTML=h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
   if(S.screen==="project"&&!S.edit){drawEdges();fitBoard()}
 }
@@ -711,6 +717,8 @@ async function saveRows(id,msg,loud){
   catch(e){toast("保存失败："+e.message)}
 }
 document.addEventListener("input",e=>{
+  if(e.target.id==="msrch"){S.q=e.target.value;const c=e.target.selectionStart;render();
+    const el=$("#msrch");if(el){el.focus();try{el.setSelectionRange(c,c)}catch(_){}}return}
   const i=e.target.dataset?.pri;if(i==null) return;
   const P=D.p[S.arg||cur()];if(!P) return;
   P.rows[+i].cols=P.rows[+i].cols||{};P.rows[+i].cols[PRI]=e.target.value.trim();
@@ -749,17 +757,17 @@ function saveNode(pid,nid){
   });
   return saveProject(pid,`修改 SOP 节点：${n.name}`);
 }
-function addMethod(pid){
-  const arr=pid==="shared"?(D.shared.methods=D.shared.methods||[]):(D.p[pid].project.methods=D.p[pid].project.methods||[]);
-  const pre=pid==="shared"?"sh":pid;
-  let n=1;while(arr.some(m=>m.id===pre+"-"+String(n).padStart(3,"0"))) n++;
-  const today=new Date(Date.now()+9*36e5).toISOString().slice(0,10);
-  const m={id:pre+"-"+String(n).padStart(3,"0"),node:"",name:"新方法",what:"",when:"",
-           src:(+today.slice(5,7))+"/"+(+today.slice(8,10)),refs:[today]};
-  arr.push(m);S.edit=true;go("method",pid+"|"+m.id);
+function addMethod(){
+  const arr=D.meth.methods=D.meth.methods||[];
+  let n=1;while(arr.some(m=>m.id==="m-"+String(n).padStart(3,"0"))) n++;
+  const t=new Date(Date.now()+9*36e5).toISOString().slice(0,10);
+  const m={id:"m-"+String(n).padStart(3,"0"),cat:(D.meth.cats||[])[0]||"每天怎么跑",
+           proj:cur(),projName:D.p[cur()]?.project?.name||"",
+           name:"新方法",when:"",what:"",src:(+t.slice(5,7))+"/"+(+t.slice(8,10)),refs:[t]};
+  arr.push(m);S.edit=true;go("method",m.id);
 }
-function saveMethod(pid,mid){
-  const m=findM(pid,mid);if(!m) return;
+function saveMethod(id){
+  const m=findM(id);if(!m) return;
   m.name=$("#m_name").value.trim()||"未命名";
   m.what=$("#m_what").value.trim();
   m.when=$("#m_when").value.trim();
@@ -767,19 +775,15 @@ function saveMethod(pid,mid){
   m.refs=[...new Set((m.src.match(/(\d{1,2})\/(\d{1,2})/g)||[]).map(t=>{
     const [a,b]=t.split("/");return `2026-${String(+a).padStart(2,"0")}-${String(+b).padStart(2,"0")}`}))];
   S.edit=false;
-  return saveMethods(pid,`方法：${m.name}`);
+  return saveMethods(`方法：${m.name}`);
 }
-async function delMethod(pid,mid){
+async function delMethod(id){
   if(!confirmDel){confirmDel=true;toast("再点一次「删除这条方法」才真的删");setTimeout(()=>confirmDel=false,4000);return}
   confirmDel=false;
-  const arr=pid==="shared"?D.shared.methods:D.p[pid].project.methods;
-  const i=arr.findIndex(m=>m.id===mid);if(i<0) return;
+  const arr=D.meth.methods,i=arr.findIndex(m=>m.id===id);if(i<0) return;
   const [m]=arr.splice(i,1);
-  try{
-    if(pid==="shared") await put("shared/methods.json",D.shared,`删除方法：${m.name}`);
-    else await put(`projects/${pid}/project.json`,D.p[pid].project,`删除方法：${m.name}`);
-    S.edit=false;toast("已删除");back();
-  }catch(e){arr.splice(i,0,m);toast("删除失败："+e.message)}
+  try{await put("methods.json",D.meth,`删除方法：${m.name}`);S.edit=false;toast("已删除");tab("meth")}
+  catch(e){arr.splice(i,0,m);toast("删除失败："+e.message)}
 }
 async function decide(id,i,opt){
   const P=D.p[id];const g=P.iteration.gates[i];
@@ -789,12 +793,13 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-addm],[data-savem],[data-delm],[data-setnode]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj]");
   if(!t) return;const d=t.dataset;
-  if(d.addm) return addMethod(d.addm);
-  if(d.savem){const [pid,mid]=d.savem.split("|");return saveMethod(pid,mid)}
-  if(d.delm){const [pid,mid]=d.delm.split("|");return delMethod(pid,mid)}
-  if(d.setnode!=null){const [pid,mid,nid]=d.setnode.split("|");const m=findM(pid,mid);if(m){m.node=nid||"";render()}return}
+  if("addm" in d) return addMethod();
+  if(d.savem) return saveMethod(d.savem);
+  if(d.delm) return delMethod(d.delm);
+  if(d.setcat){const [id,c]=d.setcat.split("|");const m=findM(id);if(m){m.cat=c;render()}return}
+  if(d.mproj!=null){S.mproj=d.mproj||"";return render()}
   if(d.zoom){ZOOM=d.zoom==="fit"?1:(d.zoom==="+"?Math.min(3,ZOOM*1.3):Math.max(.6,ZOOM/1.3));return fitBoard()}
   if(d.node) return go("node",(S.arg||cur())+"|"+d.node);
   if(d.filter!=null){S.filter=S.filter===d.filter?null:d.filter;return render()}
