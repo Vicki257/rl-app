@@ -6,93 +6,98 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="今天">
-<meta name="theme-color" content="#1A1815">
+<meta name="theme-color" content="#0D0D0C">
 <title>强化学习系统</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
-  --ground:#1A1815; --paper:#24211D; --ink:#EDE6DA; --ink2:#CFC6B8; --ink3:#8C8474;
-  --line:#37322B; --soft:#2D2924; --accent:#E8B866; --accentSoft:#3A3122; --bad:#E58B73; --badSoft:#3A2520; --onAccent:#1C1A17;
+  --ground:#0D0D0C; --paper:#171716; --ink:#FFFFFF; --ink2:#E2DED6; --ink3:#A39C8E;
+  --line:#33322D; --soft:#201F1C; --accent:#E5C463; --accentSoft:#3B3218; --bad:#E88E74; --badSoft:#3A2318; --onAccent:#12110F;
   --sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
   --serif:"Noto Serif SC","Songti SC",serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:radial-gradient(120% 40% at 50% 0%,#3A3226 0%,var(--ground) 60%) fixed,var(--ground);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{margin:0;background:radial-gradient(130% 42% at 50% 0%,#2A2416 0%,var(--ground) 62%) fixed,var(--ground);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased}
 #app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
 .body{flex:1;padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 24px;display:flex;flex-direction:column;gap:12px}
-.nav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:rgba(26,24,21,.94);backdrop-filter:blur(10px);padding:8px 0 calc(env(safe-area-inset-bottom,0px) + 10px)}
-.nav button{font:inherit;font-size:12px;background:none;border:0;color:var(--ink3);padding:6px 0;cursor:pointer}
+.nav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:rgba(13,13,12,.96);backdrop-filter:blur(10px);padding:8px 0 calc(env(safe-area-inset-bottom,0px) + 10px)}
+.nav button{font:inherit;font-size:14px;font-weight:600;background:none;border:0;color:var(--ink3);padding:6px 0;cursor:pointer}
 .nav button[aria-current="true"]{color:var(--accent);font-weight:700}
 button{font:inherit}
 button:focus-visible,.tap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px}
-.back{font-size:15px;color:var(--accent);background:none;border:0;padding:0;cursor:pointer}
+.back{font-size:16px;color:var(--accent);background:none;border:0;padding:0;cursor:pointer}
 .h1{font-family:var(--serif);font-size:30px;font-weight:900;margin:0}
-.h2{font-size:12px;letter-spacing:.14em;color:var(--ink3);font-weight:700;margin:6px 0 0}
-.card{background:rgba(255,240,210,.05);border:1px solid rgba(255,230,190,.12);border-radius:14px;padding:14px}
+.h2{font-size:13px;letter-spacing:.14em;color:var(--ink3);font-weight:700;margin:6px 0 0}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:15px 16px}
 .tap{cursor:pointer}
 .row{display:flex;align-items:center;gap:10px}
 .chev{margin-left:auto;color:var(--ink3);flex:none}
-.chip{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--ink)}
-.meta{font-size:12px;color:var(--ink3);font-family:var(--mono)}
-.pill{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:14.5px;cursor:pointer;color:var(--ink)}
+.meta{font-size:13px;color:var(--ink3);font-family:var(--mono)}
+.pill{font-size:12.5px;padding:3px 10px;border-radius:999px;font-weight:600;white-space:nowrap}
 .ok{background:var(--accentSoft);color:var(--accent)} .bd{background:var(--badSoft);color:var(--bad)}
 .q{font-family:var(--serif);color:#FFF6E6;font-size:23px;font-weight:700;line-height:1.45;margin:0;text-wrap:balance}
-.lbl{font-size:12px;color:var(--accent);font-weight:700;width:34px;flex:none}
-.line3{display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.6}
+.lbl{font-size:13.5px;color:var(--accent);font-weight:700;width:38px;flex:none}
+.line3{display:flex;gap:11px;align-items:flex-start;padding:13px 0;border-top:1px solid var(--line);font-size:16px;line-height:1.65}
 .line3:first-child{border-top:0}
 .line3 .txt{flex:1;min-width:0}
-.btn{font-weight:700;font-size:16px;background:var(--accent);color:var(--onAccent);border:0;border-radius:12px;padding:13px;cursor:pointer;width:100%}
-.btn.ghost{background:var(--paper);color:var(--ink);border:1px solid var(--line);font-weight:500;font-size:14px;padding:10px}
+.btn{font-weight:700;font-size:17px;background:var(--accent);color:var(--onAccent);border:0;border-radius:12px;padding:13px;cursor:pointer;width:100%}
+.btn.ghost{background:var(--paper);color:var(--ink);border:1px solid var(--line);font-weight:600;font-size:15.5px;padding:12px}
 .btn:disabled{opacity:.5}
-.banner{border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.6}
-.small{font-size:13px;color:var(--ink2);line-height:1.6}
-.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
-.tbl table{border-collapse:collapse;font-size:12px;min-width:620px;width:100%}
-.tbl th,.tbl td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+.banner{border-radius:12px;padding:12px 14px;font-size:15px;line-height:1.6}
+.small{font-size:14.5px;color:var(--ink2);line-height:1.6}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--paper);font-size:15px}
+.tbl table{border-collapse:collapse;font-size:15px;min-width:620px;width:100%}
+.tbl th,.tbl td{text-align:left;padding:10px 11px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
 .tbl th{color:var(--ink3);background:var(--soft);white-space:nowrap}
 .tbl tr.sel td{background:var(--accentSoft)}
 .tbl tbody tr{cursor:pointer}
-.kv{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-top:1px solid var(--line)}
+.kv{display:flex;flex-direction:column;gap:4px;padding:12px 0;border-top:1px solid var(--line)}
 .kv:first-child{border-top:0}
-.kv .k{font-size:12px;color:var(--accent);font-weight:700}
-.kv .v{font-size:14px;line-height:1.65;white-space:pre-line}
-.step{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:14px;cursor:pointer}
+.kv .k{font-size:13.5px;color:var(--accent);font-weight:700}
+.kv .v{font-size:16.5px;line-height:1.7;white-space:pre-line}
+.step{display:flex;align-items:center;gap:10px;padding:11px 0;font-size:16px;cursor:pointer}
 .step .n{font-family:var(--mono);width:20px;height:20px;border-radius:6px;background:var(--soft);display:grid;place-items:center;font-size:11px;flex:none}
-.arrow{padding-left:5px;color:var(--ink3);font-size:12px}
-.sub{margin:2px 0 6px 30px;padding:10px;background:var(--soft);border-radius:10px;font-size:13px;line-height:1.7;color:var(--ink2);white-space:pre-line}
+.arrow{padding-left:5px;color:var(--accent);opacity:.6;font-size:14px}
+.sub{margin:2px 0 6px 30px;padding:12px;background:var(--soft);border-radius:10px;font-size:15px;line-height:1.7;color:var(--ink2);white-space:pre-line}
 .recall{display:flex;flex-direction:column;gap:4px;padding:12px 0;border-top:1px solid var(--line)}
 .recall:first-child{border-top:0}
-.recall .t{font-weight:700;font-size:15px}
-.recall .w{font-size:13px;color:var(--ink2);line-height:1.6}
-.tag{font-size:11px;font-weight:700;color:var(--accent)}
-.evi{margin-top:6px;padding:10px;background:var(--soft);border-radius:10px;font-size:13px;line-height:1.7;color:var(--ink2);white-space:pre-line}
-.cmp{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.recall .t{font-weight:700;font-size:17px}
+.recall .w{font-size:15px;color:var(--ink2);line-height:1.6}
+.tag{font-size:12.5px;font-weight:700;color:var(--accent)}
+.evi{margin-top:8px;padding:12px;background:var(--soft);border-radius:10px;font-size:15px;line-height:1.7;color:var(--ink2);white-space:pre-line}
+.cmp{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
 .cmp td,.cmp th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
-.cmp th{color:var(--ink3);font-size:11px}
-textarea,input{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px;line-height:1.6}
+.cmp th{color:var(--ink3);font-size:12.5px}
+textarea,input{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px;line-height:1.6}
 textarea{min-height:70px;resize:vertical}
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:5}
 .sheet .in{background:var(--paper);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;flex-direction:column;gap:8px}
-.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--ground);font-size:13px;padding:8px 14px;border-radius:999px;z-index:9;max-width:90%;text-align:center}
-.center{display:grid;place-items:center;min-height:60vh;color:var(--ink3);font-size:14px}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--accent);color:var(--onAccent);font-weight:600;font-size:15px;padding:10px 18px;border-radius:999px;z-index:9;max-width:90%;text-align:center}
+.ed{border-radius:8px;padding:3px 7px;margin:0 -7px;min-height:1.7em;transition:background .15s}
+.ed:hover{background:var(--soft)}
+.ed:focus{outline:none;background:var(--soft);box-shadow:0 0 0 1px var(--accent)}
+.ed:empty::before{content:attr(data-ph);color:#5B554A}
+.fold{display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--ink);font-weight:600;font-size:16px}
+.center{display:grid;place-items:center;min-height:60vh;color:var(--ink3);font-size:16px}
 /* SOP 白板 */
 .board{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;touch-action:none;background-image:radial-gradient(#312C25 1px,transparent 1px);background-size:20px 20px}
 .board.zoom{overflow:auto}
 .cvs{position:relative;width:1100px;height:860px;transform-origin:0 0}
 .zc{display:flex;gap:6px;align-items:center;margin-top:8px}
-.zc button{font:inherit;font-size:12px;background:var(--paper);border:1px solid var(--line);color:var(--ink3);border-radius:999px;padding:4px 12px;cursor:pointer}
+.zc button{font:inherit;font-size:13.5px;background:var(--paper);border:1px solid var(--line);color:var(--ink3);border-radius:999px;padding:4px 12px;cursor:pointer}
 .zc .z{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-left:4px}
 .flow{display:none;margin-top:10px}
 .fl{display:flex;gap:8px;justify-content:center}
-.fn{flex:1;min-width:0;background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:10px 11px;cursor:pointer}
+.fn{flex:1;min-width:0;background:var(--soft);border:1px solid #4A4636;border-radius:11px;padding:13px 12px;cursor:pointer}
 .fn.plain{border-style:dashed;background:transparent;cursor:default;text-align:center}
-.fn .t{font-family:var(--mono);font-size:12.5px;color:var(--accent);display:flex;justify-content:space-between;gap:4px}
+.fn .t{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--accent);display:flex;justify-content:space-between;gap:4px}
 .fn.plain .t{color:var(--ink);justify-content:center}
-.fn .q{color:var(--ink3);font-size:11px;line-height:1.45;margin-top:3px}
-.fa{text-align:center;color:#6A5E48;font-size:13px;line-height:1;padding:6px 0}
-.fp{font:inherit;font-size:12px;color:var(--ink3);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 14px;cursor:pointer}
+.fn .q{color:var(--ink2);font-size:13px;line-height:1.5;margin-top:3px}
+.fa{text-align:center;color:var(--accent);opacity:.65;font-size:15px;line-height:1;padding:8px 0}
+.fp{font:inherit;font-size:14px;color:var(--ink3);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 14px;cursor:pointer}
 .fp b{color:var(--ink);margin-right:6px;font-weight:700}
 .fp.on{background:var(--accentSoft);border-color:var(--accent);color:var(--accent)}
 .fp.on b{color:var(--accent)}
@@ -116,8 +121,8 @@ textarea{min-height:70px;resize:vertical}
 .pain.un .pp{color:var(--ink3)}
 .pain .fx{font-size:11px;letter-spacing:.06em;color:#8FB489;margin:7px 0 3px}
 .pain.un .fx{color:var(--ink3)}
-.pain p{margin:0;font-size:14px;line-height:1.65;color:var(--ink2)}
-.whole{font-size:16px;line-height:1.7;color:var(--accent);margin:12px 0 14px;padding-left:11px;border-left:2px solid var(--accentSoft)}
+.pain p{margin:0;font-size:16px;line-height:1.65;color:var(--ink2)}
+.whole{font-size:18px;line-height:1.7;color:var(--accent);margin:12px 0 14px;padding-left:11px;border-left:2px solid var(--accentSoft)}
 </style>
 </head>
 <body>
@@ -137,6 +142,7 @@ async function gh(path,opt={}){
 }
 async function get(path){const j=await gh(path);SHA[path]=j.sha;return JSON.parse(b64d(j.content))}
 async function put(path,obj,msg){
+  if(!SHA[path]){try{const j=await gh(path);SHA[path]=j.sha}catch(e){}}
   const body={message:msg||`更新 ${path}`,content:b64e(JSON.stringify(obj,null,2)+"\n")};
   if(SHA[path]) body.sha=SHA[path];
   try{const j=await gh(path,{method:"PUT",body:JSON.stringify(body)});SHA[path]=j.content.sha;}
@@ -342,38 +348,30 @@ function flowHTML(pj){
       <div class="t"><span>${esc(n.name)}</span>${n.kind==="plain"?"":"<span>›</span>"}</div>
       ${(n.q||n.sub)?`<div class="q">${esc(n.q||n.sub)}</div>`:""}</div>`).join("")}</div>`).join("");
 }
+function edv(k,v,ph){return `<div class="kv"><span class="k">${esc(k)}</span><div class="v ed" contenteditable data-ph="${esc(ph||"")}" data-p="${esc(k)}">${esc(v||"")}</div></div>`}
 function project(){
   const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
-  const pj=P.project,m=pj.mainline||{};
-  if(S.edit) return `<div class="body">${topBar(pj.name,"编辑")}
-    <div class="card" style="display:flex;flex-direction:column;gap:8px">
-      <label class="small" for="p_goal">目标</label><textarea id="p_goal">${esc(pj.goal)}</textarea>
-      <label class="small" for="p_reward">奖励的行为</label><textarea id="p_reward">${esc(pj.reward)}</textarea>
-      <label class="small" for="p_reality">什么才算“碰到现实”</label><textarea id="p_reality">${esc(pj.reality)}</textarea>
-      <label class="small" for="p_main">主线</label><textarea id="p_main">${esc(m.main||"")}</textarea>
-      <label class="small" for="p_evo">从主线长出来的（分号隔开）</label><textarea id="p_evo">${esc((m.evolved||[]).join("；"))}</textarea>
-      <label class="small" for="p_br">支线（分号隔开）</label><textarea id="p_br">${esc((m.branches||[]).join("；"))}</textarea>
-      <button class="btn" data-saveproj="${esc(id)}">保存</button><button class="btn ghost" data-canceledit>取消</button></div>
-  </div>${nav("plist")}`;
-  return `<div class="body">${topBar(pj.name,"")}
-    <div class="row"><span class="meta">项目</span><button class="back" style="margin-left:auto" data-edit>编辑</button></div>
-    <div class="card"><div class="kv"><span class="k">目标</span><span class="v">${esc(pj.goal)}</span></div>
-      <div class="kv"><span class="k">奖励的行为</span><span class="v">${esc(pj.reward)}</span></div></div>
+  const pj=P.project,m=pj.mainline||{},d=pj.doing||{};
+  const over=(m.branches||[]).length>(m.limit||2);
+  return `<div class="body">${topBar(pj.name,"点任意一行就能改")}
+    <div class="card">${edv("目标",pj.goal,"一句话")}${edv("奖励的行为",pj.reward,"持续做什么行为，能复利到这个目标")}</div>
     <div class="card"><b>当前最佳 SOP · ${esc(pj.sop?.version||"")}</b>${boardHTML(pj)}</div>
     <div class="card tap row" data-go="list" data-arg="${esc(id)}"><b>${esc(pj.tableName||"复盘表")}</b><span class="meta">${
       ["待改","改了未验","够用了","不做"].map(k=>{const n=P.rows.filter(r=>r.f===k).length;return n?n+" "+k:""}).filter(Boolean).join(" · ")
     }</span><span class="chev">›</span></div>
-    ${(pj.insights||[]).length?`<div class="card"><b>沉淀的认知</b>${pj.insights.map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join("")}</div>`:""}
     <div class="card"><b>① 当前进行</b>
-      <div class="kv"><span class="k">现在在做什么</span><span class="v">${esc(pj.doing?.what)}</span></div>
-      <div class="kv"><span class="k">什么才算“碰到现实”</span><span class="v">${esc(pj.reality)}</span></div>
-      <div class="kv"><span class="k">现实进展到哪</span><span class="v">${esc(pj.doing?.reality||"—")}</span></div>
-      <div class="kv"><span class="k">这个判断靠什么</span><span class="v">${esc(pj.doing?.evidence||"—")}</span></div></div>
-    <div class="card"><b>② 主线与支线</b>
-      <div class="kv"><span class="k">主线</span><span class="v">${esc(m.main)}</span></div>
-      <div class="kv"><span class="k">从主线长出来的</span><span class="v">${esc((m.evolved||[]).join("；")||"—")}</span></div>
-      <div class="kv"><span class="k">支线${(m.branches||[]).length>(m.limit||2)?"（超过上限，可能分心了）":""}</span><span class="v">${esc((m.branches||[]).join("；")||"—")}</span></div></div>
-    ${pj.metrics?`<div class="card"><b>指标</b><div class="kv"><span class="v">${esc(pj.metrics)}</span></div></div>`:""}
+      ${edv("在做的事",d.what,"跑一遍 SOP / 验证假设 / 比较参数……写具体做的事")}
+      ${edv("什么才算“碰到现实”",pj.reality,"以及什么不算。AI 自己说有效不算")}
+      ${edv("现实进展到哪",d.reality,"还没接触 / 已接触等待反馈 / 已收到真实反馈 / 已归因并改变行动")}
+      ${edv("这个判断靠什么",d.evidence,"证据来源")}</div>
+    <div class="card"><b>② 主线与支线${over?'　<span class="pill bd">⚠ 支线超过上限</span>':""}</b>
+      ${edv("主线",m.main,"一句话")}
+      ${edv("由主线演化出来的",(m.evolved||[]).join("；"),"分号隔开")}
+      ${edv("支线",(m.branches||[]).join("；"),"分号隔开")}</div>
+    <div class="card"><div class="fold" data-toggle="ins"><b>沉淀的认知</b><span class="meta">${(pj.insights||[]).length} 条</span><span class="chev">${S.open.ins?"⌄":"›"}</span></div>
+      ${S.open.ins?(pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""):""}</div>
+    ${pj.metrics?`<div class="card"><div class="fold" data-toggle="met"><b>指标</b><span class="chev">${S.open.met?"⌄":"›"}</span></div>
+      ${S.open.met?`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`:""}</div>`:""}
   </div>${nav("plist")}`;
 }
 function nodePage(){
@@ -568,19 +566,28 @@ document.addEventListener("input",e=>{
   P.rows[+i].cols=P.rows[+i].cols||{};P.rows[+i].cols[PRI]=e.target.value.trim();
   if(!S.priDirty){S.priDirty=true;const b=document.querySelector("[data-savepri]");if(!b)render()}
 });
-async function saveProject(id,msg){
+async function saveProject(id,msg,quiet){
   const P=D.p[id];
-  try{await put(`projects/${id}/project.json`,P.project,msg);toast("已保存");S.edit=false;S.moved=false;render()}
+  try{await put(`projects/${id}/project.json`,P.project,msg);S.moved=false;
+      if(quiet){S.toast="已保存";const el=document.querySelector(".toast");if(!el)render();setTimeout(()=>{S.toast="";if(S.screen==="project")render()},1600);}
+      else{toast("已保存");render()}}
   catch(e){toast("保存失败："+e.message)}
 }
-function saveProjFields(id){
-  const pj=D.p[id].project,m=pj.mainline=pj.mainline||{};
-  pj.goal=$("#p_goal").value.trim();pj.reward=$("#p_reward").value.trim();pj.reality=$("#p_reality").value.trim();
-  m.main=$("#p_main").value.trim();
+document.addEventListener("blur",e=>{
+  const t=e.target,k=t?.dataset?.p;if(!k||S.screen!=="project") return;
+  const id=S.arg||cur(),pj=D.p[id]?.project;if(!pj) return;
+  const v=t.innerText.trim(),m=pj.mainline=pj.mainline||{},d=pj.doing=pj.doing||{};
   const sp=s=>s.split(/[；;]/).map(x=>x.trim()).filter(Boolean);
-  m.evolved=sp($("#p_evo").value);m.branches=sp($("#p_br").value);
-  return saveProject(id,`修改项目：${pj.name}`);
-}
+  const before=JSON.stringify([pj.goal,pj.reward,pj.reality,d.what,d.reality,d.evidence,m.main,m.evolved,m.branches]);
+  if(k==="目标")pj.goal=v; else if(k==="奖励的行为")pj.reward=v;
+  else if(k==="什么才算“碰到现实”")pj.reality=v;
+  else if(k==="在做的事")d.what=v; else if(k==="现实进展到哪")d.reality=v;
+  else if(k==="这个判断靠什么")d.evidence=v;
+  else if(k==="主线")m.main=v; else if(k==="由主线演化出来的")m.evolved=sp(v);
+  else if(k==="支线")m.branches=sp(v);
+  if(JSON.stringify([pj.goal,pj.reward,pj.reality,d.what,d.reality,d.evidence,m.main,m.evolved,m.branches])!==before)
+    saveProject(id,`修改${k}：${pj.name}`);
+},true);
 function saveNode(pid,nid){
   const n=(D.p[pid].project.sop?.nodes||[]).find(x=>x.id===nid);if(!n) return;
   n.whole=$("#n_whole").value.trim();n.concl=$("#n_concl").value.trim();
@@ -600,7 +607,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-saverow],[data-decide],[data-savecfg],[data-reload],[data-saveproj],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-saverow],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow]");
   if(!t) return;const d=t.dataset;
   if(d.zoom){ZOOM=d.zoom==="fit"?1:(d.zoom==="+"?Math.min(3,ZOOM*1.3):Math.max(.6,ZOOM/1.3));return fitBoard()}
   if(d.node) return go("node",(S.arg||cur())+"|"+d.node);
@@ -622,7 +629,6 @@ document.addEventListener("click",async e=>{
   if("edit" in d){S.edit=true;return render()}
   if("canceledit" in d){S.edit=false;return render()}
   if(d.saverow) return saveRow(d.saverow);
-  if(d.saveproj) return saveProjFields(d.saveproj);
   if(d.savenode){const [pid,nid]=d.savenode.split("|");return saveNode(pid,nid)}
   if("saveboard" in d) return saveProject(S.arg||cur(),"调整 SOP 图的节点位置");
   if(d.decide){const [id,i,o]=d.decide.split("|");return decide(id,+i,o)}
