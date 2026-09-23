@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="今天">
 <meta name="theme-color" content="#0D0D0C">
 <title>强化学习系统</title>
-<!-- build 2026-09-23h -->
+<!-- build 2026-09-23i -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -196,8 +196,11 @@ function next7(){const d=new Date();const jst=new Date(d.getTime()+9*36e5);if(js
 const nightPill=st=>({done:'<span class="pill ok">夜间分析已完成</span>',wait:'<span class="pill ok">等待 AI 分析</span>',run:'<span class="pill ok">AI 分析中</span>',fail:'<span class="pill bd">夜间分析未完成</span>'}[st]);
 function curRow(P){return P.rows.find(r=>r.date===P.current.rowDate)||P.rows[P.rows.length-1]}
 function widgetFrom(id,P){
-  const row=curRow(P),n=row?.night||{};
-  return {project:id,name:P.project.name,q:P.current.q,writtenAt:P.current.writtenAt,
+  const row=focusRow(P),n=row?.night||{};
+  const isList=!!P.project.labels;
+  return {project:id,name:P.project.name,
+    q:isList?(row?.q||P.current.q):P.current.q,
+    writtenAt:P.current.writtenAt,
     night:{status:P.current.night?.status||"wait",deadline:P.current.night?.deadline||null,error:P.current.night?.error||null,
       c:n.cs||"",r:n.r||"",x:n.recall?.[0]?.t||""}};
 }
@@ -423,7 +426,7 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-23h</div>
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-23i</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
