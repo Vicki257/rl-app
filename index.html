@@ -238,6 +238,13 @@ function settings(){
 }
 function focusRow(P){
   if(!P.project.labels) return curRow(P);           // 每天一行的项目：当前那一行
+  // 点过「重新分析」就锁在那一行，直到它被标成够用了 / 不做。
+  // 不锁的话，今天页按优先分动态跳，夜间分析却写死在另一行，三张卡就会看着像没跑。
+  const f=P.current.focus;
+  if(f&&f.idx>=0){
+    const r=P.rows[f.idx];
+    if(r&&r.date===f.date&&r.f!=="够用了"&&r.f!=="不做") return r;
+  }
   const open=sortRows(P.rows).filter(r=>r.f!=="够用了"&&r.f!=="不做");
   return open[0]||sortRows(P.rows)[0]||P.rows[0];   // 清单型项目：优先分最高的未完成那一条
 }
@@ -514,7 +521,7 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-26d</div>
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-26e</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
@@ -553,6 +560,11 @@ function nodePage(){
 }
 async function reanalyze(id){
   const P=D.p[id];
+  // 锁定今天页这一刻显示的就是哪一行。同一天可能有好几行，所以必须带下标。
+  const row=focusRow(P),idx=P.rows.indexOf(row);
+  P.current.focus={date:row?.date||null,idx,q:row?.q||""};
+  P.current.rowDate=row?.date||P.current.rowDate;
+  P.current.q=row?.q||P.current.q;
   P.current.night={status:"wait",deadline:next8(),retries:0,error:null,
                    requestedAt:new Date().toISOString(),requestedBy:"在网页上点了重新分析"};
   try{
