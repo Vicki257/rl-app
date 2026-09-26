@@ -514,7 +514,7 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-26c</div>
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-26d</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
@@ -586,41 +586,34 @@ function fmtDays(r){            // 闭环耗时：按日历天算，不按小时
   return Math.round((new Date(b)-new Date(a))/864e5)+"天";
 }
 function realityBlock(id,P){
-  const R=P.iteration.reality||{},rows=P.rows;
-  const n=k=>rows.filter(r=>r.f===k).length;
-  const hit=rows.filter(r=>r.cols?.[REALC]==="有").length;
-  const no =rows.filter(r=>r.cols?.[REALC]==="无").length;
+  const R=P.iteration.reality||{};
+  const hits=P.rows.filter(r=>r.cols?.[REALC]==="有");      // 这张表只装真撞了现实的
+  const n=k=>hits.filter(r=>r.f===k).length;
+  const list=sortRows(hits).filter(r=>!S.rfilter||r.f===S.rfilter);
   const ix=r=>P.rows.indexOf(r);
   const chain=(R.sum||[]).map((c,j)=>fold("rc"+j,c.t,esc(c.one||""),
     `<div class="evi" style="margin-top:2px">${(c.steps||[]).map(esc).join("\n")}</div>`)).join("");
+  const bar=`<div class="row" style="flex-wrap:wrap;gap:8px;margin:2px 0 10px">
+    ${STS.filter(k=>n(k)).map(k=>`<button class="fp${S.rfilter===k?" on":""}" data-rfilter="${k}"><b>${n(k)}</b>${k}</button>`).join("")}
+    ${S.rfilter?`<button class="fp" style="margin-left:auto" data-rfilter="">全部 ${hits.length}</button>`:""}</div>`;
   const table=`<div class="tbl"><table class="nowrap"><thead><tr>
-      <th>日期</th><th>碰现实</th><th>状态</th><th>闭环</th><th>现实</th><th>为什么要改</th><th>改后验证</th>
+      <th>日期</th><th>状态</th><th>闭环</th><th>现实</th><th>为什么要改</th><th>改后验证</th>
     </tr></thead><tbody>
-    ${sortRows(rows).map(r=>`<tr data-go="row" data-arg="${r.date}|${ix(r)}">
+    ${list.map(r=>`<tr data-go="row" data-arg="${r.date}|${ix(r)}">
       <td class="meta">${r.date.slice(5).replace("-","/")}</td>
-      <td><span class="pill ${r.cols?.[REALC]==="有"?"ok":""}">${esc(r.cols?.[REALC]||"—")}</span></td>
       <td><span class="pill ${r.f==="够用了"?"ok":r.f==="待改"?"bd":""}">${esc(r.f)}</span></td>
       <td class="meta">${fmtDays(r)}</td>
       <td><span class="cell">${esc(r.q)}</span></td>
       <td><span class="cell">${esc(r.cols?.["为什么要改动"]||"—")}</span></td>
-      <td><span class="cell">${esc(r.cols?.["改后验证"]||"—")}</span></td></tr>`).join("")}
-  </tbody></table></div>`;
+      <td><span class="cell">${esc(r.cols?.["改后验证"]||"—")}</span></td></tr>`).join("")
+      ||'<tr><td colspan="6" class="meta" style="padding:14px 10px">这一类现在没有</td></tr>'}
+  </tbody></table></div>
+  <div class="meta" style="margin-top:8px">点任一行回到迭代清单那一条。没碰现实、纯想出来的改动不进这张表。</div>`;
+  const prev=STS.filter(k=>n(k)).map(k=>k+" "+n(k)).join("　");
   return `<div class="card"><b>② Reality · 撞完之后发生了什么</b>
     <div class="meta" style="margin:6px 0 10px">${esc(R.note||"")}${R.updated?"　更新于 "+esc(R.updated):""}</div>
     ${chain||'<div class="small">还没有写因果链</div>'}
-    <div class="row" style="gap:14px;flex-wrap:wrap;margin:14px 0 4px">
-      <span><b style="font-size:19px">${rows.length}</b> <span class="meta">条</span></span>
-      <span><b style="font-size:19px;color:var(--accent)">${hit}</b> <span class="meta">真撞了现实</span></span>
-      <span><b style="font-size:19px">${no}</b> <span class="meta">没碰，想出来的</span></span>
-    </div>
-    <div class="row" style="gap:14px;flex-wrap:wrap;margin-bottom:10px">
-      <span class="meta">闭环 <b style="color:var(--ink)">${n("够用了")}</b></span>
-      <span class="meta">在路上 <b style="color:var(--ink)">${n("改了未验")}</b></span>
-      <span class="meta">还没动 <b style="color:var(--ink)">${n("待改")}</b></span>
-      <span class="meta">判了不做 <b style="color:var(--ink)">${n("不做")}</b></span>
-    </div>
-    ${table}
-    <div class="meta" style="margin-top:8px">点任一行回到迭代清单那一条。</div>
+    <div style="margin-top:10px">${fold("rtbl","撞到现实的 "+hits.length+" 条",prev,bar+table)}</div>
   </div>`;
 }
 function gate(){
@@ -865,7 +858,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-reanalyze]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-reanalyze]");
   if(!t) return;const d=t.dataset;
   if(d.reanalyze) return reanalyze(d.reanalyze);
   if("addm" in d) return addMethod();
@@ -876,6 +869,7 @@ document.addEventListener("click",async e=>{
   if(d.zoom){ZOOM=d.zoom==="fit"?1:(d.zoom==="+"?Math.min(3,ZOOM*1.3):Math.max(.6,ZOOM/1.3));return fitBoard()}
   if(d.node) return go("node",(S.arg||cur())+"|"+d.node);
   if(d.filter!=null){S.filter=S.filter===d.filter?null:d.filter;return render()}
+  if(d.rfilter!=null){S.rfilter=S.rfilter===d.rfilter?"":d.rfilter;return render()}
   if(d.tofilter){const [pid,k]=d.tofilter.split("|");S.filter=k;return go("list",pid)}
   if(d.savepri){S.priDirty=false;return saveRows(d.savepri,"更新优先程度",true)}
   if(d.setst){const [i,st]=d.setst.split("|");return setStatus(+i,st)}
