@@ -204,7 +204,8 @@ function nightState(c){
   if(n.deadline&&Date.now()>new Date(n.deadline)) return "fail";
   return n.status||"wait";
 }
-function next7(){const d=new Date();const jst=new Date(d.getTime()+9*36e5);if(jst.getUTCHours()>=7)jst.setUTCDate(jst.getUTCDate()+1);jst.setUTCHours(7,0,0,0);return new Date(jst.getTime()-9*36e5).toISOString()}
+// 写入新问题后，分析要在下一个早上 8:00（日本时间）之前跑出来；过了就算没跑成
+function next8(){const d=new Date();const jst=new Date(d.getTime()+9*36e5);if(jst.getUTCHours()>=8)jst.setUTCDate(jst.getUTCDate()+1);jst.setUTCHours(8,0,0,0);return new Date(jst.getTime()-9*36e5).toISOString()}
 const nightPill=st=>({done:'<span class="pill ok">夜间分析已完成</span>',wait:'<span class="pill ok">等待 AI 分析</span>',run:'<span class="pill ok">AI 分析中</span>',fail:'<span class="pill bd">夜间分析未完成</span>'}[st]);
 function curRow(P){return P.rows.find(r=>r.date===P.current.rowDate)||P.rows[P.rows.length-1]}
 function widgetFrom(id,P){
@@ -265,7 +266,7 @@ function today(){
     <div class="card" style="padding:4px 14px">${lines}</div>
     <button class="btn" data-go="row" data-arg="${esc(row?.date||"")}|${ri}">开始 →</button>
     ${st==="wait"||st==="run"
-      ? `<div class="card small">${st==="run"?"AI 正在分析…":"已排队。下一个整点前会跑，跑完这三张卡就会换成新的。"}</div>`
+      ? `<div class="card small">${st==="run"?"AI 正在分析…":"已排队。从现在起每个整点试一次，早上 8:00 截止。跑完这三张卡就换成新的。"}</div>`
       : `<button class="btn ghost" data-reanalyze="${esc(id)}">问题写完了，重新分析 →</button>`}
     <div class="card tap row" data-go="gate" tabindex="0"><b>需要你判断</b>${gates?`<span class="pill ok">${gates}</span>`:'<span class="meta">无</span>'}<span class="chev">›</span></div>
     <div class="card tap row" data-sheet tabindex="0"><b>其他项目</b><span class="meta">${D.index.length-1}</span><span class="chev">›</span></div>
@@ -508,7 +509,7 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-26a</div>
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-26b</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
@@ -547,8 +548,8 @@ function nodePage(){
 }
 async function reanalyze(id){
   const P=D.p[id];
-  P.current.night={status:"wait",deadline:null,retries:0,error:null,
-                   requestedBy:"在网页上点了重新分析"};
+  P.current.night={status:"wait",deadline:next8(),retries:0,error:null,
+                   requestedAt:new Date().toISOString(),requestedBy:"在网页上点了重新分析"};
   try{
     await put(`projects/${id}/current.json`,P.current,"标为待分析（用户点了重新分析）");
     if(id===cur()) await put("widget.json",widgetFrom(id,P),"小组件：等待分析");
@@ -713,7 +714,7 @@ document.addEventListener("blur",e=>{
   if(daily&&key===LQ&&row.date===P.current.rowDate){
     P.current.voided=[...(P.current.voided||[]),{q:P.current.q,at:new Date().toISOString()}];
     P.current.q=v;P.current.writtenAt=new Date().toISOString();
-    P.current.night={status:"wait",deadline:next7(),retries:0,error:null,requestedBy:"用户改问题"};
+    P.current.night={status:"wait",deadline:next8(),retries:0,error:null,requestedBy:"用户改问题"};
     row.night=null;
     (async()=>{try{
       await put(`projects/${id}/rows.json`,P.rows,`改问题：${v}`);
