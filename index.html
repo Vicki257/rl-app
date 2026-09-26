@@ -343,7 +343,7 @@ function rowPage(){
 const PRI="优先程度";
 // S.arg 有时是项目 id（项目页），有时是「日期|下标」（行详情页）。只有前者能当 key 用。
 const projId=()=>(S.arg&&D.p[S.arg])?S.arg:cur();
-const APPVER="v2026-09-27b";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-09-27c";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2};
@@ -827,6 +827,22 @@ document.addEventListener("input",e=>{
   if(!S.priDirty){S.priDirty=true}
   const b=document.querySelector("[data-savepri]");
   if(b) b.style.display="";else render();   // 不整页重绘，否则输入框会失焦、刚敲的字被踢掉
+});
+
+// 优先分：离开输入框（或按回车）就直接存。
+// 之前只能靠表格最下面那个「保存优先分」按钮，而在行详情页它被 31 行表格挡在最底下，
+// 人在页面顶部改完根本看不见它，改了就走 = 白改。
+document.addEventListener("change",async e=>{
+  if(e.target?.dataset?.pri==null) return;
+  const id=projId(),P=D.p[id];if(!P) return;
+  S.priDirty=false;
+  const b=document.querySelector("[data-savepri]");if(b)b.style.display="none";
+  await saveRows(id,"更新优先程度");
+  await syncFocus(id);
+  render();
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&e.target?.dataset?.pri!=null) e.target.blur();
 });
 async function saveProject(id,msg,quiet){
   const P=D.p[id];
