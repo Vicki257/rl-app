@@ -311,7 +311,11 @@ function rowPage(){
         ${STS.map(k=>`<button class="fp${row.f===k?" on":""}" data-setst="${i}|${k}">${k}</button>`).join("")}</div></div>`
         :edr(i,LF,row.f,"",true)}
       ${edr(i,LQ,row.q,"",true)}
-      ${cols.map(c=>edr(i,c,row.cols?.[c],"")).join("")}
+      ${cols.map(c=> c===REALC
+        ? `<div class="kv"><span class="k">${esc(c)}</span><div class="row" style="flex-wrap:wrap;gap:7px;margin-top:3px">
+            ${["有","无"].map(v=>`<button class="fp${(row.cols?.[c]||"")===v?" on":""}" data-setreal="${i}|${v}">${v}</button>`).join("")}
+            <span class="meta" style="margin-left:4px">有＝这次改动是现实逼出来的</span></div></div>`
+        : edr(i,c,row.cols?.[c],"")).join("")}
     </div>
     <div class="h2">夜间分析</div>
     <div class="card" style="padding:4px 14px">${nightBlock(P,row,i)}</div>
@@ -322,6 +326,7 @@ function rowPage(){
   </div>`;
 }
 const PRI="优先程度";
+const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2};
 function sortRows(rows){return [...rows].sort((a,b)=>
@@ -509,7 +514,7 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-26b</div>
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-26c</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
@@ -564,13 +569,59 @@ function iter(){
       <div class="kv"><span class="k">现在站在哪里</span><span class="v">${esc(it.stand)}</span></div>
       <div class="kv"><span class="k">跑偏检查</span><span class="v">${it.drift?.ok?'<span class="pill ok">'+esc(it.drift.text)+'</span>':'<span class="pill bd">⚠ '+esc(it.drift?.text)+'</span>'}</span></div>
       ${it.map?`<button class="btn ghost" data-toggle="map" style="margin-top:8px">${S.open.map?"收起演化地图":"查看完整演化地图"}</button>${S.open.map?`<div class="evi">${esc(it.map)}</div>`:""}`:""}</div>
-    <div class="card"><b>② Compare · 版本比较</b>
+    ${realityBlock(id,P)}
+    <div class="card"><b>③ Compare · 版本比较</b>
       ${cmp?`<div class="small" style="margin:4px 0 8px">${esc(cmp.from)} → ${esc(cmp.to)} 只改了：${esc(cmp.change)} · 测试期 ${esc(cmp.period)}</div>
       <table class="cmp"><thead><tr><th>指标</th><th>${esc(cmp.from)}</th><th>${esc(cmp.to)}</th><th>变化</th></tr></thead><tbody>
       ${(cmp.metrics||[]).map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.a)}</td><td>${esc(m.b)}</td><td>${esc(m.delta)}</td></tr>`).join("")}</tbody></table>
       <span class="meta">只计算当前项目</span>`:'<div class="small" style="margin-top:6px">目前没有进行中的版本测试</div>'}</div>
-    <div class="card tap row" data-go="gate" data-arg="${id}"><b>③ Human Gate · 需要你判断</b><span class="pill ok">${(it.gates||[]).filter(g=>!g.decision).length}</span><span class="chev">›</span></div>
+    <div class="card tap row" data-go="gate" data-arg="${id}"><b>④ Human Gate · 需要你判断</b><span class="pill ok">${(it.gates||[]).filter(g=>!g.decision).length}</span><span class="chev">›</span></div>
   </div>${nav("ilist")}`;
+}
+function fmtDays(r){            // 闭环耗时：按日历天算，不按小时
+  if(r.f!=="够用了") return "—";
+  if(!r.closedAt) return '<span class="meta">没记</span>';
+  const a=r.date,b=String(r.closedAt).slice(0,10);
+  if(b<=a) return "当天";
+  return Math.round((new Date(b)-new Date(a))/864e5)+"天";
+}
+function realityBlock(id,P){
+  const R=P.iteration.reality||{},rows=P.rows;
+  const n=k=>rows.filter(r=>r.f===k).length;
+  const hit=rows.filter(r=>r.cols?.[REALC]==="有").length;
+  const no =rows.filter(r=>r.cols?.[REALC]==="无").length;
+  const ix=r=>P.rows.indexOf(r);
+  const chain=(R.sum||[]).map((c,j)=>fold("rc"+j,c.t,esc(c.one||""),
+    `<div class="evi" style="margin-top:2px">${(c.steps||[]).map(esc).join("\n")}</div>`)).join("");
+  const table=`<div class="tbl"><table class="nowrap"><thead><tr>
+      <th>日期</th><th>碰现实</th><th>状态</th><th>闭环</th><th>现实</th><th>为什么要改</th><th>改后验证</th>
+    </tr></thead><tbody>
+    ${sortRows(rows).map(r=>`<tr data-go="row" data-arg="${r.date}|${ix(r)}">
+      <td class="meta">${r.date.slice(5).replace("-","/")}</td>
+      <td><span class="pill ${r.cols?.[REALC]==="有"?"ok":""}">${esc(r.cols?.[REALC]||"—")}</span></td>
+      <td><span class="pill ${r.f==="够用了"?"ok":r.f==="待改"?"bd":""}">${esc(r.f)}</span></td>
+      <td class="meta">${fmtDays(r)}</td>
+      <td><span class="cell">${esc(r.q)}</span></td>
+      <td><span class="cell">${esc(r.cols?.["为什么要改动"]||"—")}</span></td>
+      <td><span class="cell">${esc(r.cols?.["改后验证"]||"—")}</span></td></tr>`).join("")}
+  </tbody></table></div>`;
+  return `<div class="card"><b>② Reality · 撞完之后发生了什么</b>
+    <div class="meta" style="margin:6px 0 10px">${esc(R.note||"")}${R.updated?"　更新于 "+esc(R.updated):""}</div>
+    ${chain||'<div class="small">还没有写因果链</div>'}
+    <div class="row" style="gap:14px;flex-wrap:wrap;margin:14px 0 4px">
+      <span><b style="font-size:19px">${rows.length}</b> <span class="meta">条</span></span>
+      <span><b style="font-size:19px;color:var(--accent)">${hit}</b> <span class="meta">真撞了现实</span></span>
+      <span><b style="font-size:19px">${no}</b> <span class="meta">没碰，想出来的</span></span>
+    </div>
+    <div class="row" style="gap:14px;flex-wrap:wrap;margin-bottom:10px">
+      <span class="meta">闭环 <b style="color:var(--ink)">${n("够用了")}</b></span>
+      <span class="meta">在路上 <b style="color:var(--ink)">${n("改了未验")}</b></span>
+      <span class="meta">还没动 <b style="color:var(--ink)">${n("待改")}</b></span>
+      <span class="meta">判了不做 <b style="color:var(--ink)">${n("不做")}</b></span>
+    </div>
+    ${table}
+    <div class="meta" style="margin-top:8px">点任一行回到迭代清单那一条。</div>
+  </div>`;
 }
 function gate(){
   const id=S.arg||cur(),P=D.p[id];const open=(P.iteration.gates||[]).map((g,i)=>[g,i]).filter(([g])=>!g.decision);
@@ -684,7 +735,11 @@ async function pick(id){
   }catch(e){toast("切换失败："+e.message)}
 }
 async function setStatus(i,st){
-  const id=cur(),P=D.p[id];P.rows[i].f=st;render();
+  const id=cur(),P=D.p[id],r=P.rows[i];
+  r.f=st;
+  if(st==="够用了"&&!r.closedAt) r.closedAt=new Date().toISOString();  // 记闭环时刻，用来算耗时
+  if(st!=="够用了") delete r.closedAt;
+  render();
   await saveRows(id,`改状态：${st}`);
 }
 async function delRow(i){
@@ -810,7 +865,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-reanalyze]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-reanalyze]");
   if(!t) return;const d=t.dataset;
   if(d.reanalyze) return reanalyze(d.reanalyze);
   if("addm" in d) return addMethod();
@@ -824,6 +879,9 @@ document.addEventListener("click",async e=>{
   if(d.tofilter){const [pid,k]=d.tofilter.split("|");S.filter=k;return go("list",pid)}
   if(d.savepri){S.priDirty=false;return saveRows(d.savepri,"更新优先程度",true)}
   if(d.setst){const [i,st]=d.setst.split("|");return setStatus(+i,st)}
+  if(d.setreal){const [i,v]=d.setreal.split("|");const P=D.p[cur()],r=P.rows[+i];
+    r.cols=r.cols||{};r.cols[REALC]=r.cols[REALC]===v?"":v;render();
+    return saveRows(cur(),`碰现实了吗：${r.cols[REALC]||"清空"}`)}
   if(d.delrow!=null) return delRow(+d.delrow);
   if("addrow" in d){
     const id=S.arg||cur(),P=D.p[id],c={};(P.project.columns||[]).forEach(k=>c[k]="");
