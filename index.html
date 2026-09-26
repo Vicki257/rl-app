@@ -264,6 +264,9 @@ function today(){
       ${STS.filter(k=>cnt[k]).map(k=>`<button class="fp" data-tofilter="${id}|${k}"><b>${cnt[k]}</b>${k}</button>`).join("")}</div>`:""}
     <div class="card" style="padding:4px 14px">${lines}</div>
     <button class="btn" data-go="row" data-arg="${esc(row?.date||"")}|${ri}">开始 →</button>
+    ${st==="wait"||st==="run"
+      ? `<div class="card small">${st==="run"?"AI 正在分析…":"已排队。下一个整点前会跑，跑完这三张卡就会换成新的。"}</div>`
+      : `<button class="btn ghost" data-reanalyze="${esc(id)}">问题写完了，重新分析 →</button>`}
     <div class="card tap row" data-go="gate" tabindex="0"><b>需要你判断</b>${gates?`<span class="pill ok">${gates}</span>`:'<span class="meta">无</span>'}<span class="chev">›</span></div>
     <div class="card tap row" data-sheet tabindex="0"><b>其他项目</b><span class="meta">${D.index.length-1}</span><span class="chev">›</span></div>
   </div>${nav("today")}`;
@@ -505,7 +508,7 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-24d</div>
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-26a</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
@@ -541,6 +544,16 @@ function nodePage(){
       ${n.so?`<div class="kv"><span class="k">所以</span><span class="v">${esc(n.so)}</span></div>`:""}</div>
     <div class="card"><b>做完的判据</b><div class="kv"><span class="v">${esc(n.judge||"还没写")}</span></div></div>
   </div>`;
+}
+async function reanalyze(id){
+  const P=D.p[id];
+  P.current.night={status:"wait",deadline:null,retries:0,error:null,
+                   requestedBy:"在网页上点了重新分析"};
+  try{
+    await put(`projects/${id}/current.json`,P.current,"标为待分析（用户点了重新分析）");
+    if(id===cur()) await put("widget.json",widgetFrom(id,P),"小组件：等待分析");
+    toast("已排队。下一个整点前会跑");
+  }catch(e){toast("排队失败："+e.message)}
 }
 function iter(){
   const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
@@ -796,8 +809,9 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-reanalyze]");
   if(!t) return;const d=t.dataset;
+  if(d.reanalyze) return reanalyze(d.reanalyze);
   if("addm" in d) return addMethod();
   if(d.savem) return saveMethod(d.savem);
   if(d.delm) return delMethod(d.delm);
