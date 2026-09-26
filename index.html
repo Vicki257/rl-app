@@ -342,7 +342,8 @@ function rowPage(){
 }
 const PRI="优先程度";
 // S.arg 有时是项目 id（项目页），有时是「日期|下标」（行详情页）。只有前者能当 key 用。
-const pid=()=>(S.arg&&D.p[S.arg])?S.arg:cur();
+const projId=()=>(S.arg&&D.p[S.arg])?S.arg:cur();
+const APPVER="v2026-09-27b";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2};
@@ -531,7 +532,7 @@ function project(){
     ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
       (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
-    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">v2026-09-27a</div>
+    <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">${APPVER}</div>
   </div>${nav("plist")}`;
 }
 function nodePage(){
@@ -674,9 +675,20 @@ function render(){
   else if(S.loading&&!D.global) h=`<div class="center">读取数据中…</div>`;
   else if(S.err&&!D.global) h=`<div class="body"><h1 class="h1">读取失败</h1><div class="banner bd">${esc(S.err)}</div><p class="small">检查令牌是否过期、仓库名是否正确，或网络是否正常。</p><button class="btn" data-reload>重试</button><button class="btn ghost" data-tab="settings">修改连接</button></div>`;
   else h=({today,row:rowPage,detail,project,node:nodePage,meth:methPage,method:methodPage,list:listPage,iter,gate,system,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
-  a.innerHTML=h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
+  const vb=S.newver?`<div class="banner ok tap" data-newver="1" style="margin:0 0 8px">有新版本 ${esc(S.newver)}（你现在是 ${APPVER}）· 点这里刷新</div>`:"";
+  a.innerHTML=vb+h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
   if(S.screen==="project"&&!S.edit){drawEdges();fitBoard()}
 }
+// GitHub Pages 的 index.html 会被浏览器缓存很久，在手机上尤其顽固。
+// 每次打开和每 10 分钟，拿当前地址带时间戳重取一次，比对里面的 APPVER。
+async function checkVer(){
+  try{
+    const r=await fetch(location.pathname+"?t="+Date.now(),{cache:"no-store"});
+    const m=(await r.text()).match(/const APPVER="(v[0-9-]+[a-z])"/);
+    if(m&&m[1]!==APPVER&&S.newver!==m[1]){S.newver=m[1];render()}
+  }catch(e){}
+}
+checkVer();setInterval(checkVer,600000);
 let K=1,ZOOM=1;
 function fitBoard(){
   const b=document.getElementById("board"),c=document.getElementById("cvs");if(!b||!c) return;
@@ -810,7 +822,7 @@ document.addEventListener("input",e=>{
   const i=e.target.dataset?.pri;if(i==null) return;
   // S.arg 在行详情页是「日期|下标」，不是项目 id。直接拿它当 key 会取到 undefined，
   // 于是整个处理提前 return——改了优先分只留在输入框里，刷新就没了。
-  const P=D.p[pid()];if(!P) return;
+  const P=D.p[projId()];if(!P) return;
   P.rows[+i].cols=P.rows[+i].cols||{};P.rows[+i].cols[PRI]=e.target.value.trim();
   if(!S.priDirty){S.priDirty=true}
   const b=document.querySelector("[data-savepri]");
@@ -885,7 +897,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-reanalyze]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-reanalyze]");
   if(!t) return;const d=t.dataset;
   if(d.reanalyze) return reanalyze(d.reanalyze);
   if("addm" in d) return addMethod();
@@ -898,6 +910,7 @@ document.addEventListener("click",async e=>{
   if(d.filter!=null){S.filter=S.filter===d.filter?null:d.filter;return render()}
   if(d.rfilter!=null){S.rfilter=S.rfilter===d.rfilter?"":d.rfilter;return render()}
   if(d.tofilter){const [pid,k]=d.tofilter.split("|");S.filter=k;return go("list",pid)}
+  if(d.newver){location.replace(location.pathname+"?v="+encodeURIComponent(S.newver||Date.now()));return}
   if(d.savepri){S.priDirty=false;return saveRows(d.savepri,"更新优先程度",true).then(()=>syncFocus(d.savepri)).then(render)}
   if(d.setst){const [i,st]=d.setst.split("|");return setStatus(+i,st)}
   if(d.setreal){const [i,v]=d.setreal.split("|");const P=D.p[cur()],r=P.rows[+i];
