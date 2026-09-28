@@ -140,6 +140,23 @@ textarea{min-height:70px;resize:vertical}
 .pain .fx{font-size:11px;letter-spacing:.06em;color:#8FB489;margin:7px 0 3px}
 .pain.un .fx{color:var(--ink3)}
 .pain p{margin:0;font-size:15.5px;line-height:1.65;color:var(--ink2)}
+/* SOP 一小节：小标题 + 用什么/怎么算/手算/为什么 对齐成两列 + 公式等宽 + 坑单独标。
+   注意别叫 .step——那个类名在上面已经被流程行用掉了（display:flex）。 */
+.sop{border-top:1px solid var(--line);padding:16px 0 4px}
+.sop:first-child{border-top:0;padding-top:4px}
+.sop .sn{font-size:15.5px;font-weight:700;color:var(--ink);margin:0 0 11px;line-height:1.45;display:block}
+.sop .sn i{font-style:normal;color:var(--accent);font-family:var(--mono);font-size:12.5px;letter-spacing:.03em;margin-right:8px}
+.sop .f{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 10px;align-items:baseline}
+.sop .lb{font-size:11.5px;color:var(--accent);font-weight:700;white-space:nowrap;letter-spacing:.04em;justify-self:end;padding-top:3px}
+.sop .tx{font-size:15.5px;line-height:1.72;color:var(--ink2);white-space:pre-line;min-width:0;overflow-wrap:anywhere}
+.sop .mono{font-family:var(--mono);font-size:12px;line-height:1.95;background:var(--soft);border-radius:8px;
+  padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink);margin:0}
+/* 公式和手算占满整行——挤在右半栏的话，→ 会被折行折散，对不齐就看不懂了 */
+.sop .f>.fw{grid-column:1/-1}
+.sop .f>.lbf{grid-column:1/-1;justify-self:start;padding-top:2px}
+.sop .wn{margin-top:11px;font-size:14.5px;line-height:1.7;color:#D9A566;background:rgba(217,165,102,.075);
+  border-left:2px solid rgba(217,165,102,.5);border-radius:0 8px 8px 0;padding:9px 12px;white-space:pre-line}
+
 .whole{font-size:17px;line-height:1.7;color:var(--accent);margin:12px 0 14px;padding-left:11px;border-left:2px solid var(--accentSoft)}
 </style>
 </head>
@@ -343,7 +360,7 @@ function rowPage(){
 const PRI="优先程度";
 // S.arg 有时是项目 id（项目页），有时是「日期|下标」（行详情页）。只有前者能当 key 用。
 const projId=()=>(S.arg&&D.p[S.arg])?S.arg:cur();
-const APPVER="v2026-09-27c";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-09-28c";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2};
@@ -535,6 +552,23 @@ function project(){
     <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">${APPVER}</div>
   </div>${nav("plist")}`;
 }
+
+// 一条「怎么做到的」。带 n 的是结构化写法（用什么 / 怎么算 / 手算 / 为什么），
+// 照 SOP 细则的排版来——压成一大段流水句人是看不懂的。没有 n 的是老格式 {t,wbs}。
+const LBS={use:"用什么",calc:"怎么算",ex:"手算",why:"为什么",now:"今天"};
+function stepHTML(h){
+  if(!h.n) return `<div class="kv"><span class="v">${esc(h.t||"")}${h.wbs?`<span class="meta">　${esc(h.wbs)}</span>`:""}</span></div>`;
+  // 文字两栏对齐；公式/手算占满整行，不然 → 会被折散
+  const row=(k,mono)=>!h[k]?"":mono
+    ? `<span class="lb lbf">${LBS[k]}</span><div class="mono fw">${esc(h[k])}</div>`
+    : `<span class="lb">${LBS[k]}</span><span class="tx">${esc(h[k])}</span>`;
+  const i=String(h.n).indexOf("　"),num=i>0?String(h.n).slice(0,i):"",ttl=i>0?String(h.n).slice(i+1):String(h.n);
+  return `<div class="sop">
+    <div class="sn">${num?`<i>${esc(num)}</i>`:""}${esc(ttl)}</div>
+    <div class="f">${row("use")}${row("calc",1)}${row("ex",1)}${row("why")}${row("now")}</div>
+    ${h.warn?`<div class="wn">⚠ ${esc(h.warn)}</div>`:""}
+  </div>`;
+}
 function nodePage(){
   const [pid,nid]=String(S.arg).split("|");const P=D.p[pid];if(!P) return `<div class="center">加载中…</div>`;
   const n=(P.project.sop?.nodes||[]).find(x=>x.id===nid);
@@ -543,7 +577,11 @@ function nodePage(){
   if(S.edit) return `<div class="body">${topBar(n.name,"编辑")}
     <div class="card" style="display:flex;flex-direction:column;gap:8px">
       <label class="small" for="n_whole">全体像</label><textarea id="n_whole">${esc(n.whole||"")}</textarea>
-      ${how.map((h,i)=>`<label class="small" for="n_h${i}">现在怎么做到的 ${i+1}（出处 ${esc(h.wbs||"")}）</label><textarea id="n_h${i}">${esc(h.t||"")}</textarea>`).join("")}
+      ${how.map((h,i)=>h.n
+        ? `<div class="small" style="color:var(--accent);font-weight:700;margin-top:6px">${esc(h.n)}</div>`
+          +["use","calc","ex","why","now","warn"].filter(k=>h[k]!=null).map(k=>
+            `<label class="small" for="n_${k}${i}" style="opacity:.65">${k==="warn"?"⚠ 注意":LBS[k]}</label><textarea id="n_${k}${i}">${esc(h[k])}</textarea>`).join("")
+        : `<label class="small" for="n_h${i}">现在怎么做到的 ${i+1}（出处 ${esc(h.wbs||"")}）</label><textarea id="n_h${i}">${esc(h.t||"")}</textarea>`).join("")}
       <label class="small" for="n_concl">结论</label><textarea id="n_concl">${esc(n.concl||"")}</textarea>
       ${pains.map((p,i)=>`<label class="small" for="n_p${i}">痛点 ${esc(p.ref||"")}${p.part?" "+esc(p.part):""} —— ${p.solved?"怎么消掉的":"还空着，缺什么"}</label>
         <div class="row" style="gap:8px;align-items:center"><input type="checkbox" id="n_s${i}" ${p.solved?"checked":""} style="width:auto"><label class="small" for="n_s${i}" style="margin:0">已解决</label></div>
@@ -557,7 +595,7 @@ function nodePage(){
     <div class="row"><span class="meta">${esc(n.q||"")}</span><button class="back" style="margin-left:auto" data-edit>编辑</button></div>
     ${n.whole?`<div class="whole">${esc(n.whole)}</div>`:""}
     <div class="card"><b>现在怎么做到的</b>
-      ${how.map(h=>`<div class="kv"><span class="v">${esc(h.t)}${h.wbs?`<span class="meta">　${esc(h.wbs)}</span>`:""}</span></div>`).join("")||'<div class="small">还没写</div>'}</div>
+      ${how.map(stepHTML).join("")||'<div class="small">还没写</div>'}</div>
     <div class="card"><b>为什么这样能达成</b><span class="meta" style="margin-left:8px">痛点 ${pains.length} 条，解决 ${done}</span>
       ${n.concl?`<div class="kv"><span class="k">结论</span><span class="v">${esc(n.concl)}</span></div>`:""}
       <div style="margin-top:12px">${pains.map(p=>`<div class="pain${p.solved?"":" un"}">
@@ -870,7 +908,10 @@ function saveNode(pid,nid){
   const n=(D.p[pid].project.sop?.nodes||[]).find(x=>x.id===nid);if(!n) return;
   n.whole=$("#n_whole").value.trim();n.concl=$("#n_concl").value.trim();
   n.so=$("#n_so").value.trim();n.judge=$("#n_judge").value.trim();
-  (n.how||[]).forEach((h,i)=>{const el=$("#n_h"+i);if(el)h.t=el.value.trim()});
+  (n.how||[]).forEach((h,i)=>{
+    if(h.n){["use","calc","ex","why","now","warn"].forEach(k=>{const el=$("#n_"+k+i);if(el)h[k]=el.value.trim()})}
+    else{const el=$("#n_h"+i);if(el)h.t=el.value.trim()}
+  });
   (n.pains||[]).forEach((p,i)=>{
     const v=($("#n_p"+i)?.value||"").trim(),sol=$("#n_s"+i)?.checked;
     p.solved=!!sol; if(sol){p.fix=v;delete p.gap}else{p.gap=v;delete p.fix}
