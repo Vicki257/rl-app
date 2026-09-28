@@ -360,7 +360,7 @@ function rowPage(){
 const PRI="优先程度";
 // S.arg 有时是项目 id（项目页），有时是「日期|下标」（行详情页）。只有前者能当 key 用。
 const projId=()=>(S.arg&&D.p[S.arg])?S.arg:cur();
-const APPVER="v2026-09-28c";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-09-28d";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2};
@@ -736,9 +736,12 @@ function fitBoard(){
     const w=el?el.offsetWidth:150,h=el?el.offsetHeight:56;
     mnX=Math.min(mnX,n.x||0);mnY=Math.min(mnY,n.y||0);mxX=Math.max(mxX,(n.x||0)+w);mxY=Math.max(mxY,(n.y||0)+h)});
   const pad=16,W=mxX-mnX+pad*2,H=mxY-mnY+pad*2,cw=b.clientWidth||600;
-  K=Math.min(1,cw/W)*ZOOM;
+  // 原来只按宽度缩放、高度被 62vh 一刀切，长链（量化 SOP 有 11 个节点排成一竖列）
+  // 会被从下面剪掉。改成宽高同时满足，框子本身也放到 82vh，尽量把整张图放进来。
+  const maxH=Math.max(360,Math.round(window.innerHeight*0.82));
+  K=Math.min(cw/W,maxH/H,1)*ZOOM;
   c.style.transform=`translate(${(-mnX+pad)*K}px,${(-mnY+pad)*K}px) scale(${K})`;
-  b.style.height=Math.round(Math.min(H*K+2,window.innerHeight*0.62))+"px";
+  b.style.height=Math.round(Math.min(H*K+2,maxH))+"px";
   b.classList.toggle("zoom",ZOOM>1);
   const z=document.getElementById("zl");if(z)z.textContent=Math.round(K*100)+"%";
 }
