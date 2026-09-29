@@ -53,6 +53,9 @@ button:focus-visible,.tap:focus-visible{outline:2px solid var(--accent);outline-
 .small{font-size:14px;color:var(--ink2);line-height:1.6}
 .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--paper);font-size:14px}
 .tbl table{border-collapse:collapse;font-size:14px;min-width:620px;width:100%}
+.tbl table.mq,.tbl table.fx,.tbl.in table{table-layout:fixed}
+.tbl table.mq td,.tbl table.mq th,.tbl table.fx td,.tbl table.fx th,.tbl.in td,.tbl.in th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbl table.mq tr.sub>td,.tbl table.fx tr.sub>td,.tbl.in tr.sub>td{overflow:visible;white-space:normal}
 .tbl th,.tbl td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
 .tbl th{color:var(--ink3);background:var(--soft);white-space:nowrap}
 .tbl tr.sel td{background:var(--accentSoft)}
@@ -128,6 +131,30 @@ textarea{min-height:70px;resize:vertical}
 /* 宽屏统一栅格。整个 app 手机优先是一根 560px 窄栏，电脑上等于白看；
    但只把 SOP 那一张卡单独撑开会一大一小，所以宽屏时整根栏子一起变宽，
    所有卡片同宽、左右对齐同一条线。正文另外限宽，免得一行八十个字。 */
+/* 主线问题两层表 */
+.tbl table.mq{min-width:700px}.tbl.in table{min-width:840px}
+tr.bg{cursor:pointer}tr.bg:hover>td{background:var(--accentSoft)}
+.tbl td.bt{font-size:15.5px;font-weight:700;color:var(--ink);min-width:260px}
+.tbl td.bt .tri{display:inline-block;color:var(--accent);font-size:9px;width:17px;transition:transform .15s}
+tr.bg.on td.bt .tri{transform:rotate(90deg)}
+.bar{display:inline-flex;gap:3px;vertical-align:middle}
+.bar i{width:10px;height:13px;border-radius:2px;background:var(--line);display:block}
+.bar i.f{background:var(--accent)}
+.tbl .red{color:var(--bad);background:none}
+.tbl .meta.kbd{color:var(--bad);background:none;font-weight:700}
+.tbl .meta.kok{color:var(--accent);font-weight:700}
+.tbl .meta.kdp{color:#8FB3D9;font-weight:700}
+tr.sub>td{padding:0 0 12px 30px !important;height:auto;background:var(--ground);white-space:normal;overflow:visible}
+.judge{font-size:14px;color:var(--ink2);padding:11px 2px 10px;line-height:1.6}
+.dtl{font-size:14.5px;line-height:1.75;color:var(--ink);white-space:pre-line;padding:12px 14px;background:var(--soft)}
+.tbl.in{background:var(--soft)}.tbl.in th{background:#211F1C}
+.tbl td.pri{text-align:center;position:relative}
+.tbl td.pri .td{display:block;font-size:10px;color:var(--accent);line-height:1;margin-top:-3px}
+tr.k.hot>td{background:var(--accentSoft)}
+.tbl td.cv{color:var(--ink3);text-align:center}
+.tbl .cell.dim{color:var(--ink2)}
+tr.add>td{color:var(--accent);cursor:pointer;border-bottom:0}
+tr.add:hover>td{background:var(--accentSoft)}
 @media(min-width:701px){
   #app{max-width:min(1080px,100vw - 48px)}
   .body{padding-left:28px;padding-right:28px;gap:14px}
@@ -268,7 +295,7 @@ function settings(){
 }
 function focusRow(P){
   if(!P.project.labels) return curRow(P);           // 每天一行的项目：当前那一行
-  const open=sortRows(P.rows).filter(r=>r.f!=="够用了"&&r.f!=="不做");
+  const open=sortRows(P.rows).filter(r=>!DONE[r.f]);   // 不管挂在哪条主线下，取优先分最高的那条
   return open[0]||sortRows(P.rows)[0]||P.rows[0];   // 清单型项目：优先分最高的未完成那一条
 }
 // 改了优先分或状态之后，今天页显示的那一条可能就换了人。
@@ -341,7 +368,8 @@ function edr(i,k,v,ph,big){
   return `<div class="kv"><span class="k">${esc(k)}</span><div class="v ed${big?" big":""}" contenteditable data-ph="${esc(ph||"")}" data-rk="${i}|${esc(k)}">${esc(v||"")}</div></div>`;
 }
 function rowPage(){
-  const id=cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
+  const a3=String(S.arg||"").split("|")[2];
+  const id=(a3&&D.p[a3])?a3:cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
   const i=rowIdx(P),row=P.rows[i];if(!row) return `<div class="center">这一条不在了</div>`;
   const pj=P.project,cols=(pj.columns||[]).filter(c=>c!==PRI);
   const LF=pj.labels?.f||"今日发现",LQ=pj.labels?.q||"留给明天的问题";
@@ -353,7 +381,7 @@ function rowPage(){
     </div>
     <div class="card">
       ${isSt?`<div class="kv"><span class="k">${esc(LF)}</span><div class="row" style="flex-wrap:wrap;gap:7px;margin-top:3px">
-        ${STS.map(k=>`<button class="fp${row.f===k?" on":""}" data-setst="${i}|${k}">${k}</button>`).join("")}</div></div>`
+        ${stsOf(pj).map(k=>`<button class="fp${row.f===k?" on":""}" data-setst="${i}|${k}">${k}</button>`).join("")}</div></div>`
         :edr(i,LF,row.f,"",true)}
       ${edr(i,LQ,row.q,"",true)}
       ${cols.map(c=> c===REALC
@@ -372,14 +400,18 @@ function rowPage(){
 }
 const PRI="优先程度";
 // S.arg 有时是项目 id（项目页），有时是「日期|下标」（行详情页）。只有前者能当 key 用。
-const projId=()=>(S.arg&&D.p[S.arg])?S.arg:cur();
-const APPVER="v2026-09-29a";   // 改代码就改这里，页面会自己发现有新版
+const projId=()=>{const a=String(S.arg||"").split("|");
+  if(a[2]&&D.p[a[2]])return a[2];
+  return (S.arg&&D.p[S.arg])?S.arg:cur()};
+const APPVER="v2026-09-29b";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
-const DONE={"够用了":1,"不做":2};
+const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
 function sortRows(rows){return [...rows].sort((a,b)=>
   ((DONE[a.f]||0)-(DONE[b.f]||0))||(priNum(b)-priNum(a))||b.date.localeCompare(a.date))}
 const STS=["待改","改了未验","够用了","不做"];
+const stsOf=pj=>pj?.states||STS;                       // 量化：待验/已确认/已被推翻/不做
+const stCls=f=>({"够用了":"ok","已确认":"ok","待改":"bd","已被推翻":"bd"})[f]||"";
 function rowsTable(id,P,selIdx){
   const pj=P.project,LQ=pj.labels?.q||"留给明天的问题",cols=(pj.columns||[]).filter(c=>c!==PRI);
   const list=sortRows(P.rows).filter(r=>!S.filter||r.f===S.filter);
@@ -387,7 +419,7 @@ function rowsTable(id,P,selIdx){
   return `<div class="tbl"><table class="nowrap"><thead><tr><th>优先</th><th>状态</th><th>日期</th><th>${esc(LQ)}</th>${cols.slice(0,2).map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>
     ${list.map(r=>`<tr class="${ix(r)===selIdx?"sel":""}">
       <td><input class="pin" value="${esc(r.cols?.[PRI]||"")}" placeholder="–" data-pri="${ix(r)}" inputmode="decimal"></td>
-      <td data-go="row" data-arg="${r.date}|${ix(r)}"><span class="pill ${r.f==="够用了"?"ok":r.f==="待改"?"bd":""}">${esc(r.f)}</span></td>
+      <td data-go="row" data-arg="${r.date}|${ix(r)}"><span class="pill ${stCls(r.f)}">${esc(r.f)}</span></td>
       <td class="meta" data-go="row" data-arg="${r.date}|${ix(r)}">${r.date.slice(5).replace("-","/")}</td>
       <td data-go="row" data-arg="${r.date}|${ix(r)}"><span class="cell">${esc(r.q)}</span></td>
       ${cols.slice(0,2).map(c=>`<td data-go="row" data-arg="${r.date}|${ix(r)}"><span class="cell">${esc(r.cols?.[c]||"—")}</span></td>`).join("")}</tr>`).join("")
@@ -398,15 +430,115 @@ function rowsTable(id,P,selIdx){
 function filterBar(id,P){
   const cnt={};P.rows.forEach(r=>cnt[r.f]=(cnt[r.f]||0)+1);
   return `<div class="row" style="flex-wrap:wrap;gap:8px">
-    ${STS.filter(k=>cnt[k]).map(k=>`<button class="fp${S.filter===k?" on":""}" data-filter="${k}"><b>${cnt[k]}</b>${k}</button>`).join("")}
+    ${stsOf(P.project).filter(k=>cnt[k]).map(k=>`<button class="fp${S.filter===k?" on":""}" data-filter="${k}"><b>${cnt[k]}</b>${k}</button>`).join("")}
     <button class="fp" style="margin-left:auto" data-addrow>＋ 新增</button></div>`;
 }
 function listPage(){
   const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
+  if((P.project.mains||[]).length) return mainsPage(id,P);
   return `<div class="body">${topBar(P.project.tableName||"复盘表",P.project.name)}
     ${filterBar(id,P)}
     ${rowsTable(id,P,-1)}
     <p class="small">优先程度 0～10，高的排前面。点任意一行打开，里面每格都能改。</p>
+  </div>`;
+}
+
+/* ══ 主线问题（两层迭代清单）══
+   上层一条主线问题一行，点三角展开底下按优先分排的小表，点主线名字进 AI 复盘页。
+   证据强度存在 row.ev（0～5），主线的「证据」取底下所有行的最高档。 */
+const EVN=["直觉·AI提出","公开资料","单次回测","跨时间仍支持","纸面模拟","小额实盘"];
+const evTxt=v=>v==null||v===""?"—":`${v} ${EVN[v]||""}`;
+const SUBC=["做的实验","改哪一步","凭什么改"];
+function rowsOfMain(P,mid){
+  return P.rows.map((r,i)=>[i,r]).filter(([,r])=>r.main===mid)
+    .sort((a,b)=>(priNum(b[1])-priNum(a[1]))||a[1].date.localeCompare(b[1].date));
+}
+function mainStat(P,mid){
+  const rs=rowsOfMain(P,mid).map(x=>x[1]);
+  const ev=rs.reduce((m,r)=>Math.max(m,+r.ev||0),0);
+  const ok=rs.filter(r=>r.f==="已确认").map(r=>r.date).sort().pop();
+  const days=ok?Math.round((Date.now()-new Date(ok+"T00:00:00").getTime())/864e5):null;
+  const wait=rs.filter(r=>!DONE[r.f]).length;
+  return {n:rs.length,ev,ago:ok?days+" 天":"从没确认过",ago2:ok?days+" 天没确认":"从没确认过",agoBad:!ok||days>30,wait};
+}
+function evBar(v){return `<span class="bar">${[0,1,2,3,4,5].map(k=>`<i class="${k<v?"f":""}"></i>`).join("")}</span>`}
+function mainsPage(id,P){
+  const pj=P.project,ms=pj.mains||[];
+  return `<div class="body">${topBar(pj.tableName||"迭代清单",pj.name)}
+    <div class="tbl"><table class="nowrap mq">
+      <colgroup><col style="width:auto"><col style="width:100px"><col style="width:106px"><col style="width:104px"><col style="width:92px"><col style="width:116px"></colgroup>
+      <thead><tr><th>主线问题</th><th>状态</th><th>证据</th><th>离上次确认</th><th>欠账</th><th>AI 复盘</th></tr></thead>
+      <tbody>${ms.map(m=>{
+        const t=mainStat(P,m.id),op=S.open["m_"+m.id];
+        return `<tr class="bg${op?" on":""}" data-toggle="m_${esc(m.id)}">
+          <td class="bt"><span class="tri">▶</span><span class="bl">${esc(m.name)}</span></td>
+          <td><span class="pill ${stCls(m.st)||(m.st==="悬着"?"bd":"")}">${esc(m.st||"")}</span></td>
+          <td>${evBar(t.ev)}</td>
+          <td class="meta${t.agoBad?" red":""}">${esc(t.ago)}</td>
+          <td class="meta${t.wait?" red":""}">${t.wait?t.wait+" 条待验":"0"}</td>
+          <td class="meta" data-go="main" data-arg="${esc(id)}|${esc(m.id)}">${esc(m.review?.tag||"未跑")} ›</td>
+        </tr>
+        <tr class="sub"${op?"":' style="display:none"'}><td colspan="6">
+          <div class="judge">${esc(m.judge||"")}</div>${subTable(P,m.id,id)}
+        </td></tr>`;
+      }).join("")}
+      <tr class="add" data-addrow><td colspan="6">＋ 新的主线问题</td></tr></tbody></table></div>
+    <p class="small">优先分最高的那一条就是今天页显示的那条，不分主线。点任意一行看详细。</p>
+  </div>`;
+}
+function subTable(P,mid,pid){
+  const rs=rowsOfMain(P,mid);
+  const top=topRowIdx(P);
+  return `<div class="tbl in"><table class="nowrap">
+    <colgroup><col style="width:66px"><col style="width:62px"><col style="width:25%"><col style="width:25%"><col style="width:20%"><col style="width:20%"><col style="width:92px"><col style="width:54px"></colgroup>
+    <thead><tr><th>优先级</th><th>日期</th><th>今日想验证的问题</th><th>做的实验</th><th>改哪一步</th><th>凭什么改</th><th>状态</th><th>详细</th></tr></thead>
+    <tbody>${rs.map(([i,r])=>`<tr class="k${i===top?" hot":""}">
+      <td class="pri"><input class="pin" value="${esc(r.cols?.[PRI]||"")}" placeholder="–" data-pri="${i}" inputmode="decimal">${i===top?'<span class="td">今天</span>':""}</td>
+      <td class="meta" data-go="row" data-arg="${r.date}|${i}|${pid}">${r.date.slice(5).replace("-","/")}</td>
+      ${["", ...SUBC].map((c,k)=>`<td data-go="row" data-arg="${r.date}|${i}|${pid}"><span class="cell${k?" dim":""}">${esc(k?(r.cols?.[c]||"—"):r.q)}</span></td>`).join("")}
+      <td data-go="row" data-arg="${r.date}|${i}|${pid}"><span class="pill ${stCls(r.f)}">${esc(r.f)}</span></td>
+      <td class="cv" data-go="row" data-arg="${r.date}|${i}|${pid}">›</td></tr>`).join("")
+      ||'<tr><td colspan="8" class="meta" style="padding:0 10px">这条主线下还没有记录</td></tr>'}
+    <tr class="add" data-addrow><td colspan="8">＋ 今天这一条</td></tr></tbody></table></div>`;
+}
+function topRowIdx(P){const row=focusRow(P);return row?P.rows.indexOf(row):-1}
+function mainPage(){
+  const [pid,mid]=String(S.arg).split("|");const P=D.p[pid];
+  if(!P) return `<div class="center">加载中…</div>`;
+  const m=(P.project.mains||[]).find(x=>x.id===mid);if(!m) return `<div class="center">这条主线不在了</div>`;
+  const pid2=pid;
+  const t=mainStat(P,mid),rs=rowsOfMain(P,mid).slice().sort((a,b)=>a[1].date.localeCompare(b[1].date));
+  const KC={"哪里不对":"bd","可以改进":"ok","Deep research":"dp","走到今天":""};
+  return `<div class="body">${topBar("","主线问题")}
+    <p class="q">${esc(m.name)}</p>
+    <div class="row" style="flex-wrap:wrap;gap:11px">
+      <span class="pill ${stCls(m.st)||(m.st==="悬着"?"bd":"")}">${esc(m.st||"")}</span>
+      ${evBar(t.ev)}<span class="meta">证据 ${t.ev}</span>
+      <span class="meta${t.agoBad?" red":""}">${esc(t.ago2)}</span>
+      <span class="meta${t.wait?" red":""}">${t.wait} 条待验</span></div>
+    <p class="small">${esc(m.judge||"")}</p>
+    <div class="h2">演化过程 · ${rs.length} 条</div>
+    <div class="tbl"><table class="nowrap fx">
+      <colgroup><col style="width:70px"><col style="width:42%"><col style="width:auto"><col style="width:96px"></colgroup>
+      <thead><tr><th>日期</th><th>今日想验证的问题</th><th>凭什么改</th><th>状态</th></tr></thead>
+      <tbody>${rs.map(([i,r])=>`<tr data-go="row" data-arg="${r.date}|${i}|${pid2}">
+        <td class="meta">${r.date.slice(5).replace("-","/")}</td>
+        <td><span class="cell">${esc(r.q)}</span></td>
+        <td><span class="cell dim">${esc(r.cols?.["凭什么改"]||"—")}</span></td>
+        <td><span class="pill ${stCls(r.f)}">${esc(r.f)}</span></td></tr>`).join("")}
+      </tbody></table></div>
+    <div class="h2">AI 复盘 · ${esc(m.review?.tag||"还没跑过")}</div>
+    ${(m.review?.items||[]).length?`<div class="tbl"><table class="nowrap fx">
+      <colgroup><col style="width:124px"><col style="width:auto"><col style="width:132px"><col style="width:56px"></colgroup>
+      <thead><tr><th>类型</th><th>说的是什么</th><th>涉及</th><th>展开</th></tr></thead>
+      <tbody>${m.review.items.map((x,k)=>{const op=S.open["r_"+mid+k];
+        return `<tr class="bg${op?" on":""}" data-toggle="r_${esc(mid)}${k}">
+          <td class="meta k${KC[x.kind]||""}">${esc(x.kind)}</td>
+          <td><span class="cell">${esc(x.short)}</span></td>
+          <td class="meta">${esc(x.ref||"")}</td><td class="cv">▾</td></tr>
+        <tr class="sub"${op?"":' style="display:none"'}><td colspan="4"><div class="dtl">${esc(x.detail)}</div></td></tr>`;
+      }).join("")}</tbody></table></div>`
+      :`<div class="card"><span class="meta">夜间分析还没跑过这条主线。</span></div>`}
   </div>`;
 }
 function eviBox(E,title){
@@ -548,7 +680,7 @@ function project(){
     <div class="card tap" data-go="list" data-arg="${esc(id)}">
       <div class="row"><b style="font-size:17px">${esc(pj.tableName||"复盘表")}</b><span class="chev">›</span></div>
       <div class="meta" style="margin-top:6px">${
-      ["待改","改了未验","够用了","不做"].map(k=>{const n=P.rows.filter(r=>r.f===k).length;return n?n+" "+k:""}).filter(Boolean).join("　")
+      stsOf(pj).map(k=>{const n=P.rows.filter(r=>r.f===k).length;return n?n+" "+k:""}).filter(Boolean).join("　")
     }</div></div>
     ${fold("doing","① 当前进行",esc(d.what||"还没写"),
       edv("在做的事",d.what,"跑一遍 SOP / 验证假设 / 比较参数……写具体做的事")+
@@ -725,7 +857,7 @@ function render(){
   if(!cfg.token||S.screen==="settings") h=settings();
   else if(S.loading&&!D.global) h=`<div class="center">读取数据中…</div>`;
   else if(S.err&&!D.global) h=`<div class="body"><h1 class="h1">读取失败</h1><div class="banner bd">${esc(S.err)}</div><p class="small">检查令牌是否过期、仓库名是否正确，或网络是否正常。</p><button class="btn" data-reload>重试</button><button class="btn ghost" data-tab="settings">修改连接</button></div>`;
-  else h=({today,row:rowPage,detail,project,node:nodePage,meth:methPage,method:methodPage,list:listPage,iter,gate,system,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
+  else h=({today,row:rowPage,detail,project,node:nodePage,meth:methPage,method:methodPage,list:listPage,main:mainPage,iter,gate,system,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
   const vb=S.newver?`<div class="banner ok tap" data-newver="1" style="margin:0 0 8px">有新版本 ${esc(S.newver)}（你现在是 ${APPVER}）· 点这里刷新</div>`:"";
   a.innerHTML=vb+h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
   if(S.screen==="project"&&!S.edit){drawEdges();fitBoard()}
