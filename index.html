@@ -125,12 +125,18 @@ textarea{min-height:70px;resize:vertical}
 .tbl td .cell{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tbl.nowrap td{height:44px;vertical-align:middle;padding:0 10px}
 @media(max-width:700px){.board,.zc{display:none}.flow{display:block}}
-/* 整个 app 是一根 560px 的窄栏（手机优先）。SOP 这张图在电脑上被这根栏子卡死，
-   只能缩到 60% 左右。宽屏时让它单独撑开，图才能按 100% 显示。 */
-@media(min-width:1000px){
-  /* overflow-x:hidden 是当初修手机「左边被切掉一条」加的，宽屏下会把撑出去的卡剪掉，这里放开 */
-  #app{overflow-x:visible}
-  .sopcard{width:min(1060px,calc(100vw - 56px));margin-left:calc((524px - min(1060px,100vw - 56px)) / 2)}
+/* 宽屏统一栅格。整个 app 手机优先是一根 560px 窄栏，电脑上等于白看；
+   但只把 SOP 那一张卡单独撑开会一大一小，所以宽屏时整根栏子一起变宽，
+   所有卡片同宽、左右对齐同一条线。正文另外限宽，免得一行八十个字。 */
+@media(min-width:701px){
+  #app{max-width:min(1080px,100vw - 48px)}
+  .body{padding-left:28px;padding-right:28px;gap:14px}
+  .h1{font-size:31px}
+  /* 纯文字不跟着拉满：表格、白板、公式块不在此列，它们要多宽有多宽 */
+  .kv .v,.sop .tx,.sop .wn,.sop .mono{max-width:820px}
+  /* 满宽 1024px 的按钮又长又丑，收窄但仍从同一条左线起 */
+  .body>.btn{max-width:420px}
+  .sheet .in{max-width:680px}
 }
 .cvs svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .nd{position:absolute;width:150px;line-height:1.4;background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:9px 11px;cursor:grab;user-select:none}
@@ -367,7 +373,7 @@ function rowPage(){
 const PRI="优先程度";
 // S.arg 有时是项目 id（项目页），有时是「日期|下标」（行详情页）。只有前者能当 key 用。
 const projId=()=>(S.arg&&D.p[S.arg])?S.arg:cur();
-const APPVER="v2026-09-28g";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-09-29a";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2};
@@ -538,7 +544,7 @@ function project(){
   const over=(m.branches||[]).length>(m.limit||2);
   return `<div class="body">${topBar(pj.name,"点任意一行就能改")}
     <div class="card">${edv("目标",pj.goal,"一句话")}${edv("奖励的行为",pj.reward,"持续做什么行为，能复利到这个目标")}</div>
-    <div class="card sopcard"><b>当前最佳 SOP · ${esc(pj.sop?.version||"")}</b>${boardHTML(pj)}</div>
+    <div class="card"><b>当前最佳 SOP · ${esc(pj.sop?.version||"")}</b>${boardHTML(pj)}</div>
     <div class="card tap" data-go="list" data-arg="${esc(id)}">
       <div class="row"><b style="font-size:17px">${esc(pj.tableName||"复盘表")}</b><span class="chev">›</span></div>
       <div class="meta" style="margin-top:6px">${
@@ -747,7 +753,9 @@ function fitBoard(){
   // 会被从下面剪掉。改成宽高同时满足，框子本身也放到 82vh，尽量把整张图放进来。
   const maxH=Math.max(360,Math.round(window.innerHeight*0.82));
   K=Math.min(cw/W,maxH/H,1)*ZOOM;
-  c.style.transform=`translate(${(-mnX+pad)*K}px,${(-mnY+pad)*K}px) scale(${K})`;
+  // 宽屏下整张图比框子窄（量化 SOP 只占 712px），不居中的话图全挤在左边、右边一大片空
+  const ox=ZOOM>1?0:Math.max(0,(cw-W*K)/2);
+  c.style.transform=`translate(${(-mnX+pad)*K+ox}px,${(-mnY+pad)*K}px) scale(${K})`;
   b.style.height=Math.round(Math.min(H*K+2,maxH))+"px";
   b.classList.toggle("zoom",ZOOM>1);
   const z=document.getElementById("zl");if(z)z.textContent=Math.round(K*100)+"%";
