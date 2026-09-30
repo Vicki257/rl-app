@@ -407,7 +407,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-09-30a";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-09-30b";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -704,8 +704,9 @@ function project(){
 
 // 一条「怎么做到的」。带 n 的是结构化写法（用什么 / 怎么算 / 手算 / 为什么），
 // 照 SOP 细则的排版来——压成一大段流水句人是看不懂的。没有 n 的是老格式 {t,wbs}。
-const LBS={use:"用什么",calc:"怎么算",ex:"手算",why:"为什么",now:"今天"};
-function stepHTML(h){
+const LBS0={use:"用什么",calc:"怎么算",ex:"手算",why:"为什么",now:"今天"};
+const lbsOf=pj=>({...LBS0,...(pj?.sop?.labels||{})});
+function stepHTML(h,LBS=LBS0){
   if(!h.n) return `<div class="kv"><span class="v">${esc(h.t||"")}${h.wbs?`<span class="meta">　${esc(h.wbs)}</span>`:""}</span></div>`;
   // 文字两栏对齐；公式/手算占满整行，不然 → 会被折散
   const row=(k,mono)=>!h[k]?"":mono
@@ -722,7 +723,7 @@ function nodePage(){
   const [pid,nid]=String(S.arg).split("|");const P=D.p[pid];if(!P) return `<div class="center">加载中…</div>`;
   const n=(P.project.sop?.nodes||[]).find(x=>x.id===nid);
   if(!n) return `<div class="body">${topBar("找不到这一环",P.project.name)}</div>`;
-  const pains=n.pains||[],how=n.how||[];
+  const pains=n.pains||[],how=n.how||[],LBS=lbsOf(P.project);
   if(S.edit) return `<div class="body">${topBar(n.name,"编辑")}
     <div class="card" style="display:flex;flex-direction:column;gap:8px">
       <label class="small" for="n_whole">全体像</label><textarea id="n_whole">${esc(n.whole||"")}</textarea>
@@ -744,7 +745,7 @@ function nodePage(){
     <div class="row"><span class="meta">${esc(n.q||"")}</span><button class="back" style="margin-left:auto" data-edit>编辑</button></div>
     ${n.whole?`<div class="whole">${esc(n.whole)}</div>`:""}
     <div class="card"><b>现在怎么做到的</b>
-      ${how.map(stepHTML).join("")||'<div class="small">还没写</div>'}</div>
+      ${how.map(h=>stepHTML(h,LBS)).join("")||'<div class="small">还没写</div>'}</div>
     <div class="card"><b>为什么这样能达成</b><span class="meta" style="margin-left:8px">痛点 ${pains.length} 条，解决 ${done}</span>
       ${n.concl?`<div class="kv"><span class="k">结论</span><span class="v">${esc(n.concl)}</span></div>`:""}
       <div style="margin-top:12px">${pains.map(p=>`<div class="pain${p.solved?"":" un"}">
