@@ -240,7 +240,11 @@ const cur=()=>D.global?.current;
 async function loadProject(id,force){
   if(D.p[id]&&!force) return D.p[id];
   const [project,rows,current,iteration]=await Promise.all(["project","rows","current","iteration"].map(n=>get(`projects/${id}/${n}.json`)));
-  return D.p[id]={project,rows,current,iteration};
+  D.p[id]={project,rows,current,iteration};
+  // 夜间分析只认 current.json 的 focus。行数据可能在 app 外面被改过（导入、脚本），
+  // 所以每次载入都对一次；没变的话 syncFocus 自己会跳过，不会白写。
+  syncFocus(id).catch(()=>{});
+  return D.p[id];
 }
 async function loadAll(){
   S.loading=true;S.err="";render();
@@ -403,7 +407,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-09-29b";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-09-30a";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
