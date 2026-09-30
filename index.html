@@ -407,7 +407,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-09-30b";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-09-30c";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -452,7 +452,9 @@ function listPage(){
    证据强度存在 row.ev（0～5），主线的「证据」取底下所有行的最高档。 */
 const EVN=["直觉·AI提出","公开资料","单次回测","跨时间仍支持","纸面模拟","小额实盘"];
 const evTxt=v=>v==null||v===""?"—":`${v} ${EVN[v]||""}`;
-const SUBC=["做的实验","改哪一步","凭什么改"];
+// 小表中间三列。每个项目的列名不一样，写死会把别的项目的列名带错。
+const SUBC0=["做的实验","改哪一步","凭什么改"];
+const subcOf=pj=>(pj?.subc?.length===3?pj.subc:SUBC0);
 function rowsOfMain(P,mid){
   return P.rows.map((r,i)=>[i,r]).filter(([,r])=>r.main===mid)
     .sort((a,b)=>(priNum(b[1])-priNum(a[1]))||a[1].date.localeCompare(b[1].date));
@@ -492,10 +494,10 @@ function mainsPage(id,P){
 }
 function subTable(P,mid,pid){
   const rs=rowsOfMain(P,mid);
-  const top=topRowIdx(P);
+  const top=topRowIdx(P),SUBC=subcOf(P.project),LB=P.project.labels||{};
   return `<div class="tbl in"><table class="nowrap">
     <colgroup><col style="width:66px"><col style="width:62px"><col style="width:25%"><col style="width:25%"><col style="width:20%"><col style="width:20%"><col style="width:92px"><col style="width:54px"></colgroup>
-    <thead><tr><th>优先级</th><th>日期</th><th>今日想验证的问题</th><th>做的实验</th><th>改哪一步</th><th>凭什么改</th><th>状态</th><th>详细</th></tr></thead>
+    <thead><tr><th>优先级</th><th>日期</th><th>${esc(LB.q||"今日想验证的问题")}</th>${SUBC.map(c=>`<th>${esc(c)}</th>`).join("")}<th>${esc(LB.f||"状态")}</th><th>详细</th></tr></thead>
     <tbody>${rs.map(([i,r])=>`<tr class="k${i===top?" hot":""}">
       <td class="pri"><input class="pin" value="${esc(r.cols?.[PRI]||"")}" placeholder="–" data-pri="${i}" inputmode="decimal">${i===top?'<span class="td">今天</span>':""}</td>
       <td class="meta" data-go="row" data-arg="${r.date}|${i}|${pid}">${r.date.slice(5).replace("-","/")}</td>
