@@ -175,26 +175,26 @@ tr.add:hover>td{background:var(--accentSoft)}
 /* 痛点 */
 .pain{border-left:2px solid var(--accentSoft);padding-left:11px;margin:0 0 13px}
 .pain.un{border-left-color:var(--line);opacity:.8}
-.pain .pp{font-size:11px;letter-spacing:.06em;color:var(--accent);margin-bottom:4px}
+.pain .pp{font-size:12.5px;letter-spacing:.06em;color:var(--accent);margin-bottom:4px}
 .pain.un .pp{color:var(--ink3)}
-.pain .fx{font-size:11px;letter-spacing:.06em;color:#8FB489;margin:7px 0 3px}
+.pain .fx{font-size:12.5px;letter-spacing:.06em;color:#8FB489;margin:7px 0 3px}
 .pain.un .fx{color:var(--ink3)}
-.pain p{margin:0;font-size:15.5px;line-height:1.65;color:var(--ink2)}
+.pain p{margin:0;font-size:16px;line-height:1.65;color:var(--ink2)}
 /* SOP 一小节：小标题 + 用什么/怎么算/手算/为什么 对齐成两列 + 公式等宽 + 坑单独标。
    注意别叫 .step——那个类名在上面已经被流程行用掉了（display:flex）。 */
 .sop{border-top:1px solid var(--line);padding:16px 0 4px}
 .sop:first-child{border-top:0;padding-top:4px}
-.sop .sn{font-size:15.5px;font-weight:700;color:var(--ink);margin:0 0 11px;line-height:1.45;display:block}
-.sop .sn i{font-style:normal;color:var(--accent);font-family:var(--mono);font-size:12.5px;letter-spacing:.03em;margin-right:8px}
+.sop .sn{font-size:17px;font-weight:700;color:var(--ink);margin:0 0 11px;line-height:1.45;display:block}
+.sop .sn i{font-style:normal;color:var(--accent);font-family:var(--mono);font-size:14px;letter-spacing:.03em;margin-right:8px}
 .sop .f{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 10px;align-items:baseline}
-.sop .lb{font-size:11.5px;color:var(--accent);font-weight:700;white-space:nowrap;letter-spacing:.04em;justify-self:end;padding-top:3px}
-.sop .tx{font-size:15.5px;line-height:1.72;color:var(--ink2);white-space:pre-line;min-width:0;overflow-wrap:anywhere}
-.sop .mono{font-family:var(--mono);font-size:12px;line-height:1.95;background:var(--soft);border-radius:8px;
+.sop .lb{font-size:13.5px;color:var(--accent);font-weight:700;white-space:nowrap;letter-spacing:.04em;justify-self:end;padding-top:3px}
+.sop .tx{font-size:16px;line-height:1.72;color:var(--ink2);white-space:pre-line;min-width:0;overflow-wrap:anywhere}
+.sop .mono{font-family:var(--mono);font-size:15px;line-height:1.8;background:var(--soft);border-radius:8px;
   padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink);margin:0}
 /* 公式和手算占满整行——挤在右半栏的话，→ 会被折行折散，对不齐就看不懂了 */
 .sop .f>.fw{grid-column:1/-1}
 .sop .f>.lbf{grid-column:1/-1;justify-self:start;padding-top:2px}
-.sop .wn{margin-top:11px;font-size:14.5px;line-height:1.7;color:#D9A566;background:rgba(217,165,102,.075);
+.sop .wn{margin-top:11px;font-size:15.5px;line-height:1.7;color:#D9A566;background:rgba(217,165,102,.075);
   border-left:2px solid rgba(217,165,102,.5);border-radius:0 8px 8px 0;padding:9px 12px;white-space:pre-line}
 
 .whole{font-size:17px;line-height:1.7;color:var(--accent);margin:12px 0 14px;padding-left:11px;border-left:2px solid var(--accentSoft)}
@@ -407,7 +407,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-09-30c";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-02a";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
