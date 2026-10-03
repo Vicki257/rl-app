@@ -407,7 +407,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-03a";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-03b";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -852,7 +852,7 @@ function system(){
   return `<div class="body"><h1 class="h1">系统</h1>
     <div class="card row"><b>数据仓库</b><span class="meta">${esc(cfg.owner)}/${esc(cfg.repo)}</span><button class="back" style="margin-left:auto" data-tab="settings">修改</button></div>
     <div class="card"><div class="row"><b>夜间分析队列</b><span class="meta" style="margin-left:auto">${esc(q?.date||"还没有运行过")}</span></div>
-      ${Object.entries(q?.projects||{}).map(([k,v])=>`<div class="line3"><span class="txt">${esc(D.index.find(x=>x.id===k)?.name||k)}</span><span class="meta">${esc(v.status)}${v.retries?" · 重试 "+v.retries:""}${v.error?" · "+esc(v.error):""}</span></div>`).join("")||'<div class="small" style="margin-top:6px">暂无记录</div>'}</div>
+      ${Object.entries(q?.projects||{}).map(([k,v])=>`<div class="line3"><span class="txt">${esc(D.index.find(x=>x.id===k)?.name||k)}</span><span class="meta">${esc(v.status)}${v.finishedAt?" · "+esc(String(v.finishedAt).slice(0,10)):""}${v.retries?" · 重试 "+v.retries:""}${v.error?" · "+esc(v.error):""}</span></div>`).join("")||'<div class="small" style="margin-top:6px">今晚没有项目要分析——队列只放在网页上点过「重新分析」的项目。</div>'}</div>
     <div class="card"><b>备份</b><div class="small" style="margin-top:4px">每次写入都是一次 GitHub 提交，历史自动保存，可以回到任意一次修改。</div></div>
     <button class="btn ghost" data-reload>重新读取数据</button>
   </div>${nav("system")}`;
