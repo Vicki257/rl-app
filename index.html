@@ -407,7 +407,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-03c";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-03d";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -595,7 +595,6 @@ function pplPage(){
   const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
   const pj=P.project,ns=pplNodes(pj),ppl=pj.ppl||[];
   return `<div class="body">${topBar("人",pj.name)}
-    <p class="small">一行一个人，一列一个 SOP 节点。每格填的就是那一步要从这个人身上拿到的数据。填到第几格，他就走到第几步。</p>
     <div class="tbl"><table><thead><tr><th>名字</th><th>第几步</th>${ns.map(n=>`<th>${esc(n.name)}</th>`).join("")}</tr></thead>
       <tbody>${ppl.length?ppl.map((p,i)=>`<tr>
         <td class="tap" data-go="person" data-arg="${esc(id)}|${i}"><b>${esc(p.name||"（没名字）")}</b></td>
@@ -614,15 +613,8 @@ function personPage(){
   return `<div class="body">${topBar(p.name||"（没名字）",pj.name+" · 第 "+pplStep(pj,p)+" / "+ns.length+" 步")}
     <div class="card"><label class="small" for="pp_name">名字</label>
       <textarea id="pp_name" style="min-height:52px">${esc(p.name||"")}</textarea></div>
-    ${ns.map((n,k)=>`<div class="card">
-      <b style="font-size:16px">${esc(n.name)}</b>
-      ${n.q?`<div class="small" style="margin-top:2px">${esc(n.q)}</div>`:""}
-      ${(n.how||[]).map(h=>h.calc?`<div class="small" style="margin-top:10px;opacity:.7">这一格填什么</div>
-        <div style="white-space:pre-wrap;background:var(--soft);border-radius:10px;padding:10px 12px;margin:4px 0 10px;font-size:14px;line-height:1.75">${esc(h.calc)}</div>`:"").join("")}
-      ${(n.how||[]).map(h=>h.warn?`<div class="banner bd" style="margin:0 0 10px">⚠ ${esc(h.warn)}</div>`:"").join("")}
-      <textarea id="pp_${k}" style="min-height:100px">${esc((p.cells||{})[n.id]||"")}</textarea>
-      <div class="kv" style="margin-top:10px"><span class="k">怎么算完成</span><span class="v">${esc(n.judge||"还没写")}</span></div>
-    </div>`).join("")}
+    <div class="card">${ns.map((n,k)=>`<label class="small" for="pp_${k}">${esc(n.name)}</label>
+      <textarea id="pp_${k}" style="min-height:84px;margin-bottom:12px">${esc((p.cells||{})[n.id]||"")}</textarea>`).join("")}</div>
     <button class="btn" data-saveppl="${esc(id)}|${i}">保存</button>
     <button class="btn ghost bd" data-delppl="${esc(id)}|${i}">删掉这个人</button>
   </div>`;
