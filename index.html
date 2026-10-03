@@ -340,7 +340,7 @@ function today(){
     ${isList?`<div class="row" style="flex-wrap:wrap;gap:8px">
       ${STS.filter(k=>cnt[k]).map(k=>`<button class="fp" data-tofilter="${id}|${k}"><b>${cnt[k]}</b>${k}</button>`).join("")}</div>`:""}
     <div class="card" style="padding:4px 14px">${lines}</div>
-    <button class="btn" data-go="row" data-arg="${esc(row?.date||"")}|${ri}">开始 →</button>
+    <button class="btn" data-go="row" data-arg="${esc(row?.date||"")}|${ri}|${esc(id)}">开始 →</button>
     ${st==="wait"||st==="run"
       ? `<div class="card small">${st==="run"?"AI 正在分析…":"已排队。从现在起每个整点试一次，早上 8:00 截止。跑完这三张卡就换成新的。"}</div>`
       : `<button class="btn ghost" data-reanalyze="${esc(id)}">问题写完了，重新分析 →</button>`}
@@ -407,7 +407,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-02a";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-03a";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -423,10 +423,10 @@ function rowsTable(id,P,selIdx){
   return `<div class="tbl"><table class="nowrap"><thead><tr><th>优先</th><th>状态</th><th>日期</th><th>${esc(LQ)}</th>${cols.slice(0,2).map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>
     ${list.map(r=>`<tr class="${ix(r)===selIdx?"sel":""}">
       <td><input class="pin" value="${esc(r.cols?.[PRI]||"")}" placeholder="–" data-pri="${ix(r)}" inputmode="decimal"></td>
-      <td data-go="row" data-arg="${r.date}|${ix(r)}"><span class="pill ${stCls(r.f)}">${esc(r.f)}</span></td>
-      <td class="meta" data-go="row" data-arg="${r.date}|${ix(r)}">${r.date.slice(5).replace("-","/")}</td>
-      <td data-go="row" data-arg="${r.date}|${ix(r)}"><span class="cell">${esc(r.q)}</span></td>
-      ${cols.slice(0,2).map(c=>`<td data-go="row" data-arg="${r.date}|${ix(r)}"><span class="cell">${esc(r.cols?.[c]||"—")}</span></td>`).join("")}</tr>`).join("")
+      <td data-go="row" data-arg="${r.date}|${ix(r)}|${id}"><span class="pill ${stCls(r.f)}">${esc(r.f)}</span></td>
+      <td class="meta" data-go="row" data-arg="${r.date}|${ix(r)}|${id}">${r.date.slice(5).replace("-","/")}</td>
+      <td data-go="row" data-arg="${r.date}|${ix(r)}|${id}"><span class="cell">${esc(r.q)}</span></td>
+      ${cols.slice(0,2).map(c=>`<td data-go="row" data-arg="${r.date}|${ix(r)}|${id}"><span class="cell">${esc(r.cols?.[c]||"—")}</span></td>`).join("")}</tr>`).join("")
       ||'<tr><td colspan="6" class="meta" style="padding:14px 10px">这一类现在没有</td></tr>'}
   </tbody></table></div>
   <button class="btn ghost" data-savepri="${esc(id)}" style="display:${S.priDirty?"":"none"}">保存优先分</button>`;
@@ -812,7 +812,7 @@ function realityBlock(id,P){
   const table=`<div class="tbl"><table class="nowrap"><thead><tr>
       <th>日期</th><th>状态</th><th>闭环</th><th>现实</th><th>为什么要改</th><th>改后验证</th>
     </tr></thead><tbody>
-    ${list.map(r=>`<tr data-go="row" data-arg="${r.date}|${ix(r)}">
+    ${list.map(r=>`<tr data-go="row" data-arg="${r.date}|${ix(r)}|${id}">
       <td class="meta">${r.date.slice(5).replace("-","/")}</td>
       <td><span class="pill ${r.f==="够用了"?"ok":r.f==="待改"?"bd":""}">${esc(r.f)}</span></td>
       <td class="meta">${fmtDays(r)}</td>
