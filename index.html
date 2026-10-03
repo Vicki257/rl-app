@@ -9,16 +9,17 @@
 <meta name="theme-color" content="#0D0D0C">
 <title>强化学习系统</title>
 <!-- build 2026-09-23i -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
-  --ground:#0D0D0C; --paper:#171716; --ink:#FFFFFF; --ink2:#E2DED6; --ink3:#A39C8E;
-  --line:#33322D; --soft:#201F1C; --accent:#E5C463; --accentSoft:#3B3218; --bad:#E88E74; --badSoft:#3A2318; --onAccent:#12110F;
+  --ground:#0D0D0C; --paper:#1A1A17; --ink:#F3EFE6; --ink2:#D9D4C8; --ink3:#9D9589;
+  --line:#302F29; --soft:#232219; --accent:#E5C463; --accentSoft:#3B3218; --bad:#E88E74; --badSoft:#3A2318; --onAccent:#12110F;
   --glow:#2A2416; --navbg:rgba(13,13,12,.96); --qink:#FFF6E6; --phink:#5B554A; --dot:#312C25;
   --fnline:#4A4636; --inth:#211F1C; --fx:#8FB489; --kdp:#8FB3D9; --edge:#8A7B58; --pin:#514A3F;
   --wn:#D9A566; --wnbg:rgba(217,165,102,.075); --wnline:rgba(217,165,102,.5);
   --sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
-  --serif:"Noto Serif SC","Songti SC",serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --read:"Noto Serif SC","Songti SC",serif;  /* 正文（人写的和 AI 写的）统一用这个 */ --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
 
 /* 白天版。只改颜色变量，版式和夜间完全一样 */
@@ -31,6 +32,14 @@ html[data-theme="light"]{
 }
 html[data-theme="light"] .nd.drag{box-shadow:0 8px 20px rgba(0,0,0,.12)}
 html[data-theme="light"] .sheet{background:rgba(0,0,0,.28)}
+
+/* 正文统一：凡是「内容」——我写的、AI 写的——都用 --read，界面文字（按钮、标签、导航、元信息）才用 sans。
+   这样一页里不会出现三四种字体。公式和手算还是等宽，那是它该用的。 */
+.kv .v,.line3 .txt,.sub,.evi,.dtl,.pain p,.recall .w,.how,.judge,.q,.sop .tx,.nd .q,.fn .q,
+.tbl td,.cmp td,.banner,.prev,textarea,input,.srch{font-family:var(--read)}
+.tbl th,.cmp th{font-family:var(--sans)}
+.sop .mono,.meta,.zc .z,.step .n{font-family:var(--mono)}
+.nd .t,.fn .t,.sop .sn i{font-family:var(--sans)}
 *{box-sizing:border-box}
 html,body{height:100%}
 html{overflow-x:hidden}
@@ -51,6 +60,7 @@ button:focus-visible,.tap:focus-visible{outline:2px solid var(--accent);outline-
 .tap{cursor:pointer}
 .row{display:flex;align-items:center;gap:10px}
 .chev{margin-left:auto;color:var(--ink3);flex:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:14.5px;cursor:pointer;color:var(--ink)}
 .meta{font-size:13px;color:var(--ink3);font-family:var(--mono)}
 .pill{font-size:12.5px;padding:3px 10px;border-radius:999px;font-weight:600;white-space:nowrap}
@@ -432,7 +442,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-03e";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-03f";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -617,18 +627,40 @@ const pplNodes=pj=>((pj.sop&&pj.sop.nodes)||[]).filter(n=>n.kind!=="plain");
 function pplStep(pj,p){const ns=pplNodes(pj);let k=0;ns.forEach((n,i)=>{if(String((p.cells||{})[n.id]||"").trim())k=i+1});return k}
 function fline(x){const t=String(x||"").trim();if(!t)return"";const l=t.split("\n")[0];return l.length>24?l.slice(0,24)+"…":l}
 function pplPage(){
-  const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
-  const pj=P.project,ns=pplNodes(pj),ppl=pj.ppl||[];
+  const a0=String(S.arg||"").split("|")[0],id=(a0&&D.p[a0])?a0:cur(),P=D.p[id];
+  if(!P) return `<div class="center">加载中…</div>`;
+  const pj=P.project,ns=pplNodes(pj),all=pj.ppl||[],gaps=pj.gaps||[];
+  const g=S.gap||"";                                   // "" = 全部
+  const inG=x=>!g||(x.gap||"")===g;
+  const ppl=all.map((x,i)=>({x,i})).filter(o=>inG(o.x));
+  const gname=(gaps.find(x=>x.id===g)||{}).name||"";
+  const cnt=k=>all.filter(x=>(x.gap||"")===k).length;
   return `<div class="body">${topBar("人",pj.name)}
-    <p class="small">一列一个 SOP 节点。每一格按那个节点的「怎么做」去填。</p>
-    <div class="tbl"><table><thead><tr><th>名字</th><th>第几步</th>${ns.map(n=>`<th>${esc(n.name)}</th>`).join("")}</tr></thead>
-      <tbody>${ppl.length?ppl.map((p,i)=>`<tr>
-        <td class="tap" data-go="person" data-arg="${esc(id)}|${i}"><b>${esc(p.name||"（没名字）")}</b></td>
-        <td class="tap" data-go="person" data-arg="${esc(id)}|${i}">${pplStep(pj,p)} / ${ns.length}</td>
-        ${ns.map(n=>`<td class="tap" data-go="person" data-arg="${esc(id)}|${i}">${esc(fline((p.cells||{})[n.id]))||`<span style="opacity:.35">—</span>`}</td>`).join("")}
-      </tr>`).join(""):`<tr><td colspan="${ns.length+2}"><span class="meta">还没有名字。「${esc((ns[0]||{}).name||"第一步")}」那一格填不出来，就不该把人加进来。</span></td></tr>`}</tbody>
+    <p class="small">先写缺口——这件事缺什么样的人。名字只能挂在某个缺口下面。每一格按那个 SOP 节点的「怎么做」去填。</p>
+    <div class="chips">
+      <button class="chip${g?"":" on"}" data-gap="">全部 ${all.length}</button>
+      ${gaps.map(x=>`<button class="chip${g===x.id?" on":""}" data-gap="${esc(x.id)}">${esc(x.name)} ${cnt(x.id)}</button>`).join("")}
+      ${S.newgap?"":`<button class="chip" data-newgap="1">＋ 缺口</button>`}
+    </div>
+    ${S.newgap?`<div class="card"><label class="small" for="gp_new">缺什么样的人（一句话）</label>
+      <textarea id="gp_new" style="min-height:52px" placeholder="例：第一个真的会用、而且会抱怨的人"></textarea>
+      <div class="row" style="margin-top:8px;gap:8px">
+        <button class="btn" style="flex:1" data-savegap="${esc(id)}">加上</button>
+        <button class="btn ghost" style="flex:1" data-cancelgap="1">取消</button></div></div>`:""}
+    ${g?`<div class="row"><span class="meta">${esc(gname)}</span>
+      <button class="fp" style="margin-left:auto" data-delgap="${esc(id)}|${esc(g)}">删掉这个缺口</button></div>`:""}
+    <div class="tbl"><table><thead><tr><th>名字</th>${g?"":`<th>缺口</th>`}<th>第几步</th>${ns.map(n=>`<th>${esc(n.name)}</th>`).join("")}</tr></thead>
+      <tbody>${ppl.length?ppl.map(o=>{const p=o.x,i=o.i,go=`data-go="person" data-arg="${esc(id)}|${i}"`;
+        return `<tr>
+        <td class="tap" ${go}><b>${esc(p.name)}</b></td>
+        ${g?"":`<td class="tap" ${go}>${esc((gaps.find(x=>x.id===p.gap)||{}).name||"—")}</td>`}
+        <td class="tap" ${go}>${pplStep(pj,p)} / ${ns.length}</td>
+        ${ns.map(n=>`<td class="tap" ${go}>${esc(fline((p.cells||{})[n.id]))||`<span style="opacity:.35">—</span>`}</td>`).join("")}
+      </tr>`}).join(""):`<tr><td colspan="${ns.length+(g?2:3)}"><span class="meta">${gaps.length?"这个缺口下面还没有名字。":"还没有缺口。先写一个「缺什么样的人」，名字才有地方挂。"}</span></td></tr>`}</tbody>
     </table></div>
-    <button class="btn ghost" data-addppl="${esc(id)}">＋ 加一个人</button>
+    ${gaps.length?`<div class="card"><label class="small" for="pp_new">加一个人${g?`（挂在「${esc(gname)}」下面）`:"（先在上面选一个缺口）"}</label>
+      <textarea id="pp_new" style="min-height:52px" placeholder="他的真名"></textarea>
+      <button class="btn" style="margin-top:8px" data-addppl="${esc(id)}">加上</button></div>`:""}
   </div>`;
 }
 function personPage(){
@@ -636,7 +668,8 @@ function personPage(){
   if(!P) return `<div class="center">加载中…</div>`;
   const pj=P.project,ns=pplNodes(pj),i=+a[1],p=(pj.ppl||[])[i];
   if(!p) return `<div class="body">${topBar("人",pj.name)}<div class="card">没有这个人</div></div>`;
-  return `<div class="body">${topBar(p.name||"（没名字）",pj.name+" · 第 "+pplStep(pj,p)+" / "+ns.length+" 步")}
+  const gp=((pj.gaps||[]).find(x=>x.id===p.gap)||{}).name||"";
+  return `<div class="body">${topBar(p.name||"新的人",(gp||pj.name)+" · 第 "+pplStep(pj,p)+" / "+ns.length+" 步")}
     <div class="card"><label class="small" for="pp_name">名字</label>
       <textarea id="pp_name" style="min-height:52px">${esc(p.name||"")}</textarea></div>
     <div class="card">${ns.map((n,k)=>`<label class="small" for="pp_${k}">${esc(n.name)}</label>
@@ -646,9 +679,28 @@ function personPage(){
   </div>`;
 }
 function addPerson(id){
-  const pj=D.p[id].project;pj.ppl=pj.ppl||[];
-  pj.ppl.push({name:"",cells:{}});
+  const pj=D.p[id].project,nm=(($("#pp_new")||{}).value||"").trim();
+  if(!nm) return toast("先写名字");
+  if(!S.gap) return toast("先在上面选一个缺口");
+  pj.ppl=pj.ppl||[];pj.ppl.push({name:nm,gap:S.gap,cells:{}});
+  saveProject(id,`加一个人：${nm}`);
   return go("person",id+"|"+(pj.ppl.length-1));
+}
+function addGap(id){
+  const pj=D.p[id].project,nm=(($("#gp_new")||{}).value||"").trim();
+  if(!nm) return toast("先写这个缺口要什么样的人");
+  pj.gaps=pj.gaps||[];
+  const gid="g"+Date.now().toString(36);
+  pj.gaps.push({id:gid,name:nm});
+  S.newgap=false;S.gap=gid;saveProject(id,`加一个缺口：${nm}`);render();
+}
+function delGap(id,gid){
+  const pj=D.p[id].project,g=(pj.gaps||[]).find(x=>x.id===gid);if(!g) return;
+  const n=(pj.ppl||[]).filter(x=>x.gap===gid).length;
+  if(!confirm(`删掉缺口「${g.name}」？${n?`下面 ${n} 个人会变成没有缺口。`:""}`)) return;
+  pj.gaps=pj.gaps.filter(x=>x.id!==gid);
+  (pj.ppl||[]).forEach(x=>{if(x.gap===gid)x.gap=""});
+  S.gap="";saveProject(id,`删掉缺口：${g.name}`);render();
 }
 function savePerson(id,i){
   const pj=D.p[id].project,ns=pplNodes(pj),p=(pj.ppl||[])[i];if(!p) return;
@@ -1197,8 +1249,13 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
+  if(d.gap!=null){S.gap=d.gap;S.newgap=false;return render()}
+  if(d.newgap){S.newgap=true;return render()}
+  if(d.cancelgap){S.newgap=false;return render()}
+  if(d.savegap) return addGap(d.savegap);
+  if(d.delgap){const [pid,gid]=d.delgap.split("|");return delGap(pid,gid)}
   if(d.setth){applyTheme(d.setth);return render()}
   if(d.addppl) return addPerson(d.addppl);
   if(d.saveppl){const [pid,i]=d.saveppl.split("|");return savePerson(pid,+i)}
