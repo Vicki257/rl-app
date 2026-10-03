@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#0D0D0C">
 <title>强化学习系统</title>
 <!-- build 2026-09-23i -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
   --ground:#0D0D0C; --paper:#1A1A17; --ink:#F3EFE6; --ink2:#D9D4C8; --ink3:#9D9589;
@@ -19,7 +19,7 @@
   --wn:#D9A566; --wnbg:rgba(217,165,102,.075); --wnline:rgba(217,165,102,.5);
   --sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
   --serif:"Noto Serif SC","Songti SC",serif;
-  --read:"Noto Serif SC","Songti SC",serif;  /* 正文（人写的和 AI 写的）统一用这个 */ --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --read:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;  /* 正文（人写的和 AI 写的）统一用这个 */ --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
 
 /* 白天版。只改颜色变量，版式和夜间完全一样 */
@@ -36,14 +36,7 @@ html[data-theme="light"] .sheet{background:rgba(0,0,0,.28)}
 /* 正文统一：凡是「内容」——我写的、AI 写的——都用 --read，界面文字（按钮、标签、导航、元信息）才用 sans。
    这样一页里不会出现三四种字体。公式和手算还是等宽，那是它该用的。 */
 .kv .v,.line3 .txt,.sub,.evi,.dtl,.pain p,.recall .w,.how,.judge,.q,.sop .tx,.nd .q,.fn .q,
-.tbl td,.cmp td,.banner,.prev,textarea,input,.srch{font-family:var(--read);font-weight:500}
-/* 衬线在浅色背景上 500 刚好；深色背景上同样的字重看起来更细，所以夜间再加一档 */
-html[data-theme="dark"] .kv .v,html[data-theme="dark"] .line3 .txt,html[data-theme="dark"] .sub,
-html[data-theme="dark"] .evi,html[data-theme="dark"] .dtl,html[data-theme="dark"] .pain p,
-html[data-theme="dark"] .recall .w,html[data-theme="dark"] .how,html[data-theme="dark"] .judge,
-html[data-theme="dark"] .sop .tx,html[data-theme="dark"] .tbl td,html[data-theme="dark"] .cmp td,
-html[data-theme="dark"] .banner,html[data-theme="dark"] textarea,html[data-theme="dark"] input,
-html[data-theme="dark"] .srch{font-weight:600}
+.tbl td,.cmp td,.banner,.prev,textarea,input,.srch{font-family:var(--read);font-weight:600}
 .tbl th,.cmp th{font-family:var(--sans)}
 .sop .mono,.meta,.zc .z,.step .n{font-family:var(--mono)}
 .nd .t,.fn .t,.sop .sn i{font-family:var(--sans)}
@@ -449,7 +442,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-03h";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-03i";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
