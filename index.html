@@ -101,7 +101,7 @@ button:focus-visible,.tap:focus-visible{outline:2px solid var(--accent);outline-
 .cmp{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
 .cmp td,.cmp th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
 .cmp th{color:var(--ink3);font-size:12.5px}
-textarea,input{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px;line-height:1.6}
+textarea,input,select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px;line-height:1.6}
 textarea{min-height:70px;resize:vertical}
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:5}
 .sheet .in{background:var(--paper);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;flex-direction:column;gap:8px}
@@ -442,7 +442,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-03f";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-03g";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -640,13 +640,13 @@ function pplPage(){
     <div class="chips">
       <button class="chip${g?"":" on"}" data-gap="">全部 ${all.length}</button>
       ${gaps.map(x=>`<button class="chip${g===x.id?" on":""}" data-gap="${esc(x.id)}">${esc(x.name)} ${cnt(x.id)}</button>`).join("")}
-      ${S.newgap?"":`<button class="chip" data-newgap="1">＋ 缺口</button>`}
+      ${(S.newgap||!gaps.length)?"":`<button class="chip" data-newgap="1">＋ 缺口</button>`}
     </div>
-    ${S.newgap?`<div class="card"><label class="small" for="gp_new">缺什么样的人（一句话）</label>
+    ${(S.newgap||!gaps.length)?`<div class="card"><label class="small" for="gp_new">${gaps.length?"再加一个缺口":"先写第一个缺口——这件事缺什么样的人"}</label>
       <textarea id="gp_new" style="min-height:52px" placeholder="例：第一个真的会用、而且会抱怨的人"></textarea>
       <div class="row" style="margin-top:8px;gap:8px">
         <button class="btn" style="flex:1" data-savegap="${esc(id)}">加上</button>
-        <button class="btn ghost" style="flex:1" data-cancelgap="1">取消</button></div></div>`:""}
+        ${gaps.length?`<button class="btn ghost" style="flex:1" data-cancelgap="1">取消</button>`:""}</div></div>`:""}
     ${g?`<div class="row"><span class="meta">${esc(gname)}</span>
       <button class="fp" style="margin-left:auto" data-delgap="${esc(id)}|${esc(g)}">删掉这个缺口</button></div>`:""}
     <div class="tbl"><table><thead><tr><th>名字</th>${g?"":`<th>缺口</th>`}<th>第几步</th>${ns.map(n=>`<th>${esc(n.name)}</th>`).join("")}</tr></thead>
@@ -658,8 +658,10 @@ function pplPage(){
         ${ns.map(n=>`<td class="tap" ${go}>${esc(fline((p.cells||{})[n.id]))||`<span style="opacity:.35">—</span>`}</td>`).join("")}
       </tr>`}).join(""):`<tr><td colspan="${ns.length+(g?2:3)}"><span class="meta">${gaps.length?"这个缺口下面还没有名字。":"还没有缺口。先写一个「缺什么样的人」，名字才有地方挂。"}</span></td></tr>`}</tbody>
     </table></div>
-    ${gaps.length?`<div class="card"><label class="small" for="pp_new">加一个人${g?`（挂在「${esc(gname)}」下面）`:"（先在上面选一个缺口）"}</label>
+    ${gaps.length?`<div class="card"><label class="small" for="pp_new">加一个人${g?`（挂在「${esc(gname)}」下面）`:""}</label>
       <textarea id="pp_new" style="min-height:52px" placeholder="他的真名"></textarea>
+      ${g?"":`<label class="small" for="pp_gap" style="display:block;margin-top:10px">挂在哪个缺口下面</label>
+        <select id="pp_gap">${gaps.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select>`}
       <button class="btn" style="margin-top:8px" data-addppl="${esc(id)}">加上</button></div>`:""}
   </div>`;
 }
@@ -681,8 +683,9 @@ function personPage(){
 function addPerson(id){
   const pj=D.p[id].project,nm=(($("#pp_new")||{}).value||"").trim();
   if(!nm) return toast("先写名字");
-  if(!S.gap) return toast("先在上面选一个缺口");
-  pj.ppl=pj.ppl||[];pj.ppl.push({name:nm,gap:S.gap,cells:{}});
+  const gid=S.gap||(($("#pp_gap")||{}).value||"");
+  if(!gid) return toast("先写一个缺口");
+  pj.ppl=pj.ppl||[];pj.ppl.push({name:nm,gap:gid,cells:{}});
   saveProject(id,`加一个人：${nm}`);
   return go("person",id+"|"+(pj.ppl.length-1));
 }
