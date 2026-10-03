@@ -407,7 +407,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-03b";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-03c";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -584,6 +584,66 @@ function plist(mode){
     <p class="small">在这里选项目不会切换小组件。</p>
   </div>${nav(mode==="i"?"ilist":"plist")}`;
 }
+/* ============ 人表：一行一个人，一列一个 SOP 节点 ============
+   列不是单独定义的，就是这个项目 SOP 的节点本身。
+   「这一格填什么」= 节点的 how[].calc 原文，「怎么算完成」= 节点的 judge 原文。
+   「走到第几步」不手填：最后一个填了字的格子是第几列，他就走到第几步。 */
+const pplNodes=pj=>((pj.sop&&pj.sop.nodes)||[]).filter(n=>n.kind!=="plain");
+function pplStep(pj,p){const ns=pplNodes(pj);let k=0;ns.forEach((n,i)=>{if(String((p.cells||{})[n.id]||"").trim())k=i+1});return k}
+function fline(x){const t=String(x||"").trim();if(!t)return"";const l=t.split("\n")[0];return l.length>24?l.slice(0,24)+"…":l}
+function pplPage(){
+  const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
+  const pj=P.project,ns=pplNodes(pj),ppl=pj.ppl||[];
+  return `<div class="body">${topBar("人",pj.name)}
+    <p class="small">一行一个人，一列一个 SOP 节点。每格填的就是那一步要从这个人身上拿到的数据。填到第几格，他就走到第几步。</p>
+    <div class="tbl"><table><thead><tr><th>名字</th><th>第几步</th>${ns.map(n=>`<th>${esc(n.name)}</th>`).join("")}</tr></thead>
+      <tbody>${ppl.length?ppl.map((p,i)=>`<tr>
+        <td class="tap" data-go="person" data-arg="${esc(id)}|${i}"><b>${esc(p.name||"（没名字）")}</b></td>
+        <td class="tap" data-go="person" data-arg="${esc(id)}|${i}">${pplStep(pj,p)} / ${ns.length}</td>
+        ${ns.map(n=>`<td class="tap" data-go="person" data-arg="${esc(id)}|${i}">${esc(fline((p.cells||{})[n.id]))||`<span style="opacity:.35">—</span>`}</td>`).join("")}
+      </tr>`).join(""):`<tr><td colspan="${ns.length+2}"><span class="meta">还没有名字。「${esc((ns[0]||{}).name||"第一步")}」那一格填不出来，就不该把人加进来。</span></td></tr>`}</tbody>
+    </table></div>
+    <button class="btn ghost" data-addppl="${esc(id)}">＋ 加一个人</button>
+  </div>`;
+}
+function personPage(){
+  const a=String(S.arg||"").split("|"),id=(a[0]&&D.p[a[0]])?a[0]:cur(),P=D.p[id];
+  if(!P) return `<div class="center">加载中…</div>`;
+  const pj=P.project,ns=pplNodes(pj),i=+a[1],p=(pj.ppl||[])[i];
+  if(!p) return `<div class="body">${topBar("人",pj.name)}<div class="card">没有这个人</div></div>`;
+  return `<div class="body">${topBar(p.name||"（没名字）",pj.name+" · 第 "+pplStep(pj,p)+" / "+ns.length+" 步")}
+    <div class="card"><label class="small" for="pp_name">名字</label>
+      <textarea id="pp_name" style="min-height:52px">${esc(p.name||"")}</textarea></div>
+    ${ns.map((n,k)=>`<div class="card">
+      <b style="font-size:16px">${esc(n.name)}</b>
+      ${n.q?`<div class="small" style="margin-top:2px">${esc(n.q)}</div>`:""}
+      ${(n.how||[]).map(h=>h.calc?`<div class="small" style="margin-top:10px;opacity:.7">这一格填什么</div>
+        <div style="white-space:pre-wrap;background:var(--soft);border-radius:10px;padding:10px 12px;margin:4px 0 10px;font-size:14px;line-height:1.75">${esc(h.calc)}</div>`:"").join("")}
+      ${(n.how||[]).map(h=>h.warn?`<div class="banner bd" style="margin:0 0 10px">⚠ ${esc(h.warn)}</div>`:"").join("")}
+      <textarea id="pp_${k}" style="min-height:100px">${esc((p.cells||{})[n.id]||"")}</textarea>
+      <div class="kv" style="margin-top:10px"><span class="k">怎么算完成</span><span class="v">${esc(n.judge||"还没写")}</span></div>
+    </div>`).join("")}
+    <button class="btn" data-saveppl="${esc(id)}|${i}">保存</button>
+    <button class="btn ghost bd" data-delppl="${esc(id)}|${i}">删掉这个人</button>
+  </div>`;
+}
+function addPerson(id){
+  const pj=D.p[id].project;pj.ppl=pj.ppl||[];
+  pj.ppl.push({name:"",cells:{}});
+  return go("person",id+"|"+(pj.ppl.length-1));
+}
+function savePerson(id,i){
+  const pj=D.p[id].project,ns=pplNodes(pj),p=(pj.ppl||[])[i];if(!p) return;
+  p.name=($("#pp_name")||{}).value?.trim()||"";
+  p.cells=p.cells||{};
+  ns.forEach((n,k)=>{const el=$("#pp_"+k);if(el)p.cells[n.id]=el.value.trim()});
+  saveProject(id,`人：${p.name||"（没名字）"}`);
+}
+function delPerson(id,i){
+  const pj=D.p[id].project,p=(pj.ppl||[])[i];if(!p) return;
+  if(!confirm(`删掉「${p.name||"（没名字）"}」？`)) return;
+  pj.ppl.splice(i,1);saveProject(id,`删掉一个人`);go("ppl",id);
+}
 function boardHTML(pj){
   const ns=(pj.sop?.nodes)||[];
   if(!ns.length) return `<div class="small" style="margin-top:6px">还没有 SOP</div>`;
@@ -697,8 +757,13 @@ function project(){
       edv("主线",m.main,"一句话")+
       edv("由主线演化出来的",(m.evolved||[]).join("；"),"分号隔开")+
       edv("支线",(m.branches||[]).join("；"),"分号隔开"))}
-    ${fold("ins","沉淀的认知",(pj.insights||[]).length+" 条",
-      (pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join(""))}
+    ${fold("ins","沉淀",`${(pj.ppl||[]).length} 人 · ${(pj.insights||[]).length} 条认知`,
+      `<div class="card tap" data-go="ppl" data-arg="${esc(id)}" style="margin:0 0 8px">
+        <div class="row"><b>人</b><span class="meta" style="margin-left:auto">${(pj.ppl||[]).length} 人</span><span class="chev">›</span></div>
+        <div class="small" style="margin-top:4px">一行一个人，一列一个 SOP 节点</div></div>`+
+      `<div class="small" style="margin:10px 0 4px;opacity:.7">认知</div>`+
+      ((pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join("")
+        ||`<div class="small">还没有沉淀下来的认知</div>`))}
     ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
     <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">${APPVER}</div>
   </div>${nav("plist")}`;
@@ -864,7 +929,7 @@ function render(){
   if(!cfg.token||S.screen==="settings") h=settings();
   else if(S.loading&&!D.global) h=`<div class="center">读取数据中…</div>`;
   else if(S.err&&!D.global) h=`<div class="body"><h1 class="h1">读取失败</h1><div class="banner bd">${esc(S.err)}</div><p class="small">检查令牌是否过期、仓库名是否正确，或网络是否正常。</p><button class="btn" data-reload>重试</button><button class="btn ghost" data-tab="settings">修改连接</button></div>`;
-  else h=({today,row:rowPage,detail,project,node:nodePage,meth:methPage,method:methodPage,list:listPage,main:mainPage,iter,gate,system,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
+  else h=({today,row:rowPage,detail,project,node:nodePage,meth:methPage,method:methodPage,list:listPage,main:mainPage,iter,gate,system,ppl:pplPage,person:personPage,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
   const vb=S.newver?`<div class="banner ok tap" data-newver="1" style="margin:0 0 8px">有新版本 ${esc(S.newver)}（你现在是 ${APPVER}）· 点这里刷新</div>`:"";
   a.innerHTML=vb+h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
   if(S.screen==="project"&&!S.edit){drawEdges();fitBoard()}
@@ -1111,8 +1176,11 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-reanalyze]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
+  if(d.addppl) return addPerson(d.addppl);
+  if(d.saveppl){const [pid,i]=d.saveppl.split("|");return savePerson(pid,+i)}
+  if(d.delppl){const [pid,i]=d.delppl.split("|");return delPerson(pid,+i)}
   if(d.reanalyze) return reanalyze(d.reanalyze);
   if("addm" in d) return addMethod();
   if(d.savem) return saveMethod(d.savem);
