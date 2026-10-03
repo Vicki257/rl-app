@@ -14,17 +14,31 @@
 :root{
   --ground:#0D0D0C; --paper:#171716; --ink:#FFFFFF; --ink2:#E2DED6; --ink3:#A39C8E;
   --line:#33322D; --soft:#201F1C; --accent:#E5C463; --accentSoft:#3B3218; --bad:#E88E74; --badSoft:#3A2318; --onAccent:#12110F;
+  --glow:#2A2416; --navbg:rgba(13,13,12,.96); --qink:#FFF6E6; --phink:#5B554A; --dot:#312C25;
+  --fnline:#4A4636; --inth:#211F1C; --fx:#8FB489; --kdp:#8FB3D9; --edge:#8A7B58; --pin:#514A3F;
+  --wn:#D9A566; --wnbg:rgba(217,165,102,.075); --wnline:rgba(217,165,102,.5);
   --sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
   --serif:"Noto Serif SC","Songti SC",serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
+
+/* 白天版。只改颜色变量，版式和夜间完全一样 */
+html[data-theme="light"]{
+  --ground:#F6F4EF; --paper:#FFFFFF; --ink:#1A1916; --ink2:#3A362E; --ink3:#78705F;
+  --line:#E3DED1; --soft:#F2EFE7; --accent:#8A6D12; --accentSoft:#F5EBC9; --bad:#A8411F; --badSoft:#FBE7DF; --onAccent:#FFFFFF;
+  --glow:#EFE7D2; --navbg:rgba(246,244,239,.96); --qink:#1A1916; --phink:#A9A294; --dot:#E0DACA;
+  --fnline:#DDD6C6; --inth:#EDE9DF; --fx:#3C7A33; --kdp:#2B6397; --edge:#A3927066; --pin:#A9A294;
+  --wn:#8A5A12; --wnbg:rgba(180,130,30,.10); --wnline:rgba(160,110,20,.45);
+}
+html[data-theme="light"] .nd.drag{box-shadow:0 8px 20px rgba(0,0,0,.12)}
+html[data-theme="light"] .sheet{background:rgba(0,0,0,.28)}
 *{box-sizing:border-box}
 html,body{height:100%}
 html{overflow-x:hidden}
 body{overflow-x:hidden}
-body{margin:0;background:radial-gradient(130% 42% at 50% 0%,#2A2416 0%,var(--ground) 62%) fixed,var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
+body{margin:0;background:radial-gradient(130% 42% at 50% 0%,var(--glow) 0%,var(--ground) 62%) fixed,var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
 #app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;overflow-x:hidden}
 .body{flex:1;min-width:0;max-width:100%;padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 24px;display:flex;flex-direction:column;gap:12px}
-.nav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:rgba(13,13,12,.96);backdrop-filter:blur(10px);padding:8px 0 calc(env(safe-area-inset-bottom,0px) + 10px)}
+.nav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--navbg);backdrop-filter:blur(10px);padding:8px 0 calc(env(safe-area-inset-bottom,0px) + 10px)}
 .nav button{font:inherit;font-size:14px;font-weight:600;background:none;border:0;color:var(--ink3);padding:6px 0;cursor:pointer}
 .nav button[aria-current="true"]{color:var(--accent);font-weight:700}
 button{font:inherit}
@@ -41,7 +55,7 @@ button:focus-visible,.tap:focus-visible{outline:2px solid var(--accent);outline-
 .meta{font-size:13px;color:var(--ink3);font-family:var(--mono)}
 .pill{font-size:12.5px;padding:3px 10px;border-radius:999px;font-weight:600;white-space:nowrap}
 .ok{background:var(--accentSoft);color:var(--accent)} .bd{background:var(--badSoft);color:var(--bad)}
-.q{font-family:var(--serif);color:#FFF6E6;font-size:21px;font-weight:700;line-height:1.45;margin:0;text-wrap:balance}
+.q{font-family:var(--serif);color:var(--qink);font-size:21px;font-weight:700;line-height:1.45;margin:0;text-wrap:balance}
 .lbl{font-size:13.5px;color:var(--accent);font-weight:700;width:38px;flex:none}
 .line3{display:flex;gap:11px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line);font-size:15.5px;line-height:1.65}
 .line3:first-child{border-top:0}
@@ -85,7 +99,7 @@ textarea{min-height:70px;resize:vertical}
 .ed{border-radius:8px;padding:3px 7px;margin:0 -7px;min-height:1.7em;transition:background .15s}
 .ed:hover{background:var(--soft)}
 .ed:focus{outline:none;background:var(--soft);box-shadow:0 0 0 1px var(--accent)}
-.ed:empty::before{content:attr(data-ph);color:#5B554A}
+.ed:empty::before{content:attr(data-ph);color:var(--phink)}
 .prev{color:var(--ink3);font-size:14.5px;line-height:1.55;margin-top:6px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .pw{display:inline-flex;align-items:center;gap:6px;color:var(--ink3);font-size:13.5px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 12px}
 .pw .pin{width:44px}
@@ -104,7 +118,7 @@ textarea{min-height:70px;resize:vertical}
 .btn.ghost.bd{color:var(--bad);border-color:var(--bad)}
 .center{display:grid;place-items:center;min-height:60vh;color:var(--ink3);font-size:16px}
 /* SOP 白板 */
-.board{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;touch-action:none;background-image:radial-gradient(#312C25 1px,transparent 1px);background-size:20px 20px}
+.board{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;touch-action:none;background-image:radial-gradient(var(--dot) 1px,transparent 1px);background-size:20px 20px}
 .board.zoom{overflow:auto}
 .cvs{position:relative;width:1100px;height:860px;transform-origin:0 0}
 .zc{display:flex;gap:6px;align-items:center;margin-top:8px}
@@ -112,7 +126,7 @@ textarea{min-height:70px;resize:vertical}
 .zc .z{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-left:4px}
 .flow{display:none;margin-top:10px}
 .fl{display:flex;gap:8px;justify-content:center}
-.fn{flex:1;min-width:0;background:var(--soft);border:1px solid #4A4636;border-radius:11px;padding:13px 12px;cursor:pointer}
+.fn{flex:1;min-width:0;background:var(--soft);border:1px solid var(--fnline);border-radius:11px;padding:13px 12px;cursor:pointer}
 .fn.plain{border-style:dashed;background:transparent;cursor:default;text-align:center}
 .fn .t{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent);display:flex;justify-content:space-between;gap:4px}
 .fn.plain .t{color:var(--ink);justify-content:center}
@@ -124,7 +138,7 @@ textarea{min-height:70px;resize:vertical}
 .fp.on b{color:var(--accent)}
 .pin{width:40px;background:transparent;border:1px solid transparent;border-radius:7px;color:var(--accent);font:13px var(--mono);text-align:center;padding:4px 0}
 .pin:focus{outline:none;border-color:var(--accent);background:var(--soft)}
-.pin::placeholder{color:#514A3F}
+.pin::placeholder{color:var(--pin)}
 .tbl td .cell{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tbl.nowrap td{height:44px;vertical-align:middle;padding:0 10px}
 @media(max-width:700px){.board,.zc{display:none}.flow{display:block}}
@@ -143,11 +157,11 @@ tr.bg.on td.bt .tri{transform:rotate(90deg)}
 .tbl .red{color:var(--bad);background:none}
 .tbl .meta.kbd{color:var(--bad);background:none;font-weight:700}
 .tbl .meta.kok{color:var(--accent);font-weight:700}
-.tbl .meta.kdp{color:#8FB3D9;font-weight:700}
+.tbl .meta.kdp{color:var(--kdp);font-weight:700}
 tr.sub>td{padding:0 0 12px 30px !important;height:auto;background:var(--ground);white-space:normal;overflow:visible}
 .judge{font-size:14px;color:var(--ink2);padding:11px 2px 10px;line-height:1.6}
 .dtl{font-size:14.5px;line-height:1.75;color:var(--ink);white-space:pre-line;padding:12px 14px;background:var(--soft)}
-.tbl.in{background:var(--soft)}.tbl.in th{background:#211F1C}
+.tbl.in{background:var(--soft)}.tbl.in th{background:var(--inth)}
 .tbl td.pri{text-align:center;position:relative}
 .tbl td.pri .td{display:block;font-size:10px;color:var(--accent);line-height:1;margin-top:-3px}
 tr.k.hot>td{background:var(--accentSoft)}
@@ -177,7 +191,7 @@ tr.add:hover>td{background:var(--accentSoft)}
 .pain.un{border-left-color:var(--line);opacity:.8}
 .pain .pp{font-size:12.5px;letter-spacing:.06em;color:var(--accent);margin-bottom:4px}
 .pain.un .pp{color:var(--ink3)}
-.pain .fx{font-size:12.5px;letter-spacing:.06em;color:#8FB489;margin:7px 0 3px}
+.pain .fx{font-size:12.5px;letter-spacing:.06em;color:var(--fx);margin:7px 0 3px}
 .pain.un .fx{color:var(--ink3)}
 .pain p{margin:0;font-size:16px;line-height:1.65;color:var(--ink2)}
 /* SOP 一小节：小标题 + 用什么/怎么算/手算/为什么 对齐成两列 + 公式等宽 + 坑单独标。
@@ -194,8 +208,8 @@ tr.add:hover>td{background:var(--accentSoft)}
 /* 公式和手算占满整行——挤在右半栏的话，→ 会被折行折散，对不齐就看不懂了 */
 .sop .f>.fw{grid-column:1/-1}
 .sop .f>.lbf{grid-column:1/-1;justify-self:start;padding-top:2px}
-.sop .wn{margin-top:11px;font-size:15.5px;line-height:1.7;color:#D9A566;background:rgba(217,165,102,.075);
-  border-left:2px solid rgba(217,165,102,.5);border-radius:0 8px 8px 0;padding:9px 12px;white-space:pre-line}
+.sop .wn{margin-top:11px;font-size:15.5px;line-height:1.7;color:var(--wn);background:var(--wnbg);
+  border-left:2px solid var(--wnline);border-radius:0 8px 8px 0;padding:9px 12px;white-space:pre-line}
 
 .whole{font-size:17px;line-height:1.7;color:var(--accent);margin:12px 0 14px;padding-left:11px;border-left:2px solid var(--accentSoft)}
 </style>
@@ -206,6 +220,17 @@ tr.add:hover>td{background:var(--accentSoft)}
 /* ============ 配置与 GitHub 读写 ============ */
 const LS="rl.cfg";
 const cfg=(()=>{try{return JSON.parse(localStorage.getItem(LS)||"{}")}catch(e){return{}}})();
+const THK="rl.theme";
+function theme(){try{return localStorage.getItem(THK)||"auto"}catch(e){return "auto"}}
+function applyTheme(t){
+  try{localStorage.setItem(THK,t)}catch(e){}
+  const light = t==="light" || (t==="auto" && window.matchMedia("(prefers-color-scheme: light)").matches);
+  document.documentElement.setAttribute("data-theme",light?"light":"dark");
+  const m=document.querySelector('meta[name="theme-color"]');
+  if(m) m.setAttribute("content",light?"#F6F4EF":"#0D0D0C");
+}
+try{window.matchMedia("(prefers-color-scheme: light)").addEventListener("change",()=>{if(theme()==="auto")applyTheme("auto")})}catch(e){}
+applyTheme(theme());
 function saveCfg(){try{localStorage.setItem(LS,JSON.stringify(cfg))}catch(e){}}
 const b64e=s=>{const b=new TextEncoder().encode(s);let x="";b.forEach(c=>x+=String.fromCharCode(c));return btoa(x)};
 const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
@@ -407,7 +432,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-03d";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-03e";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -595,6 +620,7 @@ function pplPage(){
   const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
   const pj=P.project,ns=pplNodes(pj),ppl=pj.ppl||[];
   return `<div class="body">${topBar("人",pj.name)}
+    <p class="small">一列一个 SOP 节点。每一格按那个节点的「怎么做」去填。</p>
     <div class="tbl"><table><thead><tr><th>名字</th><th>第几步</th>${ns.map(n=>`<th>${esc(n.name)}</th>`).join("")}</tr></thead>
       <tbody>${ppl.length?ppl.map((p,i)=>`<tr>
         <td class="tap" data-go="person" data-arg="${esc(id)}|${i}"><b>${esc(p.name||"（没名字）")}</b></td>
@@ -640,7 +666,7 @@ function boardHTML(pj){
   const ns=(pj.sop?.nodes)||[];
   if(!ns.length) return `<div class="small" style="margin-top:6px">还没有 SOP</div>`;
   return `<div class="board" id="board"><div class="cvs" id="cvs">
-    <svg id="svg"><defs><marker id="ah" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,.5 L10,5 L0,9.5 z" fill="#8A7B58"></path></marker></defs><g id="eg"></g></svg>
+    <svg id="svg"><defs><marker id="ah" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,.5 L10,5 L0,9.5 z" fill="var(--edge)"></path></marker></defs><g id="eg"></g></svg>
     ${ns.map(n=>`<div class="nd${n.kind==="plain"?" plain":""}" data-nid="${esc(n.id)}" style="left:${n.x||20}px;top:${n.y||20}px${n.w?`;width:${n.w}px`:""}">
       <div class="t"><span>${esc(n.name)}</span>${n.kind==="plain"?"":"<span>›</span>"}</div>
       ${(n.q||n.sub)?`<div class="q">${esc(n.q||n.sub)}</div>`:""}</div>`).join("")}
@@ -910,6 +936,9 @@ function system(){
     <div class="card row"><b>数据仓库</b><span class="meta">${esc(cfg.owner)}/${esc(cfg.repo)}</span><button class="back" style="margin-left:auto" data-tab="settings">修改</button></div>
     <div class="card"><div class="row"><b>夜间分析队列</b><span class="meta" style="margin-left:auto">${esc(q?.date||"还没有运行过")}</span></div>
       ${Object.entries(q?.projects||{}).map(([k,v])=>`<div class="line3"><span class="txt">${esc(D.index.find(x=>x.id===k)?.name||k)}</span><span class="meta">${esc(v.status)}${v.finishedAt?" · "+esc(String(v.finishedAt).slice(0,10)):""}${v.retries?" · 重试 "+v.retries:""}${v.error?" · "+esc(v.error):""}</span></div>`).join("")||'<div class="small" style="margin-top:6px">今晚没有项目要分析——队列只放在网页上点过「重新分析」的项目。</div>'}</div>
+    <div class="card"><div class="row"><b>外观</b></div>
+      <div class="row" style="margin-top:8px;gap:8px">${[["auto","跟随系统"],["light","白天"],["dark","夜间"]].map(([k,l])=>
+        `<button class="chip${theme()===k?" on":""}" data-setth="${k}">${l}</button>`).join("")}</div></div>
     <div class="card"><b>备份</b><div class="small" style="margin-top:4px">每次写入都是一次 GitHub 提交，历史自动保存，可以回到任意一次修改。</div></div>
     <button class="btn ghost" data-reload>重新读取数据</button>
   </div>${nav("system")}`;
@@ -976,7 +1005,7 @@ function drawEdges(){
     const p1=anchorPt(a,b,ea,eb),p2=anchorPt(b,a,eb,ea);
     const p=document.createElementNS("http://www.w3.org/2000/svg","path");
     p.setAttribute("d",`M${p1[0]},${p1[1]} L${p2[0]},${p2[1]}`);
-    p.setAttribute("stroke","#8A7B58");p.setAttribute("stroke-width","1.5");
+    p.setAttribute("stroke",getComputedStyle(document.documentElement).getPropertyValue("--edge").trim()||"#8A7B58");p.setAttribute("stroke-width","1.5");
     p.setAttribute("fill","none");p.setAttribute("marker-end","url(#ah)");
     g.appendChild(p);
   });
@@ -1168,8 +1197,9 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
+  if(d.setth){applyTheme(d.setth);return render()}
   if(d.addppl) return addPerson(d.addppl);
   if(d.saveppl){const [pid,i]=d.saveppl.split("|");return savePerson(pid,+i)}
   if(d.delppl){const [pid,i]=d.delppl.split("|");return delPerson(pid,+i)}
