@@ -61,6 +61,9 @@ button:focus-visible,.tap:focus-visible{outline:2px solid var(--accent);outline-
 .row{display:flex;align-items:center;gap:10px}
 .chev{margin-left:auto;color:var(--ink3);flex:none}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
+.seg{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-bottom:2px}
+.seg button{flex:1;font:inherit;font-weight:700;font-size:15.5px;background:none;border:0;border-radius:9px;padding:9px 0;cursor:pointer;color:var(--ink3)}
+.seg button.on{background:var(--paper);color:var(--ink)}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:14.5px;cursor:pointer;color:var(--ink)}
 .meta{font-size:13px;color:var(--ink3);font-family:var(--mono)}
 .pill{font-size:12.5px;padding:3px 10px;border-radius:999px;font-weight:600;white-space:nowrap}
@@ -442,7 +445,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-03i";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-16a";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -717,9 +720,33 @@ function delPerson(id,i){
   if(!confirm(`删掉「${p.name||"（没名字）"}」？`)) return;
   pj.ppl.splice(i,1);saveProject(id,`删掉一个人`);go("ppl",id);
 }
-function boardHTML(pj){
-  const ns=(pj.sop?.nodes)||[];
-  if(!ns.length) return `<div class="small" style="margin-top:6px">还没有 SOP</div>`;
+/* ============ 路线（tracks）与多套 SOP ============
+   一个项目可以分成几条路线，每条路线下面可以有几套 SOP，各自一张图。
+   没有 tracks 字段的项目，下面这些函数全部退回原来的行为（pj.sop 那一套），页面一个字都不变。
+   路线里没写 goal / reward / reality 的，继承项目级的那一份（不复制，避免两处事实打架）。 */
+const tracksOf=pj=>(pj&&pj.tracks&&pj.tracks.length?pj.tracks:null);
+function curTrack(pj){const ts=tracksOf(pj);if(!ts)return null;return ts.find(t=>t.id===S.track)||ts[0]}
+function trF(pj,k){const t=curTrack(pj);return (t&&Object.prototype.hasOwnProperty.call(t,k))?t[k]:pj[k]}
+function sopList(pj){
+  const t=curTrack(pj);
+  if(!t) return pj.sop?[{name:pj.sop.version||"SOP",when:"",sop:pj.sop}]:[];
+  return (t.sops||[]).map(x=> x&&x.ref==="sop"
+    ? {name:x.name||(pj.sop&&pj.sop.version)||"SOP",when:x.when||"",sop:pj.sop}
+    : {name:(x&&x.name)||"SOP",when:(x&&x.when)||"",sop:x});
+}
+function curSopO(pj){const L=sopList(pj);return L[S.sop]||L[0]||null}
+const curSop=pj=>{const o=curSopO(pj);return o?o.sop:null};
+function allSops(pj){                      // 找节点时要跨全部路线、全部 SOP 找
+  const out=[];const ts=tracksOf(pj);
+  if(!ts) {if(pj.sop)out.push(pj.sop);return out}
+  ts.forEach(t=>(t.sops||[]).forEach(x=>out.push(x&&x.ref==="sop"?pj.sop:x)));
+  if(pj.sop&&!out.includes(pj.sop))out.push(pj.sop);
+  return out.filter(Boolean);
+}
+function findNode(pj,nid){for(const sp of allSops(pj)){const n=(sp.nodes||[]).find(x=>x.id===nid);if(n)return n}return null}
+function boardHTML(sop){
+  const ns=(sop&&sop.nodes)||[];
+  if(!ns.length) return `<div class="small" style="margin-top:6px">这一套还没画。</div>`;
   return `<div class="board" id="board"><div class="cvs" id="cvs">
     <svg id="svg"><defs><marker id="ah" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,.5 L10,5 L0,9.5 z" fill="var(--edge)"></path></marker></defs><g id="eg"></g></svg>
     ${ns.map(n=>`<div class="nd${n.kind==="plain"?" plain":""}" data-nid="${esc(n.id)}" style="left:${n.x||20}px;top:${n.y||20}px${n.w?`;width:${n.w}px`:""}">
@@ -727,18 +754,18 @@ function boardHTML(pj){
       ${(n.q||n.sub)?`<div class="q">${esc(n.q||n.sub)}</div>`:""}</div>`).join("")}
   </div></div>
   <div class="zc"><button data-zoom="fit">适配全图</button><button data-zoom="-">−</button><button data-zoom="+">＋</button><span class="z" id="zl"></span></div>
-  <div class="flow">${flowHTML(pj)}</div>
+  <div class="flow">${flowHTML(sop)}</div>
   ${S.moved?`<button class="btn ghost" data-saveboard style="margin-top:8px">保存布局</button>`:""}`;
 }
-function layersOf(pj){
-  const ns=pj.sop?.nodes||[],es=pj.sop?.edges||[],dep={};
+function layersOf(sop){
+  const ns=(sop&&sop.nodes)||[],es=(sop&&sop.edges)||[],dep={};
   ns.forEach(n=>dep[n.id]=0);
   for(let i=0;i<ns.length;i++) es.forEach(([a,b])=>{if(dep[b]<dep[a]+1)dep[b]=dep[a]+1});
   const L=[];ns.forEach(n=>{(L[dep[n.id]]=L[dep[n.id]]||[]).push(n)});
   return L.filter(Boolean);
 }
-function flowHTML(pj){
-  return layersOf(pj).map((row,i)=>(i?'<div class="fa">↓</div>':"")+`<div class="fl">${row.map(n=>
+function flowHTML(sop){
+  return layersOf(sop).map((row,i)=>(i?'<div class="fa">↓</div>':"")+`<div class="fl">${row.map(n=>
     `<div class="fn${n.kind==="plain"?" plain":""}"${n.kind==="plain"?"":` data-node="${esc(n.id)}"`}>
       <div class="t"><span>${esc(n.name)}</span>${n.kind==="plain"?"":"<span>›</span>"}</div>
       ${(n.q||n.sub)?`<div class="q">${esc(n.q||n.sub)}</div>`:""}</div>`).join("")}</div>`).join("");
@@ -813,9 +840,20 @@ function project(){
   const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
   const pj=P.project,m=pj.mainline||{},d=pj.doing||{};
   const over=(m.branches||[]).length>(m.limit||2);
+  const TS=tracksOf(pj),TR=curTrack(pj),SL=sopList(pj),SO=curSopO(pj);
   return `<div class="body">${topBar(pj.name,"点任意一行就能改")}
-    <div class="card">${edv("目标",pj.goal,"一句话")}${edv("奖励的行为",pj.reward,"持续做什么行为，能复利到这个目标")}</div>
-    <div class="card"><b>当前最佳 SOP · ${esc(pj.sop?.version||"")}</b>${boardHTML(pj)}</div>
+    ${TS?`<div class="seg">${TS.map(t=>
+      `<button data-track="${esc(t.id)}"${(TR&&t.id===TR.id)?' class="on"':""}>${esc(t.name)}</button>`).join("")}</div>`:""}
+    <div class="card">${edv("目标",trF(pj,"goal"),"一句话")}${edv("奖励的行为",trF(pj,"reward"),"持续做什么行为，能复利到这个目标")}</div>
+    ${SL.length?`<div class="card">
+      <div class="h2" style="margin:0 0 8px">当前最佳 SOP</div>
+      ${SL.length>1?`<div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:10px">${SL.map((x,i)=>
+        `<button class="chip${i===(SL[S.sop]?S.sop:0)?" on":""}" data-sop="${i}">${esc(x.name)}</button>`).join("")}</div>`:""}
+      <div class="row"><b>${esc((SO&&SO.sop&&SO.sop.version)||(SO&&SO.name)||"")}</b></div>
+      <div class="how"><b>这套 SOP 适用于什么情况</b>${(SO&&SO.when)?esc(SO.when):`<span style="opacity:.6">还没写。同一条路线下有好几套的时候，这一格决定什么时候该用哪一套。</span>`}</div>
+      ${boardHTML(SO&&SO.sop)}</div>`
+    :`<div class="card"><div class="h2" style="margin:0 0 8px">当前最佳 SOP</div>
+      <div class="small">这条路线还没有 SOP。</div></div>`}
     <div class="card tap" data-go="list" data-arg="${esc(id)}">
       <div class="row"><b style="font-size:17px">${esc(pj.tableName||"复盘表")}</b><span class="chev">›</span></div>
       <div class="meta" style="margin-top:6px">${
@@ -823,7 +861,7 @@ function project(){
     }</div></div>
     ${fold("doing","① 当前进行",esc(d.what||"还没写"),
       edv("在做的事",d.what,"跑一遍 SOP / 验证假设 / 比较参数……写具体做的事")+
-      edv("什么才算“碰到现实”",pj.reality,"以及什么不算。AI 自己说有效不算")+
+      edv("什么才算“碰到现实”",trF(pj,"reality"),"以及什么不算。AI 自己说有效不算")+
       edv("现实进展到哪",d.reality,"还没接触 / 已接触等待反馈 / 已收到真实反馈 / 已归因并改变行动")+
       edv("这个判断靠什么",d.evidence,"证据来源"))}
     ${fold("main","② 主线与支线",(over?"⚠ 支线超过上限 · ":"")+esc(m.main||"还没写"),
@@ -845,7 +883,7 @@ function project(){
 // 一条「怎么做到的」。带 n 的是结构化写法（用什么 / 怎么算 / 手算 / 为什么），
 // 照 SOP 细则的排版来——压成一大段流水句人是看不懂的。没有 n 的是老格式 {t,wbs}。
 const LBS0={use:"用什么",calc:"怎么算",ex:"手算",why:"为什么",now:"今天"};
-const lbsOf=pj=>({...LBS0,...(pj?.sop?.labels||{})});
+const lbsOf=pj=>({...LBS0,...((curSop(pj)||{}).labels||{})});
 function stepHTML(h,LBS=LBS0){
   if(!h.n) return `<div class="kv"><span class="v">${esc(h.t||"")}${h.wbs?`<span class="meta">　${esc(h.wbs)}</span>`:""}</span></div>`;
   // 文字两栏对齐；公式/手算占满整行，不然 → 会被折散
@@ -861,7 +899,7 @@ function stepHTML(h,LBS=LBS0){
 }
 function nodePage(){
   const [pid,nid]=String(S.arg).split("|");const P=D.p[pid];if(!P) return `<div class="center">加载中…</div>`;
-  const n=(P.project.sop?.nodes||[]).find(x=>x.id===nid);
+  const n=findNode(P.project,nid);
   if(!n) return `<div class="body">${topBar("找不到这一环",P.project.name)}</div>`;
   const pains=n.pains||[],how=n.how||[],LBS=lbsOf(P.project);
   if(S.edit) return `<div class="body">${topBar(n.name,"编辑")}
@@ -1192,18 +1230,20 @@ document.addEventListener("blur",e=>{
   const id=S.arg||cur(),pj=D.p[id]?.project;if(!pj) return;
   const v=t.innerText.trim(),m=pj.mainline=pj.mainline||{},d=pj.doing=pj.doing||{};
   const sp=s=>s.split(/[；;]/).map(x=>x.trim()).filter(Boolean);
-  const before=JSON.stringify([pj.goal,pj.reward,pj.reality,d.what,d.reality,d.evidence,m.main,m.evolved,m.branches]);
-  if(k==="目标")pj.goal=v; else if(k==="奖励的行为")pj.reward=v;
-  else if(k==="什么才算“碰到现实”")pj.reality=v;
+  const before=JSON.stringify([pj.goal,pj.reward,pj.reality,pj.tracks,d.what,d.reality,d.evidence,m.main,m.evolved,m.branches]);
+  const tw=(key,val)=>{const t=curTrack(pj);
+    if(t&&Object.prototype.hasOwnProperty.call(t,key))t[key]=val;else pj[key]=val};
+  if(k==="目标")tw("goal",v); else if(k==="奖励的行为")tw("reward",v);
+  else if(k==="什么才算“碰到现实”")tw("reality",v);
   else if(k==="在做的事")d.what=v; else if(k==="现实进展到哪")d.reality=v;
   else if(k==="这个判断靠什么")d.evidence=v;
   else if(k==="主线")m.main=v; else if(k==="由主线演化出来的")m.evolved=sp(v);
   else if(k==="支线")m.branches=sp(v);
-  if(JSON.stringify([pj.goal,pj.reward,pj.reality,d.what,d.reality,d.evidence,m.main,m.evolved,m.branches])!==before)
+  if(JSON.stringify([pj.goal,pj.reward,pj.reality,pj.tracks,d.what,d.reality,d.evidence,m.main,m.evolved,m.branches])!==before)
     saveProject(id,`修改${k}：${pj.name}`);
 },true);
 function saveNode(pid,nid){
-  const n=(D.p[pid].project.sop?.nodes||[]).find(x=>x.id===nid);if(!n) return;
+  const n=findNode(D.p[pid].project,nid);if(!n) return;
   n.whole=$("#n_whole").value.trim();n.concl=$("#n_concl").value.trim();
   n.so=$("#n_so").value.trim();n.judge=$("#n_judge").value.trim();
   (n.how||[]).forEach((h,i)=>{
@@ -1252,8 +1292,10 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
+  if(d.track){S.track=d.track;S.sop=0;S.open={};return render()}
+  if(d.sop!=null&&!d.saveppl&&!d.delppl){S.sop=+d.sop;return render()}
   if(d.gap!=null){S.gap=d.gap;S.newgap=false;return render()}
   if(d.newgap){S.newgap=true;return render()}
   if(d.cancelgap){S.newgap=false;return render()}
