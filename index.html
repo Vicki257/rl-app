@@ -125,6 +125,8 @@ textarea{min-height:70px;resize:vertical}
 .srch{width:100%;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:13px 14px;font-size:16px;color:var(--ink);margin-bottom:10px;-webkit-appearance:none}
 .srch:focus{outline:none;border-color:var(--accent)}
 .chip.on{background:var(--accentSoft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.chip.add{color:var(--ink3);font-weight:400;padding:7px 16px}
+.pill.soft{background:var(--soft);color:var(--ink3)}
 .tag.m{color:var(--ink);background:var(--accentSoft);border-radius:5px;padding:2px 7px}
 .how{margin-top:8px;padding:11px 12px;background:var(--accentSoft);border-radius:10px;font-size:15px;line-height:1.65;color:var(--ink2)}
 .how b{display:block;color:var(--accent);font-size:13px;margin-bottom:3px}
@@ -445,7 +447,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-16a";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-16b";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -734,6 +736,7 @@ function sopList(pj){
     ? {name:x.name||(pj.sop&&pj.sop.version)||"SOP",when:x.when||"",sop:pj.sop}
     : {name:(x&&x.name)||"SOP",when:(x&&x.when)||"",sop:x});
 }
+function curSopRaw(pj){const t=curTrack(pj);if(!t||!(t.sops||[]).length)return null;return t.sops[S.sop]||t.sops[0]}
 function curSopO(pj){const L=sopList(pj);return L[S.sop]||L[0]||null}
 const curSop=pj=>{const o=curSopO(pj);return o?o.sop:null};
 function allSops(pj){                      // 找节点时要跨全部路线、全部 SOP 找
@@ -836,6 +839,9 @@ function fold(key,title,preview,inner){
     ${on?inner:`<div class="prev">${preview||""}</div>`}</div>`;
 }
 function edv(k,v,ph){return `<div class="kv"><span class="k">${esc(k)}</span><div class="v ed" contenteditable data-ph="${esc(ph||"")}" data-p="${esc(k)}">${esc(v||"")}</div></div>`}
+function verPill(o){const v=(o&&o.sop&&o.sop.version)||"";
+  if(!v) return `<span class="pill soft">还没建</span>`;
+  return `<span class="pill ok">${esc(v.split("·")[0].trim())}</span>`}
 function project(){
   const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
   const pj=P.project,m=pj.mainline||{},d=pj.doing||{};
@@ -847,13 +853,16 @@ function project(){
     <div class="card">${edv("目标",trF(pj,"goal"),"一句话")}${edv("奖励的行为",trF(pj,"reward"),"持续做什么行为，能复利到这个目标")}</div>
     ${SL.length?`<div class="card">
       <div class="h2" style="margin:0 0 8px">当前最佳 SOP</div>
-      ${SL.length>1?`<div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:10px">${SL.map((x,i)=>
-        `<button class="chip${i===(SL[S.sop]?S.sop:0)?" on":""}" data-sop="${i}">${esc(x.name)}</button>`).join("")}</div>`:""}
-      <div class="row"><b>${esc((SO&&SO.sop&&SO.sop.version)||(SO&&SO.name)||"")}</b></div>
-      <div class="how"><b>这套 SOP 适用于什么情况</b>${(SO&&SO.when)?esc(SO.when):`<span style="opacity:.6">还没写。同一条路线下有好几套的时候，这一格决定什么时候该用哪一套。</span>`}</div>
+      ${TS?`<div class="chips" style="margin-bottom:11px">${SL.map((x,i)=>
+        `<button class="chip${i===(SL[S.sop]?S.sop:0)?" on":""}" data-sop="${i}">${esc(x.name)}</button>`).join("")
+        }<button class="chip add" data-sop="new">＋</button></div>
+      <div class="row" style="gap:10px;flex-wrap:wrap"><b style="font-size:16px">${esc((SO&&SO.name)||"")}</b>${verPill(SO)}</div>`
+      :`<div class="row"><b>${esc((SO&&SO.sop&&SO.sop.version)||(SO&&SO.name)||"")}</b></div>`}
+      ${TS?`<div class="how"><b>这套 SOP 适用于什么情况</b><div class="ed" contenteditable data-ph="还没写。等你分析清楚之后填在这里——同一条路线下有多套 SOP，这一格决定什么时候该用哪一套。" data-p="这套 SOP 适用于什么情况">${esc((SO&&SO.when)||"")}</div></div>`:""}
       ${boardHTML(SO&&SO.sop)}</div>`
     :`<div class="card"><div class="h2" style="margin:0 0 8px">当前最佳 SOP</div>
-      <div class="small">这条路线还没有 SOP。</div></div>`}
+      <div class="small">这条路线还没有 SOP。</div>
+      ${TS?`<button class="btn ghost" data-sop="new" style="margin-top:10px">＋ 新建一套 SOP</button>`:""}</div>`}
     <div class="card tap" data-go="list" data-arg="${esc(id)}">
       <div class="row"><b style="font-size:17px">${esc(pj.tableName||"复盘表")}</b><span class="chev">›</span></div>
       <div class="meta" style="margin-top:6px">${
@@ -1235,6 +1244,7 @@ document.addEventListener("blur",e=>{
     if(t&&Object.prototype.hasOwnProperty.call(t,key))t[key]=val;else pj[key]=val};
   if(k==="目标")tw("goal",v); else if(k==="奖励的行为")tw("reward",v);
   else if(k==="什么才算“碰到现实”")tw("reality",v);
+  else if(k==="这套 SOP 适用于什么情况"){const r=curSopRaw(pj);if(r)r.when=v}
   else if(k==="在做的事")d.what=v; else if(k==="现实进展到哪")d.reality=v;
   else if(k==="这个判断靠什么")d.evidence=v;
   else if(k==="主线")m.main=v; else if(k==="由主线演化出来的")m.evolved=sp(v);
@@ -1294,6 +1304,13 @@ document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
   const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
+  if(d.sop==="new"){
+    const pid=S.arg||cur(),pj2=D.p[pid]?.project,tk=pj2&&curTrack(pj2);
+    if(!tk){toast("这个项目还没有路线");return}
+    const nm=(prompt("新的一套 SOP 叫什么？")||"").trim();if(!nm) return;
+    tk.sops=tk.sops||[];tk.sops.push({name:nm,when:"",version:"",nodes:[],edges:[]});
+    S.sop=tk.sops.length-1;saveProject(pid,`新建一套 SOP：${nm}`);return render()
+  }
   if(d.track){S.track=d.track;S.sop=0;S.open={};return render()}
   if(d.sop!=null&&!d.saveppl&&!d.delppl){S.sop=+d.sop;return render()}
   if(d.gap!=null){S.gap=d.gap;S.newgap=false;return render()}
