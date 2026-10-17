@@ -127,6 +127,15 @@ textarea{min-height:70px;resize:vertical}
 .chip.on{background:var(--accentSoft);border-color:var(--accent);color:var(--accent);font-weight:600}
 .chip.add{color:var(--ink3);font-weight:400;padding:7px 16px}
 .tbl.sm table{min-width:0}
+.ovs{padding:14px 0;border-bottom:1px solid var(--line)}
+.ovs:first-child{padding-top:2px}
+.ovs:last-child{border-bottom:0;padding-bottom:2px}
+.ovt{font-size:15.5px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.ovt i{font-style:normal;color:var(--accent);font-family:var(--mono);margin-right:8px}
+.ovb{font-family:var(--read);font-weight:600;font-size:15px;line-height:1.75;color:var(--ink2);white-space:pre-line}
+.ovl{margin:4px 0 0;padding-left:0;list-style:none;counter-reset:ov}
+.ovl li{counter-increment:ov;font-family:var(--read);font-weight:600;font-size:15px;line-height:1.7;padding:6px 0 6px 28px;position:relative}
+.ovl li:before{content:counter(ov);position:absolute;left:0;top:6px;color:var(--ink3);font-family:var(--mono);font-size:13px}
 .tbl.sm th{white-space:normal}
 .coc{cursor:pointer}
 .pill.soft{background:var(--soft);color:var(--ink3)}
@@ -450,7 +459,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-17a";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-17b";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -743,19 +752,27 @@ const cosOf=sop=>((sop&&sop.cos)||[]);
 function findCo(pj,cid){for(const sp of allSops(pj)){const c=(sp.cos||[]).find(x=>String(x.id)===String(cid));if(c)return c}return null}
 function coListHTML(pid,sop){
   const cos=cosOf(sop);if(!cos.length) return "";
-  return `<div style="margin-top:14px">
-    <div class="h2" style="margin:0 0 8px">筛选候选公司与研究记录</div>
-    ${cos.map(c=>`<div class="card tap coc" data-go="co" data-arg="${esc(pid)}|${esc(c.id)}" style="margin-bottom:8px">
-      <div class="row" style="gap:8px;flex-wrap:wrap"><b style="font-size:16px">${esc(c.name)}</b>
-        ${c.state?`<span class="pill ok">${esc(c.state)}</span>`:""}
-        ${c.verdict?`<span class="pill soft">${esc(c.verdict)}</span>`:""}
-        <span class="chev" style="margin-left:auto">›</span></div>
-      <div class="f" style="margin-top:8px">
-        <span class="lb">为什么研究</span><span class="tx">${esc(c.why||"")}</span>
-        <span class="lb">最大发现</span><span class="tx">${esc(c.find||"")}</span>
-        <span class="lb">当前节点</span><span class="tx">${esc(c.at||"")}</span></div>
-    </div>`).join("")}</div>`;
+  const f=S.cof||"all";
+  const rows=cos.filter(c=>f==="all"||String(c.state||"")!=="待研究");
+  return `<div style="margin-top:16px">
+    <div class="h2" style="margin:0 0 4px">筛选候选公司与研究记录</div>
+    <div class="small" style="margin:0 0 10px">每一行代表一家在指定筛选批次中出现的公司。点击公司名称，进入研究详情。</div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="chip${f==="all"?" on":""}" data-cof="all">全部候选</button>
+      <button class="chip${f==="done"?" on":""}" data-cof="done">已研究</button>
+      ${cos.length>6?`<input class="srch" id="cosrch" data-cosrch placeholder="搜索公司…" style="flex:1;min-width:140px;margin:0">`:""}
+    </div>
+    <div class="tbl sm"><table><thead><tr>
+      <th>公司 / 代码</th><th style="width:22%">研究状态</th><th style="width:26%">投资判断</th></tr></thead><tbody>
+      ${rows.map(c=>`<tr class="corow tap" data-go="co" data-arg="${esc(pid)}|${esc(c.id)}">
+        <td><b>${esc(String(c.name).replace(/（.*$/,""))}</b> <span class="chev">›</span>
+          <div class="meta" style="margin-top:2px">${esc(c.id)}</div></td>
+        <td>${esc(c.state||"待研究")}</td><td>${esc(c.verdict||"未判断")}</td></tr>`).join("")
+      ||`<tr><td colspan="3" class="small">这个筛选里还没有已研究的公司。</td></tr>`}
+    </tbody></table></div>
+  </div>`;
 }
+
 function coPage(){
   const [pid,cid]=String(S.arg).split("|"),P=D.p[pid];if(!P) return `<div class="center">加载中…</div>`;
   const pj=P.project,c=findCo(pj,cid);
@@ -775,7 +792,19 @@ function coPage(){
       `<div class="tbl sm"><table><tbody>${(c.meta||[]).map(r=>
         `<tr><th style="width:40%">${esc(r[0])}</th><td>${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>`
       +(c.metanote?`<div class="how" style="margin-top:10px"><b>为什么有这么多「待核实」</b>${esc(c.metanote)}</div>`:""))}
-    <div class="h2" style="margin:18px 0 8px">研究因果主线</div>
+    ${(()=>{const v=c.ov||{};const sec=(n,t,body)=>body?`<div class="ovs">
+      <div class="ovt"><i>${n}</i>${esc(t)}</div>${body}</div>`:"";
+      const p=x=>`<div class="ovb">${esc(x)}</div>`;
+      return `<div class="card" style="margin-top:12px">
+        ${sec("01","为什么被筛出来？",v.found&&p(v.found))}
+        ${sec("02","公司靠什么赚钱？",v.biz&&p(v.biz))}
+        ${sec("03","深度研究过程",(v.phases||[]).length?`<ol class="ovl">${v.phases.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`:"")}
+        ${sec("04","发现的异常",v.anom&&p(v.anom))}
+        ${sec("05","最终判断与未解决问题",v.fin&&p(v.fin))}
+        ${sec("06","这次研究对 SOP 的反馈",v.fb&&p(v.fb))}
+      </div>`})()}
+    <div class="h2" style="margin:22px 0 8px">详细研究过程</div>
+    <div class="small" style="margin:-4px 0 10px">下面是完整的因果链：每一步为什么查、怎么查、查到什么、哪里不够、所以下一步。</div>
     ${(c.steps||[]).map((s,i)=>`<div class="card">
       <div class="sop" style="padding:0;border:0;background:none">
         <div class="sn" style="font-size:16.5px">${esc(s.t)}</div>
@@ -1260,6 +1289,12 @@ async function saveRows(id,msg,loud){
   catch(e){toast("保存失败："+e.message)}
 }
 document.addEventListener("input",e=>{
+  if(!e.target?.dataset||!("cosrch" in e.target.dataset)) return;
+  const q=e.target.value.trim().toLowerCase();
+  document.querySelectorAll(".corow").forEach(tr=>{
+    tr.style.display=(!q||tr.textContent.toLowerCase().includes(q))?"":"none"});
+},true);
+document.addEventListener("input",e=>{
   if(e.target.id==="msrch"){
     if(IME) return;                      // 中文拼音还在拼，先别动
     S.q=e.target.value;const b=$("#mbody");if(b)b.innerHTML=methBody();return}
@@ -1363,7 +1398,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-cof],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
   if(d.sop==="new"){
     const pid=S.arg||cur(),pj2=D.p[pid]?.project,tk=pj2&&curTrack(pj2);
@@ -1372,6 +1407,7 @@ document.addEventListener("click",async e=>{
     tk.sops=tk.sops||[];tk.sops.push({name:nm,when:"",version:"",nodes:[],edges:[]});
     S.sop=tk.sops.length-1;saveProject(pid,`新建一套 SOP：${nm}`);return render()
   }
+  if(d.cof){S.cof=d.cof;return render()}
   if(d.track){S.track=d.track;S.sop=0;S.open={};return render()}
   if(d.sop!=null&&!d.saveppl&&!d.delppl){S.sop=+d.sop;return render()}
   if(d.gap!=null){S.gap=d.gap;S.newgap=false;return render()}
