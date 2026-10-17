@@ -459,7 +459,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-17b";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-17c";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -756,7 +756,12 @@ function coListHTML(pid,sop){
   const rows=cos.filter(c=>f==="all"||String(c.state||"")!=="待研究");
   return `<div style="margin-top:16px">
     <div class="h2" style="margin:0 0 4px">筛选候选公司与研究记录</div>
-    <div class="small" style="margin:0 0 10px">每一行代表一家在指定筛选批次中出现的公司。点击公司名称，进入研究详情。</div>
+    ${(()=>{const B=(sop&&sop.batch)||null;return B?
+      `<div class="small" style="margin:0 0 8px">筛选批次 T = ${esc(B.t)}　·　SOP ${esc(String(B.ver).split("（")[0])}　·　${B.n} 家。点击公司名称，进入研究详情。</div>`
+      :`<div class="small" style="margin:0 0 10px">点击公司名称，进入研究详情。</div>`})()}
+    ${(sop&&sop.batch)?fold("cobatch","这一批是怎么筛出来的","漏斗 2,990 → 16 家 · 两道完整性检查 · 拆股口径坑",
+      `<div class="mono fw">${esc(sop.batch.funnel)}</div>`
+      +`<div class="how" style="margin-top:10px"><b>这批名单的数据状态</b>${esc(sop.batch.note)}</div>`):""}
     <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="chip${f==="all"?" on":""}" data-cof="all">全部候选</button>
       <button class="chip${f==="done"?" on":""}" data-cof="done">已研究</button>
@@ -785,14 +790,26 @@ function coPage(){
       <div class="row" style="gap:8px;flex-wrap:wrap">
         ${c.state?`<span class="pill ok">研究状态　${esc(c.state)}</span>`:""}
         ${c.verdict?`<span class="pill soft">判断　${esc(c.verdict)}</span>`:""}</div>
-      <div class="meta" style="margin-top:8px">历史基准 ${esc(c.base||"—")}　·　参考价格 ${esc(c.px||"—")}　·　${esc(c.at||"")}</div>
+      <div class="meta" style="margin-top:8px">${[c.base?"历史基准 "+esc(c.base):"",c.px?"参考价格 "+esc(c.px):"",esc(c.at||"")].filter(Boolean).join("　·　")}</div>
       <div class="f" style="margin-top:10px">${row("研究入口",c.why)}${row("最终认识",c.sum)}</div>
     </div>
-    ${fold("co_meta_"+c.id,"档案｜筛选批次与原始字段","股票代码 / SOP 版本 / 筛选批次 / PBR·PER / 原始链接",
+    ${(c.meta||[]).length?fold("co_meta_"+c.id,"档案｜筛选批次与原始字段","股票代码 / SOP 版本 / 筛选批次 / PBR·PER / 原始链接",
       `<div class="tbl sm"><table><tbody>${(c.meta||[]).map(r=>
         `<tr><th style="width:40%">${esc(r[0])}</th><td>${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>`
-      +(c.metanote?`<div class="how" style="margin-top:10px"><b>为什么有这么多「待核实」</b>${esc(c.metanote)}</div>`:""))}
-    ${(()=>{const v=c.ov||{};const sec=(n,t,body)=>body?`<div class="ovs">
+      +(c.metanote?`<div class="how" style="margin-top:10px"><b>两个时点与仍待补的字段</b>${esc(c.metanote)}</div>`:"")):""}
+    ${(()=>{const q=c.scr;return q?`<div class="card">
+      <div class="h2" style="margin:0 0 8px">筛选快照　T = ${esc(q.t)}</div>
+      <div class="tbl sm"><table><tbody>
+        <tr><th style="width:34%">J-Quants 代码</th><td>${esc(q.jq||"")}</td></tr>
+        <tr><th>PBR</th><td>${esc(q.pbr||"")}</td></tr>
+        <tr><th>PER</th><td>${esc(q.per||"")}</td></tr>
+        <tr><th>股息率</th><td>${esc(q.dy||"")}${q.warn?" ⚠":""}</td></tr>
+        <tr><th>第 3 步标签</th><td>${esc(q.tag||"")}</td></tr>
+      </tbody></table></div>
+      <div class="f" style="margin-top:10px"><span class="lb">为什么留在名单里</span><span class="tx">${esc(q.why||"")}</span></div>
+      ${q.warn?`<div class="wn" style="margin-top:8px">⚠ ${esc(q.warn)}</div>`:""}
+    </div>`:""})()}
+    ${(()=>{const v=c.ov||{};if(!Object.keys(v).length) return "";const sec=(n,t,body)=>body?`<div class="ovs">
       <div class="ovt"><i>${n}</i>${esc(t)}</div>${body}</div>`:"";
       const p=x=>`<div class="ovb">${esc(x)}</div>`;
       return `<div class="card" style="margin-top:12px">
@@ -803,8 +820,9 @@ function coPage(){
         ${sec("05","最终判断与未解决问题",v.fin&&p(v.fin))}
         ${sec("06","这次研究对 SOP 的反馈",v.fb&&p(v.fb))}
       </div>`})()}
-    <div class="h2" style="margin:22px 0 8px">详细研究过程</div>
-    <div class="small" style="margin:-4px 0 10px">下面是完整的因果链：每一步为什么查、怎么查、查到什么、哪里不够、所以下一步。</div>
+    ${(c.steps||[]).length?`<div class="h2" style="margin:22px 0 8px">详细研究过程</div>
+    <div class="small" style="margin:-4px 0 10px">下面是完整的因果链：每一步为什么查、怎么查、查到什么、哪里不够、所以下一步。</div>`:
+    `<div class="card" style="margin-top:12px"><div class="small">这家还没开始研究。它现在只是 ${esc((c.scr&&c.scr.t)||"")} 这一批的候选之一。</div></div>`}
     ${(c.steps||[]).map((s,i)=>`<div class="card">
       <div class="sop" style="padding:0;border:0;background:none">
         <div class="sn" style="font-size:16.5px">${esc(s.t)}</div>
@@ -814,15 +832,15 @@ function coPage(){
       ${s.evi?fold("co_e"+c.id+"_"+i,"详细证据与原始报告","原始科目与年份 / 计算口径 / 来源 / 被推翻的结论",
         `<div class="mono fw">${esc(s.evi)}</div>`):""}
     </div>`).join("")}
-    <div class="h2" style="margin:18px 0 8px">认知修正记录</div>
+    ${(c.revs||[]).length?`<div class="h2" style="margin:18px 0 8px">认知修正记录</div>
     <div class="tbl sm"><table><thead><tr><th style="width:32%">最初判断</th><th style="width:34%">后来发现</th><th>修正后的认识</th></tr></thead><tbody>
       ${(c.revs||[]).map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join("")}
-    </tbody></table></div>
-    <div class="h2" style="margin:18px 0 8px">阶段性最终判断</div>
-    <div class="card"><div class="f">${row("已证实",c.ok)}${row("未证实",c.no)}${row("投资判断",c.judge)}</div></div>
-    <div class="h2" style="margin:18px 0 8px">对原 SOP 的现实反馈</div>
+    </tbody></table></div>`:""}
+    ${(c.ok||c.no||c.judge)?`<div class="h2" style="margin:18px 0 8px">阶段性最终判断</div>
+    <div class="card"><div class="f">${row("已证实",c.ok)}${row("未证实",c.no)}${row("投资判断",c.judge)}</div></div>`:""}
+    ${c.fb?`<div class="h2" style="margin:18px 0 8px">对原 SOP 的现实反馈</div>
     <div class="card"><div class="f">${row("这次研究暴露了什么",c.fb)}</div>
-      ${c.fbhow?`<div class="how" style="margin-top:10px"><b>处理方式</b>${esc(c.fbhow)}</div>`:""}</div>
+      ${c.fbhow?`<div class="how" style="margin-top:10px"><b>处理方式</b>${esc(c.fbhow)}</div>`:""}</div>`:""}
   </div>`;
 }
 function curSopRaw(pj){const t=curTrack(pj);if(!t||!(t.sops||[]).length)return null;return t.sops[S.sop]||t.sops[0]}
