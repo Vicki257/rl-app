@@ -459,7 +459,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-17c";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-17d";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -769,12 +769,14 @@ function coListHTML(pid,sop){
     </div>
     <div class="tbl sm"><table><thead><tr>
       <th>公司 / 代码</th><th style="width:22%">研究状态</th><th style="width:26%">投资判断</th></tr></thead><tbody>
-      ${rows.map(c=>`<tr class="corow tap" data-go="co" data-arg="${esc(pid)}|${esc(c.id)}">
+      ${(S.coall?rows:rows.slice(0,5)).map(c=>`<tr class="corow tap" data-go="co" data-arg="${esc(pid)}|${esc(c.id)}">
         <td><b>${esc(String(c.name).replace(/（.*$/,""))}</b> <span class="chev">›</span>
           <div class="meta" style="margin-top:2px">${esc(c.id)}</div></td>
         <td>${esc(c.state||"待研究")}</td><td>${esc(c.verdict||"未判断")}</td></tr>`).join("")
       ||`<tr><td colspan="3" class="small">这个筛选里还没有已研究的公司。</td></tr>`}
     </tbody></table></div>
+    ${rows.length>5?`<button class="btn ghost" data-coall="1" style="margin-top:8px;width:100%">${
+      S.coall?"收起":`展开全部 ${rows.length} 家`}</button>`:""}
   </div>`;
 }
 
@@ -1416,7 +1418,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-cof],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
   if(d.sop==="new"){
     const pid=S.arg||cur(),pj2=D.p[pid]?.project,tk=pj2&&curTrack(pj2);
@@ -1425,7 +1427,8 @@ document.addEventListener("click",async e=>{
     tk.sops=tk.sops||[];tk.sops.push({name:nm,when:"",version:"",nodes:[],edges:[]});
     S.sop=tk.sops.length-1;saveProject(pid,`新建一套 SOP：${nm}`);return render()
   }
-  if(d.cof){S.cof=d.cof;return render()}
+  if(d.cof){S.cof=d.cof;S.coall=false;return render()}
+  if(d.coall){S.coall=!S.coall;return render()}
   if(d.track){S.track=d.track;S.sop=0;S.open={};return render()}
   if(d.sop!=null&&!d.saveppl&&!d.delppl){S.sop=+d.sop;return render()}
   if(d.gap!=null){S.gap=d.gap;S.newgap=false;return render()}
