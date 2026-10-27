@@ -284,8 +284,8 @@ async function put(path,obj,msg){
 }
 
 /* ============ 状态 ============ */
-const D={global:null,index:[],status:null,p:{},meth:null,bn:null};
-const S={screen:"today",arg:null,stack:[],open:{},sheet:false,edit:false,loading:true,err:"",toast:"",bnSkip:0};
+const D={global:null,index:[],status:null,p:{},meth:null};
+const S={screen:"today",arg:null,stack:[],open:{},sheet:false,edit:false,loading:true,err:"",toast:""};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const cur=()=>D.global?.current;
@@ -301,7 +301,7 @@ async function loadProject(id,force){
 async function loadAll(){
   S.loading=true;S.err="";render();
   try{
-    [D.global,D.index,D.status,D.meth,D.bn]=await Promise.all([get("global.json"),get("projects/index.json"),get("status.json").catch(()=>null),get("methods.json").catch(()=>({name:"方法库",cats:[],methods:[]})),get("bottleneck.json").catch(()=>null)]);
+    [D.global,D.index,D.status,D.meth]=await Promise.all([get("global.json"),get("projects/index.json"),get("status.json").catch(()=>null),get("methods.json").catch(()=>({name:"方法库",cats:[],methods:[]}))]);
     await loadProject(cur(),true);
   }catch(e){S.err=e.message}
   S.loading=false;render();
@@ -369,74 +369,6 @@ async function syncFocus(id){
     if(id===cur()) await put("widget.json",widgetFrom(id,P),"小组件：换问题");
   }catch(e){toast("今天页没换过去："+e.message)}
 }
-/* ============ 跨项目瓶颈（只读 bottleneck.json，不在前端跑分析）============ */
-// 「换一个」只在本次会话里生效，不写回仓库，也不动任何项目的优先级。
-function bnList(){
-  const b=D.bn;if(!b||!b.pick) return [];
-  const pk=b.pick,rest=(b.cands||[]).filter(c=>!(c.project===pk.project&&c.rowIdx===pk.rowIdx));
-  return [pk,...rest];
-}
-function bnPick(){const L=bnList();return L.length?L[S.bnSkip%L.length]:null}
-// 过期判断全部在本地做，不额外请求：看日期，再看已经载入的项目有没有对不上
-function bnState(){
-  const b=D.bn;if(!b||!b.pick) return {k:"none",msg:"还没有跨项目分析"};
-  const days=Math.floor((Date.now()-new Date(b.at))/864e5);
-  const c=bnPick();
-  if(c){
-    const P=D.p[c.project];
-    if(P){
-      const r=P.rows[c.rowIdx],done=new Set(P.project.done||[]);
-      if(!r||r.date!==c.rowDate) return {k:"drift",days,msg:"这一行在仓库里已经挪过位置了，这份判断按旧位置写的"};
-      if(done.has(r.f)) return {k:"drift",days,msg:`这一行已经结案（${r.f}），这份判断是它还开着的时候写的`};
-    }
-  }
-  if(b.request&&new Date(b.request.at)>new Date(b.at)) return {k:"wait",days,msg:"已排队，等今晚重算"};
-  if(days>=3) return {k:"stale",days,msg:`这份判断是 ${days} 天前的，期间的新记录没算进去`};
-  return {k:"ok",days,msg:""};
-}
-function bnCard(){
-  const b=D.bn,st=bnState();
-  if(st.k==="none") return `<div class="card"><div class="h2" style="margin:0 0 6px">今天先解决</div>
-    <div class="small">还没有跨项目分析。它由夜间任务写进 <code>bottleneck.json</code>，现在那个文件不存在或读不到。</div>
-    <button class="btn ghost" data-rebottle style="margin-top:10px">让今晚算一次 →</button></div>`;
-  const c=bnPick(),L=bnList(),pill={ok:"",stale:'<span class="pill bd">可能已过期</span>',
-    drift:'<span class="pill bd">数据已变</span>',wait:'<span class="pill ok">已排队</span>'}[st.k]||"";
-  const isPick=(S.bnSkip||0)%L.length===0;          // 第 0 条才是分析选中的那一条，其余是备选
-  const u=c.unlock||[];
-  const ready=c.ready!==undefined?c.ready:(c.actionable!==false);
-  return `<div class="card">
-    <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px">
-      <span class="h2" style="margin:0">今天先解决</span>
-      <span class="meta">${esc(c.name)}${c.pri?"　优先 "+esc(c.pri):""}</span>${pill}
-      ${L.length>1?`<button class="back" style="margin-left:auto" data-bnnext>换一个 ›</button>`:""}</div>
-    <p class="q" style="font-size:19px">${esc(c.q||"")}</p>
-    ${st.msg?`<div class="wn" style="margin-top:8px">⚠ ${esc(st.msg)}</div>`:""}
-    ${isPick?"":`<div class="meta" style="margin-top:8px">这是备选，不是今天的推荐。再点「换一个」继续翻，或返回第一条。</div>`}
-    <div class="sop" style="padding:0;border:0;background:none;margin-top:12px"><div class="f">
-      ${isPick&&c.why?`<span class="lb">为什么是它</span><span class="tx">${esc(c.why)}</span>`:""}
-      ${!isPick&&c.note?`<span class="lb">为什么没选它</span><span class="tx">${esc(c.note)}</span>`:""}
-      ${u.length?`<span class="lb">解决后能解锁</span><span class="tx">${u.map(x=>
-        (x.inferred?"（推断）":"")+esc(x.t)).join("\n")}</span>`:""}
-      ${c.act?`<span class="lb lbf">现在只做</span><div class="mono fw">${esc(c.act)}</div>`:""}
-    </div></div>
-    ${ready===false?`<div class="wn" style="margin-top:8px">⚠ 这一条今天动不了${c.readyWhy?"："+esc(c.readyWhy):"（分析里标了 actionable=false）"}</div>`
-      :isPick&&c.readyWhy?`<div class="how" style="margin-top:10px"><b>为什么今天就能开始</b>${esc(c.readyWhy)}</div>`:""}
-    ${!isPick&&!c.act?`<div class="small" style="margin-top:8px">这一条没有写「现在只做」——分析只对选中的那一条写最小动作。</div>`:""}
-    <button class="btn" style="margin-top:12px" data-bngo="${esc(c.project)}|${esc(c.rowDate||"")}|${c.rowIdx}">进入 ${esc(c.name)} →</button>
-    <div class="meta" style="margin-top:8px">${esc(b.at||"").slice(0,10)} 的全局分析　·　${esc(b.by||"")}</div>
-  </div>
-  ${fold("bnwhy","依据 · 候选比较 · 历史证据",`${(b.cands||[]).length} 个候选 · ${((b.pick||{}).evi||[]).length} 条依据`,
-    `<div class="small" style="margin-bottom:6px">候选比较（每个项目最高的那一条未完成）</div>
-     <div class="tbl sm"><table><tbody>${(b.cands||[]).map(x=>
-       `<tr><th style="width:30%">${esc(x.name)}　优先 ${esc(x.pri||"–")}<div class="meta">${esc(x.rowDate||"")}</div></th>
-        <td>${esc(x.q||"")}<div class="meta" style="margin-top:4px">${x.actionable===false?"⚠ 今天动不了　":""}${esc(x.note||"")}</div></td></tr>`).join("")}
-     </tbody></table></div>
-     <div class="small" style="margin:14px 0 6px">选中这一条的依据</div>
-     ${((b.pick||{}).evi||[]).map(e=>`<div class="line3"><span class="lbl">${esc(e[0])}</span><span class="txt">${esc(e[1])}<div class="meta">${esc(e[2]||"")}</div></span></div>`).join("")}
-     ${((b.pick||{}).recall||[]).length?`<div class="small" style="margin:14px 0 6px">历史召回</div>
-       ${(b.pick.recall||[]).map(r=>`<div class="line3"><span class="lbl">召回</span><span class="txt"><b>${esc(r.t)}</b><div class="meta">${esc(r.w||"")}</div></span></div>`).join("")}`:""}
-     <button class="btn ghost" data-rebottle style="margin-top:12px">让今晚重算一次 →</button>`)}`;
-}
 function today(){
   const id=cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
   const isList=!!P.project.labels;
@@ -451,7 +383,9 @@ function today(){
   else lines=["矛盾","结果","召回"].map(l=>`<div class="line3"><span class="lbl">${l}</span><span class="txt" style="color:var(--ink3)">${st==="run"?"AI 分析中…":"等待 AI 分析"}</span></div>`).join("");
   const gates=(P.iteration.gates||[]).filter(g=>!g.decision).length;
   const ri=P.rows.indexOf(row);
-  const _old=`<div class="row" style="flex-wrap:wrap"><span class="chip" data-go="project" tabindex="0">${esc(P.project.name)} ›</span><span class="meta">${rel(P.current.writtenAt)}写入</span>${nightPill(st)}</div>
+  return `<div class="body">
+    <h1 class="h1">今天</h1>
+    <div class="row" style="flex-wrap:wrap"><span class="chip" data-go="project" tabindex="0">${esc(P.project.name)} ›</span><span class="meta">${rel(P.current.writtenAt)}写入</span>${nightPill(st)}</div>
     <div class="card"><div class="h2" style="margin:0 0 6px">${isList?"优先级最高的一条":"今天从这里开始"}</div>
       <p class="q">${esc(headline)}</p>
       ${isList&&row?`<div class="row" style="margin-top:10px;gap:8px"><span class="pill ${row.f==="够用了"?"ok":"bd"}">${esc(row.f)}</span><span class="meta">优先 ${esc(row.cols?.[PRI]||"–")}</span></div>`:""}</div>
@@ -463,12 +397,7 @@ function today(){
       ? `<div class="card small">${st==="run"?"AI 正在分析…":"已排队。从现在起每个整点试一次，早上 8:00 截止。跑完这三张卡就换成新的。"}</div>`
       : `<button class="btn ghost" data-reanalyze="${esc(id)}">问题写完了，重新分析 →</button>`}
     <div class="card tap row" data-go="gate" tabindex="0"><b>需要你判断</b>${gates?`<span class="pill ok">${gates}</span>`:'<span class="meta">无</span>'}<span class="chev">›</span></div>
-    <div class="card tap row" data-sheet tabindex="0"><b>其他项目</b><span class="meta">${D.index.length-1}</span><span class="chev">›</span></div>`;
-  return `<div class="body">
-    <h1 class="h1">今天</h1>
-    ${bnCard()}
-    ${fold("curproj",`当前项目 · ${P.project.name}`,
-      `${isList?"优先级最高的一条：":""}${esc((headline||"").slice(0,42))}${(headline||"").length>42?"…":""}`,_old)}
+    <div class="card tap row" data-sheet tabindex="0"><b>其他项目</b><span class="meta">${D.index.length-1}</span><span class="chev">›</span></div>
   </div>${nav("today")}`;
 }
 function sheet(){
@@ -530,7 +459,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-27c";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-17d";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1125,12 +1054,6 @@ function nodePage(){
     <div class="card"><b>做完的判据</b><div class="kv"><span class="v">${esc(n.judge||"还没写")}</span></div></div>
   </div>`;
 }
-async function rebottle(){
-  const b=D.bn||{at:"",by:"",pick:null,cands:[]};
-  b.request={at:new Date().toISOString(),by:"在网页上点了让今晚重算"};
-  try{await put("bottleneck.json",b,"排队：下一轮夜间重算跨项目瓶颈");D.bn=b;toast("已排队，今晚那一轮会重算");render()}
-  catch(e){toast("排队失败："+e.message)}
-}
 async function reanalyze(id){
   const P=D.p[id];
   // 锁定今天页这一刻显示的就是哪一行。同一天可能有好几行，所以必须带下标。
@@ -1495,7 +1418,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-cof],[data-coall],[data-bnnext],[data-bngo],[data-rebottle],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
   if(d.sop==="new"){
     const pid=S.arg||cur(),pj2=D.p[pid]?.project,tk=pj2&&curTrack(pj2);
@@ -1504,11 +1427,6 @@ document.addEventListener("click",async e=>{
     tk.sops=tk.sops||[];tk.sops.push({name:nm,when:"",version:"",nodes:[],edges:[]});
     S.sop=tk.sops.length-1;saveProject(pid,`新建一套 SOP：${nm}`);return render()
   }
-  if("bnnext" in d){S.bnSkip=(S.bnSkip||0)+1;return render()}
-  if(d.bngo){const [bp,bd,bi]=d.bngo.split("|");
-    try{await loadProject(bp)}catch(err){return toast(err.message)}
-    return go("row",`${bd}|${bi}|${bp}`)}
-  if("rebottle" in d) return rebottle();
   if(d.cof){S.cof=d.cof;S.coall=false;return render()}
   if(d.coall){S.coall=!S.coall;return render()}
   if(d.track){S.track=d.track;S.sop=0;S.open={};return render()}
