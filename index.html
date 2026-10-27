@@ -421,42 +421,45 @@ function openListHTML(){
       </div>`).join("")}
     </section>`;
   }).join("");
-  return `<div style="margin-top:4px">
+  return `<details class="card" style="margin-top:12px;padding:14px 16px"><summary style="cursor:pointer;font-weight:650">值得探索的方向 <span class="meta" style="font-weight:400">· 按需展开</span></summary><div style="margin-top:12px">
     <div class="row" style="gap:8px;flex-wrap:wrap;padding:12px 2px 16px">
-      <b>所有未解决问题</b>
+      <b>值得探索的方向</b>
       <span style="margin-left:auto"></span>
       ${Object.keys(OST).map(k=>`<button class="chip${k===S.ost?" on":""}" data-ost="${esc(k)}">${k}</button>`).join("")}
     </div>
     ${body||'<div class="card meta" style="padding:16px">这个状态下没有记录</div>'}
-  </div>`;
+  </div></details>`;
 }
 function today(){
-  const id=cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
-  const isList=!!P.project.labels;
-  const st=nightState(P.current),row=focusRowOf(P);
-  const headline=isList?(row?.q||"清单里还没有内容"):P.current.q;
+  const id=cur(),P=D.p[id];if(!P)return '<div class="center">加载中…</div>';
   const gates=(P.iteration.gates||[]).filter(g=>!g.decision).length;
-  const ri=P.rows.indexOf(row);
-  const F=P.current.focus||{},W=F.why||null;
-  const whyHTML=W&&(W.blocked||W.why||W.unlock)
-    ? `${W.blocked?`<div class="kv"><span class="k">现在卡住了什么</span><div class="v">${esc(W.blocked)}</div></div>`:""}
-       ${W.why?`<div class="kv"><span class="k">为什么可能是瓶颈</span><div class="v">${esc(W.why)}</div></div>`:""}
-       ${W.unlock?`<div class="kv"><span class="k">解决它能推动什么</span><div class="v">${esc(W.unlock)}</div></div>`:""}
-       ${W.at?`<div class="meta" style="margin-top:6px">${esc(String(W.at).slice(0,10))} 与 AI 讨论后确认${W.by?"　·　"+esc(W.by):""}</div>`:""}`
-    : `<div class="small" style="color:var(--ink3)">尚未确认选择理由</div>`;
+  // 只展示已有记录，不把待验证的设计假设当成现实成果。
+  const changes=(P.rows||[]).filter(r=>["够用了","已确认"].includes(r.f))
+    .slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+  const changeHTML=r=>'<div style="padding:10px 0;border-top:1px solid var(--line)"><div style="font-weight:600">'+esc(r.q||"已记录的进展")+'</div><div class="meta">'+esc(r.date||"")+' · '+esc(r.f)+'</div></div>';
+  const recent=changes[0];
   return `<div class="body">
     <h1 class="h1">今天</h1>
-    <div class="row" style="flex-wrap:wrap"><span class="chip" data-go="project" tabindex="0">${esc(P.project.name)} ›</span><span class="meta">${rel(P.current.writtenAt)}写入</span>${nightPill(st)}</div>
-    <div class="card"><div class="h2" style="margin:0 0 6px">优先级最高的一条</div>
-      <p class="q">${esc(headline)}</p>
-      ${isList&&row?`<div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><span class="pill ${row.f==="够用了"||row.f==="已确认"?"ok":"bd"}">${esc(row.f)}</span><span class="meta">优先 ${esc(row.cols?.[PRI]||"–")}　·　${esc(P.project.name)}${F.manual?"　·　你选的":""}</span></div>`:""}
-      <div class="how" style="margin-top:12px"><b>为什么它是优先级最高的一条？</b>${whyHTML}</div></div>
-    <button class="btn" data-go="row" data-arg="${esc(row?.date||"")}|${ri}|${esc(id)}">开始 →</button>
+    <div class="row" style="flex-wrap:wrap"><span class="chip" data-go="project" tabindex="0">${esc(P.project.name)} ›</span></div>
+    <div class="card">
+      <div class="h2" style="margin:0 0 14px">✧ 我的世界已经发生的变化</div>
+      ${recent?changeHTML(recent):'<div class="small">还没有标记为已确认的变化。可以从项目历史中逐步整理真实成果。</div>'}
+      <details style="margin-top:12px"><summary style="cursor:pointer">展开所有变化</summary>
+        <div class="small" style="margin:10px 0">以下来自当前项目标记为「够用了／已确认」的记录；记录状态不等于独立验证。</div>
+        ${changes.slice(1).map(changeHTML).join("")||'<div class="small">暂时没有更多已确认记录</div>'}
+      </details>
+    </div>
+    <div class="card">
+      <div class="h2" style="margin:0 0 12px">⚒ 接下来我想创造什么？</div>
+      <p class="q">${id==="rl"?"让推进长期项目本身成为一件快乐、有收获、愿意继续的事。":esc(P.current?.q||"和 AI 讨论下一步想创造的东西")}</p>
+      <div class="small">由你与 AI 讨论后确认，不自动分配任务。</div>
+    </div>
     ${openListHTML()}
     <div class="card tap row" data-go="gate" tabindex="0"><b>需要你判断</b>${gates?`<span class="pill ok">${gates}</span>`:'<span class="meta">无</span>'}<span class="chev">›</span></div>
     <div class="card tap row" data-sheet tabindex="0"><b>其他项目</b><span class="meta">${D.index.length-1}</span><span class="chev">›</span></div>
   </div>${nav("today")}`;
 }
+
 function sheet(){
   return `<div class="sheet" data-closesheet><div class="in" data-stop><b style="font-size:16px">切换项目</b><span class="small">切换后今天页和小组件都会换成这个项目</span>
   ${D.index.filter(x=>x.state!=="archived").map(x=>`<div class="card tap row" data-pick="${x.id}" style="${x.id===cur()?"border-color:var(--accent)":""}"><span>${esc(x.name)}</span><span class="chev">${x.id===cur()?"当前":"›"}</span></div>`).join("")}</div></div>`;
@@ -516,7 +519,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-28b";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-28c";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
