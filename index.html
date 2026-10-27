@@ -127,6 +127,8 @@ textarea{min-height:70px;resize:vertical}
 .chip.on{background:var(--accentSoft);border-color:var(--accent);color:var(--accent);font-weight:600}
 .chip.add{color:var(--ink3);font-weight:400;padding:7px 16px}
 .tbl.sm table{min-width:0}
+.ogp+.ogp{border-top:1px solid var(--line)}
+.ogp .line3[data-ogp]{font-weight:700}
 .ovs{padding:14px 0;border-bottom:1px solid var(--line)}
 .ovs:first-child{padding-top:2px}
 .ovs:last-child{border-bottom:0;padding-bottom:2px}
@@ -285,14 +287,15 @@ async function put(path,obj,msg){
 
 /* ============ 状态 ============ */
 const D={global:null,index:[],status:null,p:{},meth:null};
-const S={screen:"today",arg:null,stack:[],open:{},sheet:false,edit:false,loading:true,err:"",toast:""};
+const S={screen:"today",arg:null,stack:[],open:{},sheet:false,edit:false,loading:true,err:"",toast:"",ost:"待改",og:{}};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const cur=()=>D.global?.current;
-async function loadProject(id,force){
+async function loadProject(id,force,quiet){
   if(D.p[id]&&!force) return D.p[id];
   const [project,rows,current,iteration]=await Promise.all(["project","rows","current","iteration"].map(n=>get(`projects/${id}/${n}.json`)));
   D.p[id]={project,rows,current,iteration};
+  if(quiet) return D.p[id];                 // 后台只读，绝不回写别的项目
   // 夜间分析只认 current.json 的 focus。行数据可能在 app 外面被改过（导入、脚本），
   // 所以每次载入都对一次；没变的话 syncFocus 自己会跳过，不会白写。
   syncFocus(id).catch(()=>{});
@@ -305,6 +308,9 @@ async function loadAll(){
     await loadProject(cur(),true);
   }catch(e){S.err=e.message}
   S.loading=false;render();
+  // 「所有未解决问题」要跨项目，所以首屏之后把其余项目也读进来；只读，不动它们的 current.json
+  (D.index||[]).filter(x=>x.state!=="archived"&&x.id!==cur())
+    .forEach(x=>loadProject(x.id,false,true).then(()=>render()).catch(()=>{}));
 }
 function toast(t){S.toast=t;render();setTimeout(()=>{S.toast="";render()},2200)}
 
@@ -322,7 +328,7 @@ function next8(){const d=new Date();const jst=new Date(d.getTime()+9*36e5);if(js
 const nightPill=st=>({done:'<span class="pill ok">夜间分析已完成</span>',wait:'<span class="pill ok">等待 AI 分析</span>',run:'<span class="pill ok">AI 分析中</span>',fail:'<span class="pill bd">夜间分析未完成</span>'}[st]);
 function curRow(P){return P.rows.find(r=>r.date===P.current.rowDate)||P.rows[P.rows.length-1]}
 function widgetFrom(id,P){
-  const row=focusRow(P),n=row?.night||{};
+  const row=focusRowOf(P),n=row?.night||{};
   const isList=!!P.project.labels;
   return {project:id,name:P.project.name,
     q:isList?(row?.q||P.current.q):P.current.q,
@@ -356,8 +362,27 @@ function focusRow(P){
 }
 // 改了优先分或状态之后，今天页显示的那一条可能就换了人。
 // 夜间分析照 current.focus 定位，所以这里必须跟着改，否则两边又会指到不同的行。
+// 用户手动定过焦点就以用户的为准；没定过才回落到优先分最高的那一条
+function focusRowOf(P){
+  const f=P.current?.focus;
+  if(f&&f.manual&&P.rows[f.idx]) return P.rows[f.idx];
+  return focusRow(P);
+}
+async function setFocus(pid,i){
+  const P=D.p[pid];if(!P) return;const r=P.rows[i];if(!r) return;
+  P.current.focus={date:r.date||null,idx:i,q:r.q||"",manual:true,at:new Date().toISOString()};
+  P.current.rowDate=r.date||P.current.rowDate;
+  P.current.q=r.q||"";                       // 只动 current.json，不碰 rows 的状态和优先分
+  try{
+    await put(`projects/${pid}/current.json`,P.current,"今日焦点：用户手动选定");
+    if(pid!==cur()){D.global.current=pid;await put("global.json",D.global,"当前项目跟随今日焦点")}
+    await put("widget.json",widgetFrom(pid,P),"小组件：跟随今日焦点");
+    S.screen="today";S.arg=null;toast("今日焦点已更新");render();
+  }catch(e){toast("保存失败："+e.message)}
+}
 async function syncFocus(id){
   const P=D.p[id];if(!P?.project.labels) return;
+  if(P.current.focus&&P.current.focus.manual) return;   // 用户定过了，AI 不许覆盖
   const row=focusRow(P),idx=P.rows.indexOf(row);
   const f=P.current.focus;
   if(f&&f.idx===idx&&f.date===(row?.date||null)) return;   // 没换人，什么都不做
@@ -369,33 +394,62 @@ async function syncFocus(id){
     if(id===cur()) await put("widget.json",widgetFrom(id,P),"小组件：换问题");
   }catch(e){toast("今天页没换过去："+e.message)}
 }
+// 两个切换：「待改」= 还没动的（量化/财富/人与关系那三个项目把这一档叫「待验」）；「改了未验」只有强化学习项目有
+const OST={"待改":["待改","待验"],"改了未验":["改了未验"]};
+function openListHTML(){
+  const want=OST[S.ost]||OST["待改"];
+  const projs=(D.index||[]).filter(x=>x.state!=="archived");
+  const body=projs.map(x=>{
+    const P=D.p[x.id];
+    if(!P) return `<div class="line3"><span class="lbl">${esc(x.name)}</span><span class="txt" style="color:var(--ink3)">载入中…</span></div>`;
+    const hit=P.rows.map((r,i)=>({r,i})).filter(o=>want.includes(o.r.f))
+      .sort((a,b)=>(priNum(b.r)-priNum(a.r))||String(b.r.date||"").localeCompare(String(a.r.date||"")));
+    if(!hit.length) return "";
+    const on=S.og[x.id]!==false;
+    return `<div class="ogp">
+      <div class="line3 tap" data-ogp="${esc(x.id)}" tabindex="0"><span class="lbl">${esc(x.name)}</span>
+        <span class="txt" style="color:var(--ink3)">${hit.length} 条</span><span class="chev">${on?"⌄":"›"}</span></div>
+      ${on?hit.map(o=>`<div class="line3 tap" data-go="row" data-arg="${esc(o.r.date||"")}|${o.i}|${esc(x.id)}" tabindex="0">
+        <span class="lbl" style="font-family:var(--mono);font-size:12px">${esc(o.r.date||"")}</span>
+        <span class="txt">${esc(o.r.q||"")}
+          <div class="meta" style="margin-top:3px">${esc(o.r.f||"")}　·　优先 ${esc((o.r.cols||{})[PRI]||"–")}</div></span>
+        <button class="back" data-setfocus="${esc(x.id)}|${o.i}">设为焦点</button></div>`).join(""):""}
+    </div>`;
+  }).join("");
+  return `<div class="card" style="padding:4px 14px 10px">
+    <div class="row" style="gap:8px;padding:10px 0 8px"><b>所有未解决问题</b>
+      <span style="margin-left:auto"></span>
+      ${Object.keys(OST).map(k=>`<button class="chip${k===S.ost?" on":""}" data-ost="${esc(k)}">${k}</button>`).join("")}</div>
+    <div style="max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch">
+      ${body||'<div class="line3"><span class="txt" style="color:var(--ink3)">这个状态下没有记录</span></div>'}
+    </div></div>`;
+}
 function today(){
   const id=cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
   const isList=!!P.project.labels;
-  const st=nightState(P.current),row=focusRow(P),n=row?.night||{};
+  const st=nightState(P.current),row=focusRowOf(P);
   const headline=isList?(row?.q||"清单里还没有内容"):P.current.q;
-  const cnt={};P.rows.forEach(r=>cnt[r.f]=(cnt[r.f]||0)+1);
-  let lines;
-  const ri0=P.rows.indexOf(row);
-  if(st==="done") lines=[["矛盾",n.cs,"c"],["结果",n.r,"r"],["召回",(n.recall?.[0]?.t||"")+(n.recall?.length?`<span class="meta">（共 ${n.recall.length} 条）</span>`:""),"x"]]
-    .map(([l,t,k])=>`<div class="line3 tap" data-go="detail" data-arg="${k}|${esc(row?.date||"")}|${ri0}" tabindex="0"><span class="lbl">${l}</span><span class="txt">${t||'<span class="meta">—</span>'}</span><span class="chev">›</span></div>`).join("");
-  else if(st==="fail") lines=`<div class="line3 tap" data-tab="system" tabindex="0"><span class="lbl" style="color:var(--bad)">⚠</span><span class="txt" style="color:var(--bad)">AI 夜间分析未完成${P.current.night?.error?"："+esc(P.current.night.error):"（7:00 前没有收到结果）"}。点击查看</span><span class="chev">›</span></div>`;
-  else lines=["矛盾","结果","召回"].map(l=>`<div class="line3"><span class="lbl">${l}</span><span class="txt" style="color:var(--ink3)">${st==="run"?"AI 分析中…":"等待 AI 分析"}</span></div>`).join("");
   const gates=(P.iteration.gates||[]).filter(g=>!g.decision).length;
   const ri=P.rows.indexOf(row);
+  const F=P.current.focus||{},W=F.why||null;
+  const whyHTML=W&&(W.blocked||W.why||W.unlock)
+    ? `${W.blocked?`<div class="kv"><span class="k">现在卡住了什么</span><div class="v">${esc(W.blocked)}</div></div>`:""}
+       ${W.why?`<div class="kv"><span class="k">为什么可能是瓶颈</span><div class="v">${esc(W.why)}</div></div>`:""}
+       ${W.unlock?`<div class="kv"><span class="k">解决它能推动什么</span><div class="v">${esc(W.unlock)}</div></div>`:""}
+       ${W.at?`<div class="meta" style="margin-top:6px">${esc(String(W.at).slice(0,10))} 与 AI 讨论后确认${W.by?"　·　"+esc(W.by):""}</div>`:""}`
+    : `<div class="small" style="color:var(--ink3)">尚未确认选择理由</div>`;
   return `<div class="body">
     <h1 class="h1">今天</h1>
     <div class="row" style="flex-wrap:wrap"><span class="chip" data-go="project" tabindex="0">${esc(P.project.name)} ›</span><span class="meta">${rel(P.current.writtenAt)}写入</span>${nightPill(st)}</div>
-    <div class="card"><div class="h2" style="margin:0 0 6px">${isList?"优先级最高的一条":"今天从这里开始"}</div>
+    <div class="card"><div class="h2" style="margin:0 0 6px">优先级最高的一条</div>
       <p class="q">${esc(headline)}</p>
-      ${isList&&row?`<div class="row" style="margin-top:10px;gap:8px"><span class="pill ${row.f==="够用了"?"ok":"bd"}">${esc(row.f)}</span><span class="meta">优先 ${esc(row.cols?.[PRI]||"–")}</span></div>`:""}</div>
-    ${isList?`<div class="row" style="flex-wrap:wrap;gap:8px">
-      ${STS.filter(k=>cnt[k]).map(k=>`<button class="fp" data-tofilter="${id}|${k}"><b>${cnt[k]}</b>${k}</button>`).join("")}</div>`:""}
-    <div class="card" style="padding:4px 14px">${lines}</div>
+      ${isList&&row?`<div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><span class="pill ${row.f==="够用了"||row.f==="已确认"?"ok":"bd"}">${esc(row.f)}</span><span class="meta">优先 ${esc(row.cols?.[PRI]||"–")}　·　${esc(P.project.name)}${F.manual?"　·　你选的":""}</span></div>`:""}
+      <div class="how" style="margin-top:12px"><b>为什么它是优先级最高的一条？</b>${whyHTML}</div></div>
     <button class="btn" data-go="row" data-arg="${esc(row?.date||"")}|${ri}|${esc(id)}">开始 →</button>
     ${st==="wait"||st==="run"
-      ? `<div class="card small">${st==="run"?"AI 正在分析…":"已排队。从现在起每个整点试一次，早上 8:00 截止。跑完这三张卡就换成新的。"}</div>`
+      ? `<div class="card small">${st==="run"?"AI 正在分析…":"已排队。从现在起每个整点试一次，早上 8:00 截止。"}</div>`
       : `<button class="btn ghost" data-reanalyze="${esc(id)}">问题写完了，重新分析 →</button>`}
+    ${openListHTML()}
     <div class="card tap row" data-go="gate" tabindex="0"><b>需要你判断</b>${gates?`<span class="pill ok">${gates}</span>`:'<span class="meta">无</span>'}<span class="chev">›</span></div>
     <div class="card tap row" data-sheet tabindex="0"><b>其他项目</b><span class="meta">${D.index.length-1}</span><span class="chev">›</span></div>
   </div>${nav("today")}`;
@@ -459,7 +513,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-17d";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-28a";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1418,7 +1472,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
   if(d.sop==="new"){
     const pid=S.arg||cur(),pj2=D.p[pid]?.project,tk=pj2&&curTrack(pj2);
@@ -1429,6 +1483,9 @@ document.addEventListener("click",async e=>{
   }
   if(d.cof){S.cof=d.cof;S.coall=false;return render()}
   if(d.coall){S.coall=!S.coall;return render()}
+  if(d.ost){S.ost=d.ost;return render()}
+  if(d.ogp){S.og[d.ogp]=S.og[d.ogp]===false;return render()}
+  if(d.setfocus){const [fp,fi]=d.setfocus.split("|");return setFocus(fp,+fi)}
   if(d.track){S.track=d.track;S.sop=0;S.open={};return render()}
   if(d.sop!=null&&!d.saveppl&&!d.delppl){S.sop=+d.sop;return render()}
   if(d.gap!=null){S.gap=d.gap;S.newgap=false;return render()}
