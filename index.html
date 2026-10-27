@@ -397,38 +397,24 @@ async function syncFocus(id){
 // 两个切换：「待改」= 还没动的（量化/财富/人与关系那三个项目把这一档叫「待验」）；「改了未验」只有强化学习项目有
 const OST={"待改":["待改","待验"],"改了未验":["改了未验"]};
 function openListHTML(){
-  const want=OST[S.ost]||OST["待改"];
-  const projs=(D.index||[]).filter(x=>x.state!=="archived");
-  const body=projs.map(x=>{
-    const P=D.p[x.id];
-    if(!P) return `<div class="card" style="padding:16px;color:var(--ink3)">${esc(x.name)} · 载入中…</div>`;
-    const hit=P.rows.map((r,i)=>({r,i})).filter(o=>want.includes(o.r.f))
-      .sort((a,b)=>(priNum(b.r)-priNum(a.r))||String(b.r.date||"").localeCompare(String(a.r.date||"")));
-    if(!hit.length)return "";
-    const symbol=({rl:"✦",quant:"▥",wealth:"◎",people:"♧"})[x.id]||"•";
-    return `<section class="card" style="padding:16px 20px;margin:0 0 12px">
-      <div class="row" style="gap:10px;padding:2px 0 12px">
-        <span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;flex-shrink:0;border-radius:50%;background:var(--bg);color:var(--accent);font-size:17px">${symbol}</span>
-        <b style="font-size:16px;min-width:0;flex:1">${esc(x.name)}</b>
-        <span class="meta" style="flex-shrink:0">${hit.length} 条</span>
+  const id=cur(),P=D.p[id];if(!P)return "";
+  const states=stsOf(P.project);
+  const options=states.filter(k=>!["够用了","已确认","不做","已被推翻"].includes(k));
+  const selected=options.includes(S.ost)?S.ost:options[0];
+  const hit=P.rows.map((r,i)=>({r,i})).filter(o=>o.r.f===selected)
+    .sort((a,b)=>(priNum(b.r)-priNum(a.r))||String(b.r.date||"").localeCompare(String(a.r.date||"")));
+  return `<details id="explore-details" class="card" style="padding:18px 20px;border-left:4px solid #87A5C2">
+    <summary style="cursor:pointer;font-weight:700;color:var(--ink)">◈ 值得探索的方向 <span class="meta" style="font-weight:400">· 按需展开</span></summary>
+    <div style="margin-top:16px">
+      <div class="row" style="gap:7px;flex-wrap:wrap;padding:0 0 14px">
+        ${options.map(k=>`<button class="chip${k===selected?" on":""}" data-ost="${esc(k)}">${esc(k)}</button>`).join("")}
       </div>
-      ${hit.map(o=>`<div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-top:1px solid var(--line)">
-        <div data-go="row" data-arg="${esc(o.r.date||"")}|${o.i}|${esc(x.id)}" tabindex="0" class="tap" style="flex:1;min-width:0;cursor:pointer">
-          <div style="font-weight:600;line-height:1.65;overflow-wrap:anywhere">${esc(o.r.q||"")}</div>
-          <div class="meta" style="margin-top:5px">优先 ${esc((o.r.cols||{})[PRI]||"–")}</div>
-        </div>
-        
-      </div>`).join("")}
-    </section>`;
-  }).join("");
-  return `<details class="card" style="margin-top:12px;padding:14px 16px"><summary style="cursor:pointer;font-weight:650">值得探索的方向 <span class="meta" style="font-weight:400">· 按需展开</span></summary><div style="margin-top:12px">
-    <div class="row" style="gap:8px;flex-wrap:wrap;padding:12px 2px 16px">
-      <b>值得探索的方向</b>
-      <span style="margin-left:auto"></span>
-      ${Object.keys(OST).map(k=>`<button class="chip${k===S.ost?" on":""}" data-ost="${esc(k)}">${k}</button>`).join("")}
+      ${hit.map(o=>`<div class="tap" data-go="row" data-arg="${esc(o.r.date||"")}|${o.i}|${esc(id)}" tabindex="0" style="padding:13px 0;border-top:1px solid var(--line)">
+        <div style="font-weight:600;line-height:1.6">${esc(o.r.q||"")}</div>
+        <div class="meta" style="margin-top:5px">优先 ${esc(o.r.cols?.[PRI]||"–")} · ${esc(o.r.f)}</div>
+      </div>`).join("")||'<div class="small">这个状态下暂无探索方向</div>'}
     </div>
-    ${body||'<div class="card meta" style="padding:16px">这个状态下没有记录</div>'}
-  </div></details>`;
+  </details>`;
 }
 function today(){
   const id=cur(),P=D.p[id];if(!P)return '<div class="center">加载中…</div>';
@@ -444,22 +430,33 @@ function today(){
     ["RL Data 已经从笔记和方案，变成可以打开使用的网页。","强化学习系统 · 第一版上线"]
   ];
   const changeHTML=(r,i)=>`<div style="padding:${i?13:2}px 0;border-top:${i?"1px solid var(--line)":"0"}"><div style="font-weight:600;line-height:1.6;font-size:${i?"15px":"18px"}">${esc(r[0])}</div><div class="meta" style="margin-top:6px">${esc(r[1])}</div></div>`;
-  return `<div class="body">
-    <h1 class="h1">今天</h1>
-    <div class="row" style="flex-wrap:wrap"><span class="chip" data-go="project" tabindex="0">${esc(P.project.name)} ›</span></div>
-    <div class="card" style="padding:22px;background:linear-gradient(135deg,var(--card) 72%,rgba(217,178,104,.10))">
-      <div class="h2" style="margin:0 0 18px;color:var(--accent)">✧ 我的世界已经发生的变化</div>
+  const focus=focusRowOf(P),idx=P.rows.indexOf(focus),startArg=idx>=0?`${esc(focus.date)}|${idx}|${esc(id)}`:"";
+  return `<div class="body today-new">
+    <section class="card" style="padding:24px 22px 20px;background:linear-gradient(140deg,var(--accentSoft),var(--paper) 75%);border-top:4px solid #D6AE55">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="h2" style="margin:0;color:var(--accent)">✧ 我的世界已经发生的变化</div>
+        <span style="font-size:21px;color:var(--accent)">✦</span>
+      </div>
       ${changeHTML(changes[0],0)}
-      <details style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
+      <details style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
         <summary style="cursor:pointer;font-weight:600">展开所有变化</summary>
         <div style="margin-top:12px">${changes.slice(1).map((r,i)=>changeHTML(r,i+1)).join("")}</div>
       </details>
+    </section>
+    <div class="row" style="align-items:center;justify-content:space-between;padding:4px 2px">
+      <h1 class="h1" style="font-size:25px">今天</h1>
+      <span class="chip tap" data-go="project" tabindex="0">${esc(P.project.name)} ›</span>
     </div>
-    <div class="card">
-      <div class="h2" style="margin:0 0 12px">⚒ 接下来我想创造什么？</div>
-      <p class="q">${id==="rl"?"让推进长期项目本身成为一件快乐、有收获、愿意继续的事。":esc(P.current?.q||"和 AI 讨论下一步想创造的东西")}</p>
-      <div class="small">由你与 AI 讨论后确认，不自动分配任务。</div>
-    </div>
+    <section class="card" style="padding:20px 18px;background:linear-gradient(125deg,var(--paper),var(--soft));border-left:4px solid #78A996">
+      <div class="h2" style="margin:0 0 12px;color:var(--fx)">⚒ 接下来我想创造什么？</div>
+      <div class="row" style="align-items:center;gap:12px">
+        <div style="flex:1;min-width:0">
+          <p class="q" style="font-size:18px;line-height:1.55;margin:0 0 8px">${id==="rl"?"让推进长期项目本身成为一件快乐、有收获、愿意继续的事。":esc(P.current?.q||"和 AI 讨论下一步想创造的东西")}</p>
+          <div class="small">由你与 AI 讨论后确认</div>
+        </div>
+        <button class="btn" style="flex-shrink:0;min-width:68px;padding:10px 14px" data-go="${startArg?"row":"project"}" ${startArg?`data-arg="${startArg}"`:`data-arg="${esc(id)}"`}>开始 ›</button>
+      </div>
+    </section>
     ${openListHTML()}
     <div class="card tap row" data-go="gate" tabindex="0"><b>需要你判断</b>${gates?`<span class="pill ok">${gates}</span>`:'<span class="meta">无</span>'}<span class="chev">›</span></div>
     <div class="card tap row" data-sheet tabindex="0"><b>其他项目</b><span class="meta">${D.index.length-1}</span><span class="chev">›</span></div>
@@ -525,7 +522,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-28d";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-28e";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1224,13 +1221,13 @@ function system(){
 
 /* ============ 渲染 ============ */
 function render(){
-  const a=$("#app");let h;
+  const a=$("#app");if(S.screen==="today"){const d=a.querySelector("#explore-details");if(d)S.exploreOpen=d.open}let h;
   if(!cfg.token||S.screen==="settings") h=settings();
   else if(S.loading&&!D.global) h=`<div class="center">读取数据中…</div>`;
   else if(S.err&&!D.global) h=`<div class="body"><h1 class="h1">读取失败</h1><div class="banner bd">${esc(S.err)}</div><p class="small">检查令牌是否过期、仓库名是否正确，或网络是否正常。</p><button class="btn" data-reload>重试</button><button class="btn ghost" data-tab="settings">修改连接</button></div>`;
   else h=({today,row:rowPage,detail,project,node:nodePage,meth:methPage,method:methodPage,list:listPage,main:mainPage,iter,gate,system,ppl:pplPage,person:personPage,co:coPage,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
   const vb=S.newver?`<div class="banner ok tap" data-newver="1" style="margin:0 0 8px">有新版本 ${esc(S.newver)}（你现在是 ${APPVER}）· 点这里刷新</div>`:"";
-  a.innerHTML=vb+h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
+  a.innerHTML=vb+h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");\n  if(S.screen==="today"&&S.exploreOpen){const d=a.querySelector("#explore-details");if(d)d.open=true}
   if(S.screen==="project"&&!S.edit){drawEdges();fitBoard()}
 }
 // GitHub Pages 的 index.html 会被浏览器缓存很久，在手机上尤其顽固。
