@@ -433,20 +433,26 @@ function openListHTML(){
 function today(){
   const id=cur(),P=D.p[id];if(!P)return '<div class="center">加载中…</div>';
   const gates=(P.iteration.gates||[]).filter(g=>!g.decision).length;
-  // 只展示已有记录，不把待验证的设计假设当成现实成果。
-  const changes=(P.rows||[]).filter(r=>["够用了","已确认"].includes(r.f))
-    .slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
-  const changeHTML=r=>'<div style="padding:10px 0;border-top:1px solid var(--line)"><div style="font-weight:600">'+esc(r.q||"已记录的进展")+'</div><div class="meta">'+esc(r.date||"")+' · '+esc(r.f)+'</div></div>';
-  const recent=changes[0];
+  // 人工整理的已发生变化：证据来自项目历史和实际使用，不从问题标题推断成果。
+  const changes=[
+    ["现在，在家也能通过 ChatGPT 语音自然进入项目状态。","本人近期使用 · 其他用户未验证"],
+    ["公司研究已经可以通过可打断的语音讨论逐步理解，而不必只读长报告。","本人首次试用 · 尚未完成整轮验证"],
+    ["现在，只用 iPad 也能调用真实量化工具和数据环境。","量化项目 · 已实际调用"],
+    ["财富、量化、人与关系三个项目，已经拥有可阅读的 SOP 主线。","跨项目 · 已核对结构"],
+    ["夜间分析已经能够自动运行，并连续两轮写入正确记录。","强化学习系统 · 真实运行记录"],
+    ["长期项目历史已经导入 RL Data，能够被后续分析引用。","强化学习系统 · 已有引用记录"],
+    ["RL Data 已经从笔记和方案，变成可以打开使用的网页。","强化学习系统 · 第一版上线"]
+  ];
+  const changeHTML=(r,i)=>`<div style="padding:${i?13:2}px 0;border-top:${i?"1px solid var(--line)":"0"}"><div style="font-weight:600;line-height:1.6;font-size:${i?"15px":"18px"}">${esc(r[0])}</div><div class="meta" style="margin-top:6px">${esc(r[1])}</div></div>`;
   return `<div class="body">
     <h1 class="h1">今天</h1>
     <div class="row" style="flex-wrap:wrap"><span class="chip" data-go="project" tabindex="0">${esc(P.project.name)} ›</span></div>
-    <div class="card">
-      <div class="h2" style="margin:0 0 14px">✧ 我的世界已经发生的变化</div>
-      ${recent?changeHTML(recent):'<div class="small">还没有标记为已确认的变化。可以从项目历史中逐步整理真实成果。</div>'}
-      <details style="margin-top:12px"><summary style="cursor:pointer">展开所有变化</summary>
-        <div class="small" style="margin:10px 0">以下来自当前项目标记为「够用了／已确认」的记录；记录状态不等于独立验证。</div>
-        ${changes.slice(1).map(changeHTML).join("")||'<div class="small">暂时没有更多已确认记录</div>'}
+    <div class="card" style="padding:22px;background:linear-gradient(135deg,var(--card) 72%,rgba(217,178,104,.10))">
+      <div class="h2" style="margin:0 0 18px;color:var(--accent)">✧ 我的世界已经发生的变化</div>
+      ${changeHTML(changes[0],0)}
+      <details style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
+        <summary style="cursor:pointer;font-weight:600">展开所有变化</summary>
+        <div style="margin-top:12px">${changes.slice(1).map((r,i)=>changeHTML(r,i+1)).join("")}</div>
       </details>
     </div>
     <div class="card">
@@ -519,7 +525,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-28c";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-28d";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
