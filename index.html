@@ -403,7 +403,7 @@ function openListHTML(){
   const selected=options.includes(S.ost)?S.ost:options[0];
   const hit=P.rows.map((r,i)=>({r,i})).filter(o=>o.r.f===selected)
     .sort((a,b)=>(priNum(b.r)-priNum(a.r))||String(b.r.date||"").localeCompare(String(a.r.date||"")));
-  return `<details id="explore-details" class="card" style="padding:18px 20px;border-left:4px solid #87A5C2">
+  return `<details id="explore-details" class="card" style="padding:18px 20px;border:1px solid #e7d9b6;background:linear-gradient(125deg,#fffefa,#fbf5e8)">
     <summary style="cursor:pointer;font-weight:700;color:var(--ink)">◈ 值得探索的方向 <span class="meta" style="font-weight:400">· 按需展开</span></summary>
     <div style="margin-top:16px">
       <div class="row" style="gap:7px;flex-wrap:wrap;padding:0 0 14px">
@@ -432,7 +432,7 @@ function today(){
   const changeHTML=(r,i)=>`<div style="padding:${i?13:2}px 0;border-top:${i?"1px solid var(--line)":"0"}"><div style="font-weight:600;line-height:1.6;font-size:${i?"15px":"18px"}">${esc(r[0])}</div><div class="meta" style="margin-top:6px">${esc(r[1])}</div></div>`;
   const focus=id==="rl"?(P.rows.find(r=>r.q.includes("长期项目为什么缺少即时吸引力"))||focusRowOf(P)):focusRowOf(P),idx=P.rows.indexOf(focus),startArg=idx>=0?`${esc(focus.date)}|${idx}|${esc(id)}`:"";
   return `<div class="body today-new">
-    <section class="card" style="padding:24px 22px 20px;background:linear-gradient(140deg,var(--accentSoft),var(--paper) 75%);border-top:4px solid #D6AE55">
+    <section class="card" style="padding:24px 22px 20px;background:linear-gradient(130deg,#fbefd0 0%,#fffdf8 70%,#fff 100%);border:1px solid #e7d9b6;border-top:4px solid #d5ac54">
       <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
         <div class="h2" style="margin:0;color:var(--accent)">✧ 我的世界已经发生的变化</div>
         <span style="font-size:21px;color:var(--accent)">✦</span>
@@ -447,11 +447,11 @@ function today(){
       <h1 class="h1" style="font-size:25px">今天</h1>
       <span class="chip tap" data-go="project" tabindex="0">${esc(P.project.name)} ›</span>
     </div>
-    <section class="card" style="padding:20px 18px;background:linear-gradient(125deg,var(--paper),var(--soft));border-left:4px solid #78A996">
-      <div class="h2" style="margin:0 0 12px;color:var(--fx)">⚒ 接下来我想创造什么？</div>
+    <section class="card" style="padding:22px 20px;background:linear-gradient(125deg,#fffefa 15%,#fbf3df 100%);border:1px solid #e7d9b6;border-top:3px solid #d5ac54">
+      <div class="h2" style="margin:0 0 12px;color:#8b6b15">⚒ 接下来我想创造什么？</div>
       <p class="q" style="font-size:18px;line-height:1.65;margin:0 0 12px;overflow-wrap:anywhere;word-break:normal;white-space:normal">${id==="rl"?"让推进长期项目本身成为一件快乐、有收获、愿意继续的事。":esc(P.current?.q||"和 AI 讨论下一步想创造的东西")}</p>
       <div class="small" style="margin-bottom:16px">由你与 AI 讨论后确认</div>
-      <button class="btn" style="display:block;width:100%;max-width:100%;padding:12px 16px;text-align:center" data-go="${startArg?"row":"project"}" ${startArg?`data-arg="${startArg}"`:`data-arg="${esc(id)}"`}>开始 ›</button>
+      <button class="btn" style="display:block;width:100%;max-width:100%;padding:12px 16px;text-align:center;background:linear-gradient(100deg,#a88729,#80620f);color:#fff;border:0;border-radius:12px" data-go="${startArg?"row":"project"}" ${startArg?`data-arg="${startArg}"`:`data-arg="${esc(id)}"`}>开始 ›</button>
     </section>
     ${openListHTML()}
     <div class="card tap row" data-go="gate" tabindex="0"><b>需要你判断</b>${gates?`<span class="pill ok">${gates}</span>`:'<span class="meta">无</span>'}<span class="chev">›</span></div>
@@ -518,7 +518,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-28h";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-28i";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
