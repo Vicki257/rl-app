@@ -430,7 +430,7 @@ function today(){
     ["RL Data 已经从笔记和方案，变成可以打开使用的网页。","强化学习系统 · 第一版上线"]
   ];
   const changeHTML=(r,i)=>`<div style="padding:${i?13:2}px 0;border-top:${i?"1px solid var(--line)":"0"}"><div style="font-weight:600;line-height:1.6;font-size:${i?"15px":"18px"}">${esc(r[0])}</div><div class="meta" style="margin-top:6px">${esc(r[1])}</div></div>`;
-  const focus=focusRowOf(P),idx=P.rows.indexOf(focus),startArg=idx>=0?`${esc(focus.date)}|${idx}|${esc(id)}`:"";
+  const focus=id==="rl"?(P.rows.find(r=>r.q.includes("长期项目为什么缺少即时吸引力"))||focusRowOf(P)):focusRowOf(P),idx=P.rows.indexOf(focus),startArg=idx>=0?`${esc(focus.date)}|${idx}|${esc(id)}`:"";
   return `<div class="body today-new">
     <section class="card" style="padding:24px 22px 20px;background:linear-gradient(140deg,var(--accentSoft),var(--paper) 75%);border-top:4px solid #D6AE55">
       <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -522,7 +522,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-28f";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-28g";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
