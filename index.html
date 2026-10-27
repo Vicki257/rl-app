@@ -401,16 +401,18 @@ function openListHTML(){
   const projs=(D.index||[]).filter(x=>x.state!=="archived");
   const body=projs.map(x=>{
     const P=D.p[x.id];
-    if(!P) return `<div style="padding:16px 0;color:var(--ink3)">${esc(x.name)} · 载入中…</div>`;
+    if(!P) return `<div class="card" style="padding:16px;color:var(--ink3)">${esc(x.name)} · 载入中…</div>`;
     const hit=P.rows.map((r,i)=>({r,i})).filter(o=>want.includes(o.r.f))
       .sort((a,b)=>(priNum(b.r)-priNum(a.r))||String(b.r.date||"").localeCompare(String(a.r.date||"")));
     if(!hit.length)return "";
-    return `<section class="ogp" style="padding:14px 0 4px">
-      <div class="row" style="justify-content:space-between;gap:12px;padding:8px 0 12px">
-        <b style="font-size:16px;min-width:0">${esc(x.name)}</b>
+    const symbol=({rl:"✦",quant:"▥",wealth:"◎",people:"♧"})[x.id]||"•";
+    return `<section class="card" style="padding:16px 20px;margin:0 0 12px">
+      <div class="row" style="gap:10px;padding:2px 0 12px">
+        <span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;flex-shrink:0;border-radius:50%;background:var(--bg);color:var(--accent);font-size:17px">${symbol}</span>
+        <b style="font-size:16px;min-width:0;flex:1">${esc(x.name)}</b>
         <span class="meta" style="flex-shrink:0">${hit.length} 条</span>
       </div>
-      ${hit.map(o=>`<div style="display:flex;align-items:flex-start;gap:12px;padding:15px 0;border-top:1px solid var(--line)">
+      ${hit.map(o=>`<div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-top:1px solid var(--line)">
         <div data-go="row" data-arg="${esc(o.r.date||"")}|${o.i}|${esc(x.id)}" tabindex="0" class="tap" style="flex:1;min-width:0;cursor:pointer">
           <div style="font-weight:600;line-height:1.65;overflow-wrap:anywhere">${esc(o.r.q||"")}</div>
           <div class="meta" style="margin-top:5px">优先 ${esc((o.r.cols||{})[PRI]||"–")}</div>
@@ -419,13 +421,13 @@ function openListHTML(){
       </div>`).join("")}
     </section>`;
   }).join("");
-  return `<div class="card" style="padding:16px 24px 20px">
-    <div class="row" style="gap:8px;flex-wrap:wrap;padding:4px 0 12px">
+  return `<div style="margin-top:4px">
+    <div class="row" style="gap:8px;flex-wrap:wrap;padding:12px 2px 16px">
       <b>所有未解决问题</b>
       <span style="margin-left:auto"></span>
       ${Object.keys(OST).map(k=>`<button class="chip${k===S.ost?" on":""}" data-ost="${esc(k)}">${k}</button>`).join("")}
     </div>
-    ${body||'<div class="meta" style="padding:16px 0">这个状态下没有记录</div>'}
+    ${body||'<div class="card meta" style="padding:16px">这个状态下没有记录</div>'}
   </div>`;
 }
 function today(){
