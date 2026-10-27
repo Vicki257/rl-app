@@ -449,13 +449,9 @@ function today(){
     </div>
     <section class="card" style="padding:20px 18px;background:linear-gradient(125deg,var(--paper),var(--soft));border-left:4px solid #78A996">
       <div class="h2" style="margin:0 0 12px;color:var(--fx)">⚒ 接下来我想创造什么？</div>
-      <div class="row" style="align-items:center;gap:12px">
-        <div style="flex:1;min-width:0">
-          <p class="q" style="font-size:18px;line-height:1.55;margin:0 0 8px">${id==="rl"?"让推进长期项目本身成为一件快乐、有收获、愿意继续的事。":esc(P.current?.q||"和 AI 讨论下一步想创造的东西")}</p>
-          <div class="small">由你与 AI 讨论后确认</div>
-        </div>
-        <button class="btn" style="flex-shrink:0;min-width:68px;padding:10px 14px" data-go="${startArg?"row":"project"}" ${startArg?`data-arg="${startArg}"`:`data-arg="${esc(id)}"`}>开始 ›</button>
-      </div>
+      <p class="q" style="font-size:18px;line-height:1.65;margin:0 0 12px;overflow-wrap:anywhere;word-break:normal;white-space:normal">${id==="rl"?"让推进长期项目本身成为一件快乐、有收获、愿意继续的事。":esc(P.current?.q||"和 AI 讨论下一步想创造的东西")}</p>
+      <div class="small" style="margin-bottom:16px">由你与 AI 讨论后确认</div>
+      <button class="btn" style="display:block;width:100%;max-width:100%;padding:12px 16px;text-align:center" data-go="${startArg?"row":"project"}" ${startArg?`data-arg="${startArg}"`:`data-arg="${esc(id)}"`}>开始 ›</button>
     </section>
     ${openListHTML()}
     <div class="card tap row" data-go="gate" tabindex="0"><b>需要你判断</b>${gates?`<span class="pill ok">${gates}</span>`:'<span class="meta">无</span>'}<span class="chev">›</span></div>
@@ -522,7 +518,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-28g";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-28h";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
