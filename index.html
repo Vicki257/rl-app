@@ -453,6 +453,12 @@ function today(){
       <div class="small" style="margin-bottom:16px">由你与 AI 讨论后确认</div>
       <button class="btn" style="display:block;width:100%;max-width:100%;padding:12px 16px;text-align:center;background:linear-gradient(100deg,#a88729,#80620f);color:#fff;border:0;border-radius:12px" data-go="${startArg?"row":"project"}" ${startArg?`data-arg="${startArg}"`:`data-arg="${esc(id)}"`}>开始 ›</button>
     </section>
+    <div class="card" style="padding:16px 18px;background:linear-gradient(115deg,#fffefa,#fbf2dc);border:1px solid #e7d9b6">
+      <div class="row" style="gap:12px;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;min-width:190px"><b style="font-size:15px">五步共创 · 先质疑，再行动</b><div class="small">和 AI 逐条检查需求、合并同源瓶颈</div></div>
+        <button class="chip" data-go="method" data-arg="m-184">打开提示词 ›</button>
+      </div>
+    </div>
     ${openListHTML()}
     <div class="card tap row" data-go="gate" tabindex="0"><b>需要你判断</b>${gates?`<span class="pill ok">${gates}</span>`:'<span class="meta">无</span>'}<span class="chev">›</span></div>
     <div class="card tap row" data-sheet tabindex="0"><b>其他项目</b><span class="meta">${D.index.length-1}</span><span class="chev">›</span></div>
@@ -518,7 +524,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-28i";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-28j";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -996,6 +1002,7 @@ function methodPage(){
     <div class="row"><span class="meta">${esc(m.projName||"")}</span>
       <button class="back" style="margin-left:auto" data-edit>编辑</button></div>
     <div class="card"><b>什么时候用得上</b><div class="kv"><span class="v">${esc(m.when)}</span></div></div>
+    ${m.id==="m-184"?'<button class="btn" data-copyfive="1" style="background:linear-gradient(100deg,#a88729,#80620f);color:white">复制当前项目的五步聊天提示词</button>':""}
     <div class="card"><b>它说的是什么</b><div class="kv"><span class="v">${esc(m.what)}</span></div></div>
     <div class="card"><div class="kv"><span class="k">哪一天总结出来的</span><span class="v">${esc(m.src||"—")}</span></div></div>
   </div>`;
@@ -1478,8 +1485,18 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
+  if(d.copyfive){
+    const m=findM("m-184"),id=cur(),P=D.p[id];
+    if(!m||!P)return toast("当前项目尚未加载");
+    const open=P.rows.filter(r=>!["够用了","不做","已确认","已被推翻"].includes(r.f));
+    const brief=open.map((r,i)=>`${i+1}. [${r.f}] ${r.q}（${r.date}；优先 ${r.cols?.[PRI]||"未定"}）`).join("\\n");
+    const prompt=m.what+"\\n\\n【本次项目快照（可能不含最新外部变更，开始前须核对仓库）】\\n项目："+P.project.name+"\\n目标："+trF(P.project,"goal")+"\\n奖励："+trF(P.project,"reward")+"\\n未关闭问题："+open.length+" 条\\n"+brief;
+    try{await navigator.clipboard.writeText(prompt);toast("已复制，粘贴到 ChatGPT 语音对话即可")}
+    catch(e){toast("复制受浏览器限制，请长按提示词手动复制")}
+    return;
+  }
   if(d.sop==="new"){
     const pid=S.arg||cur(),pj2=D.p[pid]?.project,tk=pj2&&curTrack(pj2);
     if(!tk){toast("这个项目还没有路线");return}
