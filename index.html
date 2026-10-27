@@ -452,9 +452,6 @@ function today(){
       ${isList&&row?`<div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap"><span class="pill ${row.f==="够用了"||row.f==="已确认"?"ok":"bd"}">${esc(row.f)}</span><span class="meta">优先 ${esc(row.cols?.[PRI]||"–")}　·　${esc(P.project.name)}${F.manual?"　·　你选的":""}</span></div>`:""}
       <div class="how" style="margin-top:12px"><b>为什么它是优先级最高的一条？</b>${whyHTML}</div></div>
     <button class="btn" data-go="row" data-arg="${esc(row?.date||"")}|${ri}|${esc(id)}">开始 →</button>
-    ${st==="wait"||st==="run"
-      ? `<div class="card small">${st==="run"?"AI 正在分析…":"已排队。从现在起每个整点试一次，早上 8:00 截止。"}</div>`
-      : `<button class="btn ghost" data-reanalyze="${esc(id)}">问题写完了，重新分析 →</button>`}
     ${openListHTML()}
     <div class="card tap row" data-go="gate" tabindex="0"><b>需要你判断</b>${gates?`<span class="pill ok">${gates}</span>`:'<span class="meta">无</span>'}<span class="chev">›</span></div>
     <div class="card tap row" data-sheet tabindex="0"><b>其他项目</b><span class="meta">${D.index.length-1}</span><span class="chev">›</span></div>
