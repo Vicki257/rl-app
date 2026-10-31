@@ -525,7 +525,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-31c";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-31d";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1084,14 +1084,17 @@ function stepHTML(h,LBS=LBS0){
   </div>`;
 }
 // 用这一步的操作流程去跑某个项目，实际得到了什么。只有写了 res 字段的节点才显示这一栏。
+const dkey=d=>String(d||"").replace(/[\/.]/g,"-");   // 2026/09/18 和 2026-09-18 排在一起
 function resHTML(pid,nid,n){
   if(!n.res) return "";
   // 排序只改显示顺序，跳转仍用原始下标，所以排序不会让链接错位
-  const rs=(n.res||[]).map((r,i)=>({r,i}))
-    .sort((a,b)=>String(b.r.date||"").localeCompare(String(a.r.date||"")));
+  const rs=(n.res||[]).map((r,i)=>({r,i})).sort((a,b)=>dkey(b.r.date).localeCompare(dkey(a.r.date)));
   const brief=t=>{const x=String(t||"").replace(/\s+/g," ").trim();return x?(x.length>24?x.slice(0,24)+"…":x):"还没写"};
-  return `<div class="card"><b>跑过的对象与结果</b>
-    <div class="small" style="margin:4px 0 10px">用这一步的操作流程去跑某个项目，实际得到了什么。点一行打开那一次的记录。</div>
+  const k=`restbl|${pid}|${nid}`,on=!S.open[k];        // 默认展开，点标题收起
+  return `<div class="card">
+    <div class="fold tap" data-toggle="${k}" tabindex="0"><b>跑过的对象与结果</b>
+      <span class="meta" style="margin-left:8px">${rs.length} 条</span><span class="chev">${on?"⌄":"›"}</span></div>
+    ${on?`<div class="small" style="margin:8px 0 10px">用这一步的操作流程去跑某个项目，实际得到了什么。点一行打开那一次的记录。</div>
     <div class="tbl sm"><table><thead><tr>
       <th style="width:19%">日期</th><th style="width:19%">项目</th><th>结果</th><th style="width:24%">详细</th></tr></thead><tbody>
       ${rs.map(o=>`<tr class="tap" data-go="res" data-arg="${esc(pid)}|${esc(nid)}|${o.i}" tabindex="0">
@@ -1101,7 +1104,7 @@ function resHTML(pid,nid,n){
         <td class="meta">${esc(brief(o.r.detail))}</td></tr>`).join("")
       ||`<tr><td colspan="4" class="small">还没有记录。用这一步跑过一个项目之后，点下面的 ＋ 记一条。</td></tr>`}
     </tbody></table></div>
-    <button class="btn ghost" data-addres="${esc(pid)}|${esc(nid)}" style="margin-top:8px;width:100%">＋ 新建一条记录</button></div>`;
+    <button class="btn ghost" data-addres="${esc(pid)}|${esc(nid)}" style="margin-top:8px;width:100%">＋ 新建一条记录</button>`:""}</div>`;
 }
 // 一条记录自己的页面
 function resPage(){
@@ -1112,10 +1115,11 @@ function resPage(){
   const ttl=String(n.name||"").replace(/｜.*$/,"");
   if(S.edit) return `<div class="body">${topBar(ttl+" · 记录","编辑")}
     <div class="card" style="display:flex;flex-direction:column;gap:8px">
-      <label class="small" for="r_date">日期</label><input id="r_date" type="date" value="${esc(r.date||"")}">
+      <label class="small" for="r_date">日期</label>
+      <input id="r_date" type="text" inputmode="numeric" placeholder="2026/09/18" value="${esc(r.date||"")}">
       <label class="small" for="r_proj">项目</label>
-      <select id="r_proj">${(D.index||[]).map(x=>`<option${x.name===r.proj?" selected":""}>${esc(x.name)}</option>`).join("")}${
-        (D.index||[]).some(x=>x.name===r.proj)||!r.proj?"":`<option selected>${esc(r.proj)}</option>`}</select>
+      <input id="r_proj" type="text" list="r_projs" placeholder="写哪个项目，或任何对象" value="${esc(r.proj||"")}">
+      <datalist id="r_projs">${(D.index||[]).map(x=>`<option value="${esc(x.name)}">`).join("")}</datalist>
       <label class="small" for="r_r">结果（一两句说清这次跑出来什么）</label><textarea id="r_r">${esc(r.r||"")}</textarea>
       <label class="small" for="r_d">详细</label><textarea id="r_d" style="min-height:240px">${esc(r.detail||"")}</textarea>
       <button class="btn" data-saveres="${esc(pid)}|${esc(nid)}|${i}">保存</button>
@@ -1130,7 +1134,7 @@ function resPage(){
 function addRes(pid,nid){
   const n=findNode(D.p[pid]?.project,nid);if(!n) return;
   n.res=n.res||[];
-  n.res.push({date:new Date(Date.now()+9*36e5).toISOString().slice(0,10),
+  n.res.push({date:new Date(Date.now()+9*36e5).toISOString().slice(0,10).replace(/-/g,"/"),
               proj:D.p[pid]?.project?.name||"",r:"",detail:"",_new:true});
   go("res",`${pid}|${nid}|${n.res.length-1}`);
   S.edit=true;render();                       // 新建的直接进编辑态；不按保存就不会写进仓库
