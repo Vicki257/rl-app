@@ -313,7 +313,7 @@ async function loadAll(){
   (D.index||[]).filter(x=>x.state!=="archived"&&x.id!==cur())
     .forEach(x=>loadProject(x.id,false,true).then(()=>render()).catch(()=>{}));
 }
-function toast(t){S.toast=t;render();setTimeout(()=>{S.toast="";render()},2200)}
+function toast(t){S.toast=t;render();setTimeout(()=>{S.toast="";const el=document.querySelector(".toast");if(el)el.remove();else render()},2200)}
 
 /* ============ 工具 ============ */
 function rel(iso){if(!iso)return"";const d=(Date.now()-new Date(iso))/864e5;if(d<1)return"今天";return Math.floor(d)+"天前"}
@@ -525,7 +525,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-31a";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-31c";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1086,19 +1086,61 @@ function stepHTML(h,LBS=LBS0){
 // 用这一步的操作流程去跑某个项目，实际得到了什么。只有写了 res 字段的节点才显示这一栏。
 function resHTML(pid,nid,n){
   if(!n.res) return "";
-  const rs=n.res||[];
+  // 排序只改显示顺序，跳转仍用原始下标，所以排序不会让链接错位
+  const rs=(n.res||[]).map((r,i)=>({r,i}))
+    .sort((a,b)=>String(b.r.date||"").localeCompare(String(a.r.date||"")));
+  const brief=t=>{const x=String(t||"").replace(/\s+/g," ").trim();return x?(x.length>24?x.slice(0,24)+"…":x):"还没写"};
   return `<div class="card"><b>跑过的对象与结果</b>
-    <div class="small" style="margin:4px 0 10px">用这一步的操作流程去跑某个项目，实际得到了什么。点一行展开详细。</div>
+    <div class="small" style="margin:4px 0 10px">用这一步的操作流程去跑某个项目，实际得到了什么。点一行打开那一次的记录。</div>
     <div class="tbl sm"><table><thead><tr>
-      <th style="width:22%">日期</th><th style="width:24%">项目</th><th>结果</th></tr></thead><tbody>
-      ${rs.map((r,i)=>{const k=`res|${pid}|${nid}|${i}`,on=!!S.open[k];
-        return `<tr class="tap" data-toggle="${k}" tabindex="0">
-          <td style="font-family:var(--mono);font-size:12px">${esc(r.date||"")}</td>
-          <td>${esc(r.proj||"")}</td>
-          <td>${esc(r.r||"")}　<span class="chev">${on?"⌄":"›"}</span></td></tr>
-        ${on?`<tr><td colspan="3"><div class="rdt">${esc(r.detail||"还没写详细")}</div></td></tr>`:""}`}).join("")
-      ||`<tr><td colspan="3" class="small">还没有记录。用这一步跑过一个项目之后，把日期、项目和结果写在这里。</td></tr>`}
-    </tbody></table></div></div>`;
+      <th style="width:19%">日期</th><th style="width:19%">项目</th><th>结果</th><th style="width:24%">详细</th></tr></thead><tbody>
+      ${rs.map(o=>`<tr class="tap" data-go="res" data-arg="${esc(pid)}|${esc(nid)}|${o.i}" tabindex="0">
+        <td style="font-family:var(--mono);font-size:12px">${esc(o.r.date||"")}</td>
+        <td>${esc(o.r.proj||"")}</td>
+        <td>${esc(o.r.r||"")}　<span class="chev">›</span></td>
+        <td class="meta">${esc(brief(o.r.detail))}</td></tr>`).join("")
+      ||`<tr><td colspan="4" class="small">还没有记录。用这一步跑过一个项目之后，点下面的 ＋ 记一条。</td></tr>`}
+    </tbody></table></div>
+    <button class="btn ghost" data-addres="${esc(pid)}|${esc(nid)}" style="margin-top:8px;width:100%">＋ 新建一条记录</button></div>`;
+}
+// 一条记录自己的页面
+function resPage(){
+  const [pid,nid,ix]=String(S.arg).split("|"),i=+ix,P=D.p[pid];
+  if(!P) return `<div class="center">加载中…</div>`;
+  const n=findNode(P.project,nid),r=((n&&n.res)||[])[i];
+  if(!r) return `<div class="body">${topBar("找不到这条记录",P.project.name)}</div>`;
+  const ttl=String(n.name||"").replace(/｜.*$/,"");
+  if(S.edit) return `<div class="body">${topBar(ttl+" · 记录","编辑")}
+    <div class="card" style="display:flex;flex-direction:column;gap:8px">
+      <label class="small" for="r_date">日期</label><input id="r_date" type="date" value="${esc(r.date||"")}">
+      <label class="small" for="r_proj">项目</label>
+      <select id="r_proj">${(D.index||[]).map(x=>`<option${x.name===r.proj?" selected":""}>${esc(x.name)}</option>`).join("")}${
+        (D.index||[]).some(x=>x.name===r.proj)||!r.proj?"":`<option selected>${esc(r.proj)}</option>`}</select>
+      <label class="small" for="r_r">结果（一两句说清这次跑出来什么）</label><textarea id="r_r">${esc(r.r||"")}</textarea>
+      <label class="small" for="r_d">详细</label><textarea id="r_d" style="min-height:240px">${esc(r.detail||"")}</textarea>
+      <button class="btn" data-saveres="${esc(pid)}|${esc(nid)}|${i}">保存</button>
+      <button class="btn ghost" data-canceledit>取消</button></div>
+  </div>`;
+  return `<div class="body">${topBar(ttl+" · 记录",P.project.name)}
+    <div class="row"><span class="meta">${esc(r.date||"")}　·　${esc(r.proj||"")}</span><button class="back" style="margin-left:auto" data-edit>编辑</button></div>
+    <p class="q">${esc(r.r||"还没写结果")}</p>
+    <div class="card"><b>详细</b><div class="rdt">${esc(r.detail||"还没写")}</div></div>
+  </div>`;
+}
+function addRes(pid,nid){
+  const n=findNode(D.p[pid]?.project,nid);if(!n) return;
+  n.res=n.res||[];
+  n.res.push({date:new Date(Date.now()+9*36e5).toISOString().slice(0,10),
+              proj:D.p[pid]?.project?.name||"",r:"",detail:"",_new:true});
+  go("res",`${pid}|${nid}|${n.res.length-1}`);
+  S.edit=true;render();                       // 新建的直接进编辑态；不按保存就不会写进仓库
+}
+function saveRes(pid,nid,i){
+  const n=findNode(D.p[pid]?.project,nid),r=((n&&n.res)||[])[i];if(!r) return;
+  r.date=$("#r_date").value.trim();r.proj=$("#r_proj").value.trim();
+  r.r=$("#r_r").value.trim();r.detail=$("#r_d").value.trim();
+  delete r._new;S.edit=false;
+  return saveProject(pid,`记录：${n.name} · ${r.proj||""} ${r.date||""}`);
 }
 function nodePage(){
   const [pid,nid]=String(S.arg).split("|");const P=D.p[pid];if(!P) return `<div class="center">加载中…</div>`;
@@ -1247,7 +1289,7 @@ function render(){
   if(!cfg.token||S.screen==="settings") h=settings();
   else if(S.loading&&!D.global) h=`<div class="center">读取数据中…</div>`;
   else if(S.err&&!D.global) h=`<div class="body"><h1 class="h1">读取失败</h1><div class="banner bd">${esc(S.err)}</div><p class="small">检查令牌是否过期、仓库名是否正确，或网络是否正常。</p><button class="btn" data-reload>重试</button><button class="btn ghost" data-tab="settings">修改连接</button></div>`;
-  else h=({today,row:rowPage,detail,project,node:nodePage,meth:methPage,method:methodPage,list:listPage,main:mainPage,iter,gate,system,ppl:pplPage,person:personPage,co:coPage,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
+  else h=({today,row:rowPage,detail,project,node:nodePage,res:resPage,meth:methPage,method:methodPage,list:listPage,main:mainPage,iter,gate,system,ppl:pplPage,person:personPage,co:coPage,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
   const vb=S.newver?`<div class="banner ok tap" data-newver="1" style="margin:0 0 8px">有新版本 ${esc(S.newver)}（你现在是 ${APPVER}）· 点这里刷新</div>`:"";
   a.innerHTML=vb+h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
   if(S.screen==="today"&&S.exploreOpen){const d=a.querySelector("#explore-details");if(d)d.open=true}
@@ -1504,7 +1546,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
   if(d.copyfive){
     const m=findM("m-184"),id=cur(),P=D.p[id];
@@ -1571,7 +1613,13 @@ document.addEventListener("click",async e=>{
   if(d.open){try{await loadProject(d.open)}catch(err){return toast(err.message)}return go(d.target,d.open)}
   if(d.toggle){S.open[d.toggle]=!S.open[d.toggle];return render()}
   if("edit" in d){S.edit=true;return render()}
-  if("canceledit" in d){S.edit=false;return render()}
+  if("canceledit" in d){
+    if(S.screen==="res"){const [cp,cn,ci]=String(S.arg).split("|"),cnd=findNode(D.p[cp]?.project,cn);
+      const cr=((cnd&&cnd.res)||[])[+ci];
+      if(cr&&cr._new){cnd.res.splice(+ci,1);S.edit=false;return back()}}
+    S.edit=false;return render()}
+  if(d.addres){const [ap,an]=d.addres.split("|");return addRes(ap,an)}
+  if(d.saveres){const [sp,sn,si]=d.saveres.split("|");return saveRes(sp,sn,+si)}
   if(d.savenode){const [pid,nid]=d.savenode.split("|");return saveNode(pid,nid)}
   if("saveboard" in d) return saveProject(S.arg||cur(),"调整 SOP 图的节点位置");
   if(d.decide){const [id,i,o]=d.decide.split("|");return decide(id,+i,o)}
