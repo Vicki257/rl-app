@@ -128,6 +128,7 @@ textarea{min-height:70px;resize:vertical}
 .chip.add{color:var(--ink3);font-weight:400;padding:7px 16px}
 .tbl.sm table{min-width:0}
 .ogp+.ogp{border-top:1px solid var(--line)}
+.rdt{white-space:pre-wrap;line-height:1.8;color:var(--ink2);padding:2px 0 4px}
 .ogp .line3[data-ogp]{font-weight:700}
 .ovs{padding:14px 0;border-bottom:1px solid var(--line)}
 .ovs:first-child{padding-top:2px}
@@ -524,7 +525,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-28j";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-31a";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1082,6 +1083,23 @@ function stepHTML(h,LBS=LBS0){
     ${h.warn?`<div class="wn">⚠ ${esc(h.warn)}</div>`:""}
   </div>`;
 }
+// 用这一步的操作流程去跑某个项目，实际得到了什么。只有写了 res 字段的节点才显示这一栏。
+function resHTML(pid,nid,n){
+  if(!n.res) return "";
+  const rs=n.res||[];
+  return `<div class="card"><b>跑过的对象与结果</b>
+    <div class="small" style="margin:4px 0 10px">用这一步的操作流程去跑某个项目，实际得到了什么。点一行展开详细。</div>
+    <div class="tbl sm"><table><thead><tr>
+      <th style="width:22%">日期</th><th style="width:24%">项目</th><th>结果</th></tr></thead><tbody>
+      ${rs.map((r,i)=>{const k=`res|${pid}|${nid}|${i}`,on=!!S.open[k];
+        return `<tr class="tap" data-toggle="${k}" tabindex="0">
+          <td style="font-family:var(--mono);font-size:12px">${esc(r.date||"")}</td>
+          <td>${esc(r.proj||"")}</td>
+          <td>${esc(r.r||"")}　<span class="chev">${on?"⌄":"›"}</span></td></tr>
+        ${on?`<tr><td colspan="3"><div class="rdt">${esc(r.detail||"还没写详细")}</div></td></tr>`:""}`}).join("")
+      ||`<tr><td colspan="3" class="small">还没有记录。用这一步跑过一个项目之后，把日期、项目和结果写在这里。</td></tr>`}
+    </tbody></table></div></div>`;
+}
 function nodePage(){
   const [pid,nid]=String(S.arg).split("|");const P=D.p[pid];if(!P) return `<div class="center">加载中…</div>`;
   const n=findNode(P.project,nid);
@@ -1095,11 +1113,11 @@ function nodePage(){
           +["use","calc","ex","why","now","warn"].filter(k=>h[k]!=null).map(k=>
             `<label class="small" for="n_${k}${i}" style="opacity:.65">${k==="warn"?"⚠ 注意":LBS[k]}</label><textarea id="n_${k}${i}">${esc(h[k])}</textarea>`).join("")
         : `<label class="small" for="n_h${i}">现在怎么做到的 ${i+1}（出处 ${esc(h.wbs||"")}）</label><textarea id="n_h${i}">${esc(h.t||"")}</textarea>`).join("")}
-      <label class="small" for="n_concl">结论</label><textarea id="n_concl">${esc(n.concl||"")}</textarea>
+      ${n.concl!=null?`<label class="small" for="n_concl">结论</label><textarea id="n_concl">${esc(n.concl)}</textarea>`:""}
       ${pains.map((p,i)=>`<label class="small" for="n_p${i}">痛点 ${esc(p.ref||"")}${p.part?" "+esc(p.part):""} —— ${p.solved?"怎么消掉的":"还空着，缺什么"}</label>
         <div class="row" style="gap:8px;align-items:center"><input type="checkbox" id="n_s${i}" ${p.solved?"checked":""} style="width:auto"><label class="small" for="n_s${i}" style="margin:0">已解决</label></div>
         <textarea id="n_p${i}">${esc(p.solved?(p.fix||""):(p.gap||""))}</textarea>`).join("")}
-      <label class="small" for="n_so">所以</label><textarea id="n_so">${esc(n.so||"")}</textarea>
+      ${n.so!=null?`<label class="small" for="n_so">所以</label><textarea id="n_so">${esc(n.so)}</textarea>`:""}
       <label class="small" for="n_judge">做完的判据</label><textarea id="n_judge">${esc(n.judge||"")}</textarea>
       <button class="btn" data-savenode="${esc(pid)}|${esc(nid)}">保存</button><button class="btn ghost" data-canceledit>取消</button></div>
   </div>`;
@@ -1109,15 +1127,16 @@ function nodePage(){
     ${n.whole?`<div class="whole">${esc(n.whole)}</div>`:""}
     <div class="card"><b>现在怎么做到的</b>
       ${how.map(h=>stepHTML(h,LBS)).join("")||'<div class="small">还没写</div>'}</div>
-    <div class="card"><b>为什么这样能达成</b><span class="meta" style="margin-left:8px">痛点 ${pains.length} 条，解决 ${done}</span>
+    ${!n.res?`<div class="card"><b>为什么这样能达成</b><span class="meta" style="margin-left:8px">痛点 ${pains.length} 条，解决 ${done}</span>
       ${n.concl?`<div class="kv"><span class="k">结论</span><span class="v">${esc(n.concl)}</span></div>`:""}
       <div style="margin-top:12px">${pains.map(p=>`<div class="pain${p.solved?"":" un"}">
         <div class="pp">痛点 · ${esc(p.ref||"")}${p.part?"　"+esc(p.part):""}</div>
         <p>${esc(p.text)}</p>
         <div class="fx">${p.solved?"→ 怎么消掉的":"→ 还空着"}</div>
         <p>${esc(p.solved?p.fix:p.gap)}</p></div>`).join("")||'<div class="small">还没写</div>'}</div>
-      ${n.so?`<div class="kv"><span class="k">所以</span><span class="v">${esc(n.so)}</span></div>`:""}</div>
+      ${n.so?`<div class="kv"><span class="k">所以</span><span class="v">${esc(n.so)}</span></div>`:""}</div>`:""}
     <div class="card"><b>做完的判据</b><div class="kv"><span class="v">${esc(n.judge||"还没写")}</span></div></div>
+    ${resHTML(pid,nid,n)}
   </div>`;
 }
 async function reanalyze(id){
@@ -1437,8 +1456,8 @@ document.addEventListener("blur",e=>{
 },true);
 function saveNode(pid,nid){
   const n=findNode(D.p[pid].project,nid);if(!n) return;
-  n.whole=$("#n_whole").value.trim();n.concl=$("#n_concl").value.trim();
-  n.so=$("#n_so").value.trim();n.judge=$("#n_judge").value.trim();
+  n.whole=$("#n_whole").value.trim();n.judge=$("#n_judge").value.trim();
+  ["concl","so"].forEach(k=>{const el=$("#n_"+k);if(el)n[k]=el.value.trim()});
   (n.how||[]).forEach((h,i)=>{
     if(h.n){["use","calc","ex","why","now","warn"].forEach(k=>{const el=$("#n_"+k+i);if(el)h[k]=el.value.trim()})}
     else{const el=$("#n_h"+i);if(el)h.t=el.value.trim()}
