@@ -888,14 +888,14 @@ function coPage(){
         ${sec("06","这次研究对 SOP 的反馈",v.fb&&p(v.fb))}
       </div>`})()}
     ${(c.steps||[]).length?`<div class="h2" style="margin:22px 0 8px">详细研究过程</div>
-    <div class="small" style="margin:-4px 0 10px">下面是完整的因果链：每一步为什么查、怎么查、查到什么、哪里不够、所以下一步。</div>`:
+    <div class="small" style="margin:-4px 0 10px">${(c.steps||[]).some(s=>s.next)?"下面是完整的因果链：每一步为什么查、怎么查、查到什么、哪里不够、所以下一步。":"以下是已经完成的研究过程。想核对数字时，可以展开每轮的详细证据。"}</div>`:
     `<div class="card" style="margin-top:12px"><div class="small">这家还没开始研究。它现在只是 ${esc((c.scr&&c.scr.t)||"")} 这一批的候选之一。</div></div>`}
     ${(c.steps||[]).map((s,i)=>`<div class="card">
       <div class="sop" style="padding:0;border:0;background:none">
         <div class="sn" style="font-size:16.5px">${esc(s.t)}</div>
         <div class="f">${row("为什么研究",s.why)}${row("怎么研究",s.how)}${row("实际数据",s.data,1)}${row("发现了什么",s.found)}${row("认识变化",s.fix)}</div>
       </div>
-      <div class="how" style="margin-top:10px"><b>因此，下一步</b>${esc(s.next||"")}</div>
+      ${s.next?`<div class="how" style="margin-top:10px"><b>因此，下一步</b>${esc(s.next)}</div>`:""}
       ${s.evi?fold("co_e"+c.id+"_"+i,"详细证据与原始报告","原始科目与年份 / 计算口径 / 来源 / 被推翻的结论",
         `<div class="mono fw">${esc(s.evi)}</div>`):""}
     </div>`).join("")}
