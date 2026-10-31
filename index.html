@@ -127,6 +127,8 @@ textarea{min-height:70px;resize:vertical}
 .chip.on{background:var(--accentSoft);border-color:var(--accent);color:var(--accent);font-weight:600}
 .chip.add{color:var(--ink3);font-weight:400;padding:7px 16px}
 .tbl.sm table{min-width:0}
+.tbl.rtb table{min-width:586px;table-layout:fixed}
+.tbl.rtb td{white-space:nowrap}
 .ogp+.ogp{border-top:1px solid var(--line)}
 .rdt{white-space:pre-wrap;line-height:1.8;color:var(--ink2);padding:2px 0 4px}
 .ogp .line3[data-ogp]{font-weight:700}
@@ -525,7 +527,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-31d";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-10-31e";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1089,19 +1091,19 @@ function resHTML(pid,nid,n){
   if(!n.res) return "";
   // 排序只改显示顺序，跳转仍用原始下标，所以排序不会让链接错位
   const rs=(n.res||[]).map((r,i)=>({r,i})).sort((a,b)=>dkey(b.r.date).localeCompare(dkey(a.r.date)));
-  const brief=t=>{const x=String(t||"").replace(/\s+/g," ").trim();return x?(x.length>24?x.slice(0,24)+"…":x):"还没写"};
+  const brief=t=>{const x=String(t||"").replace(/\s+/g," ").trim();return x||"还没写"};
   const k=`restbl|${pid}|${nid}`,on=!S.open[k];        // 默认展开，点标题收起
   return `<div class="card">
     <div class="fold tap" data-toggle="${k}" tabindex="0"><b>跑过的对象与结果</b>
       <span class="meta" style="margin-left:8px">${rs.length} 条</span><span class="chev">${on?"⌄":"›"}</span></div>
     ${on?`<div class="small" style="margin:8px 0 10px">用这一步的操作流程去跑某个项目，实际得到了什么。点一行打开那一次的记录。</div>
-    <div class="tbl sm"><table><thead><tr>
-      <th style="width:19%">日期</th><th style="width:19%">项目</th><th>结果</th><th style="width:24%">详细</th></tr></thead><tbody>
+    <div class="tbl rtb"><table><thead><tr>
+      <th style="width:110px">日期</th><th style="width:108px">项目</th><th style="width:218px">结果</th><th>详细</th></tr></thead><tbody>
       ${rs.map(o=>`<tr class="tap" data-go="res" data-arg="${esc(pid)}|${esc(nid)}|${o.i}" tabindex="0">
-        <td style="font-family:var(--mono);font-size:12px">${esc(o.r.date||"")}</td>
-        <td>${esc(o.r.proj||"")}</td>
-        <td>${esc(o.r.r||"")}　<span class="chev">›</span></td>
-        <td class="meta">${esc(brief(o.r.detail))}</td></tr>`).join("")
+        <td style="font-family:var(--mono);font-size:12px"><span class="cell">${esc(o.r.date||"")}</span></td>
+        <td><span class="cell">${esc(o.r.proj||"")}</span></td>
+        <td><span class="cell">${esc(o.r.r||"")}</span></td>
+        <td class="meta"><span class="cell">${esc(brief(o.r.detail))}　›</span></td></tr>`).join("")
       ||`<tr><td colspan="4" class="small">还没有记录。用这一步跑过一个项目之后，点下面的 ＋ 记一条。</td></tr>`}
     </tbody></table></div>
     <button class="btn ghost" data-addres="${esc(pid)}|${esc(nid)}" style="margin-top:8px;width:100%">＋ 新建一条记录</button>`:""}</div>`;
