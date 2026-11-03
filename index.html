@@ -149,6 +149,9 @@ textarea{min-height:70px;resize:vertical}
 .how b{display:block;color:var(--accent);font-size:13px;margin-bottom:3px}
 .btn.ghost.bd{color:var(--bad);border-color:var(--bad)}
 .center{display:grid;place-items:center;min-height:60vh;color:var(--ink3);font-size:16px}
+.sop-prompt{margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+.sop-prompt summary{cursor:pointer;font-weight:700;color:var(--ink)}
+.sop-prompt .prompt-text{margin-top:12px;font-family:var(--read);font-size:14px;line-height:1.75;color:var(--ink2);white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto}
 /* SOP 白板 */
 .board{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;touch-action:none;background-image:radial-gradient(var(--dot) 1px,transparent 1px);background-size:20px 20px}
 .board.zoom{overflow:auto}
@@ -1019,7 +1022,7 @@ function fold(key,title,preview,inner){
 function edv(k,v,ph){return `<div class="kv"><span class="k">${esc(k)}</span><div class="v ed" contenteditable data-ph="${esc(ph||"")}" data-p="${esc(k)}">${esc(v||"")}</div></div>`}
 function verPill(o){const v=(o&&o.sop&&o.sop.version)||"";
   if(!v) return `<span class="pill soft">还没建</span>`;
-  return `<span class="pill ok">${esc(v.split("·")[0].trim())}</span>`}
+  return `<span class="pill ${/候选|未验证|探索/.test(v)?"soft":"ok"}">${esc(v.split("·")[0].trim())}</span>`}
 function project(){
   const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
   const pj=P.project,m=pj.mainline||{},d=pj.doing||{};
@@ -1038,6 +1041,7 @@ function project(){
       :`<div class="row"><b>${esc((SO&&SO.sop&&SO.sop.version)||(SO&&SO.name)||"")}</b></div>`}
       ${TS?`<div class="how"><b>这套 SOP 适用于什么情况</b><div class="ed" contenteditable data-ph="还没写。等你分析清楚之后填在这里——同一条路线下有多套 SOP，这一格决定什么时候该用哪一套。" data-p="这套 SOP 适用于什么情况">${esc((SO&&SO.when)||"")}</div></div>`:""}
       ${boardHTML(SO&&SO.sop)}
+      ${(SO&&SO.sop&&SO.sop.prompt)?`<details class="sop-prompt"><summary>可复用语音对话提示词</summary><div class="prompt-text">${esc(SO.sop.prompt)}</div><button class="btn ghost" data-copysop="1" style="margin-top:12px">复制提示词</button></details>`:""}
       ${coListHTML(id,SO&&SO.sop)}</div>`
     :`<div class="card"><div class="h2" style="margin:0 0 8px">当前最佳 SOP</div>
       <div class="small">这条路线还没有 SOP。</div>
@@ -1333,7 +1337,7 @@ function fitBoard(){
 }
 window.addEventListener("resize",()=>{if(S.screen==="project")fitBoard()});
 /* ---- SOP 白板 ---- */
-function nodesOf(){const id=S.arg||cur();return (D.p[id]?.project?.sop)||{}}
+function nodesOf(){const id=S.arg||cur();return curSop(D.p[id]?.project)||{}}
 function anchorPt(a,b,ea,eb){
   const aw=ea.offsetWidth,ah=ea.offsetHeight,bw=eb.offsetWidth,bh=eb.offsetHeight;
   const ax=(a.x||0)+aw/2,ay=(a.y||0)+ah/2,bx=(b.x||0)+bw/2,by=(b.y||0)+bh/2,dx=bx-ax,dy=by-ay;
@@ -1552,8 +1556,15 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
+  if(d.copysop){
+    const id=S.arg||cur(),so=curSop(D.p[id]?.project);
+    if(!so?.prompt)return toast("这套 SOP 暂无提示词");
+    try{await navigator.clipboard.writeText(so.prompt);toast("提示词已复制")}
+    catch(e){toast("复制失败，请展开后手动复制")}
+    return;
+  }
   if(d.copyfive){
     const m=findM("m-184"),id=cur(),P=D.p[id];
     if(!m||!P)return toast("当前项目尚未加载");
