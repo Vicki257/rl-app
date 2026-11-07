@@ -530,7 +530,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-10-31e";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-07a";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1393,7 +1393,7 @@ async function pick(id){
   }catch(e){toast("切换失败："+e.message)}
 }
 async function setStatus(i,st){
-  const id=cur(),P=D.p[id],r=P.rows[i];
+  const id=projId(),P=D.p[id],r=P.rows[i];
   r.f=st;
   if(st==="够用了"&&!r.closedAt) r.closedAt=new Date().toISOString();  // 记闭环时刻，用来算耗时
   if(st!=="够用了") delete r.closedAt;
@@ -1402,7 +1402,7 @@ async function setStatus(i,st){
   await syncFocus(id);          // 标成够用了/不做之后，今天页要换下一条
 }
 async function delRow(i){
-  const id=cur(),P=D.p[id];const r=P.rows[i];
+  const id=projId(),P=D.p[id];const r=P.rows[i];
   if(!confirmDel){confirmDel=true;toast("再点一次「删除这一条」才真的删");setTimeout(()=>confirmDel=false,4000);return}
   confirmDel=false;P.rows.splice(i,1);
   try{await put(`projects/${id}/rows.json`,P.rows,`删除一条：${(r.q||"").slice(0,20)}`);toast("已删除");go("list",id)}
@@ -1416,7 +1416,7 @@ document.addEventListener("compositionend",e=>{
 });
 document.addEventListener("blur",e=>{
   const t=e.target,k=t?.dataset?.rk;if(!k) return;
-  const [is,key]=k.split("|"),i=+is,id=cur(),P=D.p[id];if(!P||!P.rows[i]) return;
+  const [is,key]=k.split("|"),i=+is,id=projId(),P=D.p[id];if(!P||!P.rows[i]) return;
   const row=P.rows[i],pj=P.project,v=t.innerText.trim();
   const LF=pj.labels?.f||"今日发现",LQ=pj.labels?.q||"留给明天的问题";
   let changed=false;
@@ -1618,8 +1618,12 @@ document.addEventListener("click",async e=>{
   if(d.delrow!=null) return delRow(+d.delrow);
   if("addrow" in d){
     const id=S.arg||cur(),P=D.p[id],c={};(P.project.columns||[]).forEach(k=>c[k]="");
-    P.rows.push({date:new Date().toISOString().slice(0,10),f:"待改",q:"",cols:c,night:null});
-    return go("row",P.rows[P.rows.length-1].date+"|"+(P.rows.length-1));
+    const date=new Date(Date.now()+9*36e5).toISOString().slice(0,10);
+    P.rows.push({date,f:"待改",q:"",cols:c,night:null});
+    const i=P.rows.length-1;
+    try{await put(`projects/${id}/rows.json`,P.rows,"新增记录");}
+    catch(err){P.rows.pop();return toast("新增失败："+err.message)}
+    return go("row",date+"|"+i+"|"+id);
   }
   if(d.go){if((d.go==="project"||d.go==="iter")&&!d.arg){go(d.go,cur())}else go(d.go,d.arg);return}
   if("back" in d) return back();
