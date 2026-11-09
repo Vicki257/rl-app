@@ -1,0 +1,31 @@
+<body>
+<div id="scene"><div class="backdrop" id="backdrop"></div><canvas id="gl"></canvas><canvas id="glow"></canvas><div id="vignette"></div></div><div id="labels"></div>
+
+<header class="nav"><div class="branding"><div class="mark"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M16 4L5 10v12l11 6 11-6V10zM5 10l11 6 11-6M16 16v12"/><path d="M10 12V8m6-1v6m6-1V8" opacity=".6"/></svg></div><div><div class="brandtitle">境界 <span style="font-size:10px;font-weight:400;letter-spacing:0;color:#b3bfc8">/ 认知世界 · 真实数据版</span></div><div class="brandsub" id="brandsub">正在读取 RL-data…</div></div></div><div class="navright"><button id="toggleNav">☷ 全体像</button><button id="orbit" class="selected">◈ 俯瞰</button><button id="roam">⌖ 漫游</button><button id="btnCards" class="action">✦ 接入卡</button><button id="btnReplay">⏱ 回放</button><button id="btnReport">⚑ 导入报告</button></div></header>
+
+<div class="offline" id="offlineTag">数据源读取中</div>
+
+<aside id="overview"><div class="eyebrow">YOUR WORLD / 全体像</div>
+<h2 class="goal" id="topDesire">核心欲望<br>未确认</h2>
+<p class="intro" id="topDesireNote"></p>
+<div id="lagWarn"></div>
+<div class="sep"></div>
+<div class="brief" id="brief"></div>
+<div class="sep"></div>
+<div class="countrow"><b id="districtCount">研究区域</b><span>点击前往建筑</span></div>
+<div id="districtList"></div>
+<div class="asidefoot"><span id="srcFoot">—</span><span>v1.0</span></div></aside>
+
+<div id="tip"><b>这座城市来自你真实的 RL-data</b>建筑数量 = 实际项目数；层级 = 数据里确认过的深入关系<br>点击建筑进入项目 · 「接入卡」把新对话接到旧问题上</div>
+
+<aside id="details"><div class="dethead"><div><div class="eyebrow" id="detEn">DISTRICT</div><div class="ttl" id="detTitle"></div><div class="descr" id="detDesc"></div></div><button class="close" id="closeDet" aria-label="关闭">×</button></div><div class="detbody" id="detBody"></div></aside>
+
+<div id="badge"><span class="live"></span><span id="modeHint">从高处看见所有方向 · 可拖动旋转</span></div>
+<div id="mobilemove"><button data-move="forward">↑</button><button data-move="left">←</button><button data-move="back">↓</button><button data-move="right">→</button></div>
+
+<div id="replay"><button id="rpOff">退出回放</button><input type="range" id="rpRange" min="0" max="1" value="1"><span class="d" id="rpDate">—</span></div>
+
+<div id="dialog"><button id="mic" title="浏览器语音听写（不是接入 AI）" aria-label="开始语音听写"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3m-4 0h8"/></svg></button><div class="docktext"><div class="docktitle">把今天的对话接进世界 <span style="font-weight:400;color:#81a5b4;font-size:10px">/ 离线召回</span></div><div class="docksub" id="voiceNote">粘贴一段对话或写一句新认识，系统检索相关旧问题并生成接入卡</div><div class="sendbox"><input id="utterance" placeholder="例如：为什么 Ab Initio 这种难用的软件还能拿下大企业？" aria-label="输入今天的新认识"><button id="send">生成接入卡 ↗</button></div></div></div>
+
+<div class="notice" id="toast"></div>
+<div id="sheet"><button class="close2" id="closeSheet">× 关闭</button><div class="inner" id="sheetInner"></div></div>

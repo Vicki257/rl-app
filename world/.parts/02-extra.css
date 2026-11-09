@@ -1,0 +1,44 @@
+/* ===== 新版追加样式：全体像 / 深入 / 接入卡 / 回放 / 原始数据 ===== */
+.warn{margin:10px 0;padding:9px 11px;border-radius:9px;background:rgba(226,150,120,.14);border:1px solid rgba(226,150,120,.4);color:#f3cdb6;font-size:11.5px;line-height:1.6}
+.ok{color:#9bd0b8}.bad{color:#e9a08f}.pend{color:#e2bf8c}
+.kv{display:flex;gap:8px;font-size:11.5px;line-height:1.6;margin:3px 0}.kv b{color:var(--muted);font-weight:500;min-width:84px;flex:none}
+.brief{margin:8px 0 2px}.brief h4{margin:12px 0 5px;font-size:10px;letter-spacing:.16em;color:var(--dim);font-weight:600;text-transform:uppercase}
+.brief p{margin:0 0 4px;font-size:12px;line-height:1.65;color:var(--ink)}
+.brief .src{font-size:10.5px;color:var(--dim)}
+.chip{display:inline-block;padding:1px 6px;border-radius:5px;border:1px solid var(--border);font-size:10px;color:var(--muted);margin-right:4px}
+.chip.r{border-color:rgba(226,191,140,.5);color:#e2bf8c}
+.chip.g{border-color:rgba(155,208,184,.5);color:#9bd0b8}
+.chip.b{border-color:rgba(141,228,220,.45);color:#8de4dc}
+.qrow{display:block;width:100%;text-align:left;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:9px;padding:8px 10px;margin:5px 0;color:var(--ink);font-size:12px;line-height:1.55}
+.qrow:hover{background:rgba(255,255,255,.07)}
+.qrow .m{display:block;font-size:10.5px;color:var(--dim);margin-top:3px}
+.lvl{border-left:2px solid rgba(226,191,140,.45);padding:2px 0 2px 11px;margin:9px 0}
+.lvl .h{font-size:10px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+.lvl .t{font-size:12.5px;line-height:1.6;margin:2px 0 0;white-space:pre-wrap}
+.lvl .cause{font-size:11px;color:#e2bf8c;line-height:1.6;margin-top:4px;background:rgba(226,191,140,.08);padding:6px 8px;border-radius:7px}
+#sheet{position:fixed;inset:0;z-index:60;background:rgba(6,10,16,.93);backdrop-filter:blur(14px);display:none;overflow:auto;padding:58px 16px 90px}
+#sheet.show{display:block}
+#sheet .inner{max-width:880px;margin:0 auto}
+#sheet h3{margin:0 0 4px;font-size:17px;font-weight:600}
+#sheet .sub{color:var(--dim);font-size:11.5px;margin-bottom:14px;line-height:1.6}
+#sheet .close2{position:fixed;top:14px;right:16px;z-index:61;background:rgba(20,28,40,.9);border:1px solid var(--border);color:var(--ink);border-radius:9px;padding:7px 12px}
+.card2{background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin:10px 0}
+.card2 .lb{font-size:10px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;margin-bottom:3px}
+.card2 .vv{font-size:12.5px;line-height:1.65;white-space:pre-wrap}
+textarea,select,#sheet input:not([type=radio]):not([type=checkbox]){width:100%;background:rgba(0,0,0,.35);border:1px solid var(--border);color:var(--ink);border-radius:9px;padding:9px 11px;font-size:12.5px;line-height:1.6}
+textarea{min-height:92px;resize:vertical}
+.btn2{background:rgba(141,228,220,.14);border:1px solid rgba(141,228,220,.45);color:#cdf3ef;border-radius:9px;padding:8px 14px;font-size:12px}
+.btn2.sec{background:rgba(255,255,255,.04);border-color:var(--border);color:var(--muted)}
+.btn2:disabled{opacity:.45}
+pre.raw{background:rgba(0,0,0,.45);border:1px solid var(--border);border-radius:9px;padding:11px;font-size:11px;line-height:1.55;overflow:auto;max-height:46vh;white-space:pre-wrap;word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+table.map{width:100%;border-collapse:collapse;font-size:11px}
+table.map th,table.map td{border:1px solid var(--border);padding:6px 7px;text-align:left;vertical-align:top;line-height:1.5}
+table.map th{color:var(--dim);font-weight:500;background:rgba(255,255,255,.03)}
+#replay{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:40;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:9px 14px;display:none;align-items:center;gap:10px;backdrop-filter:blur(12px);max-width:94vw}
+#replay.show{display:flex}
+#replay input[type=range]{width:min(42vw,300px)}
+#replay .d{font-size:12px;color:#e2bf8c;font-variant-numeric:tabular-nums;min-width:82px}
+#replay button{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:5px 9px;font-size:11px}
+.offline{position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:45;background:rgba(226,191,140,.14);border:1px solid rgba(226,191,140,.42);color:#f0d6ad;font-size:10.5px;padding:4px 11px;border-radius:7px;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:720px){#sheet{padding:54px 11px 80px}.offline{font-size:9.5px}}
+#sheet label input[type=radio]{width:auto;margin-right:6px;vertical-align:middle;accent-color:#8de4dc}
