@@ -47,9 +47,48 @@ body{overflow-x:hidden}
 body{margin:0;background:radial-gradient(130% 42% at 50% 0%,var(--glow) 0%,var(--ground) 62%) fixed,var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
 #app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;overflow-x:hidden}
 .body{flex:1;min-width:0;max-width:100%;padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 24px;display:flex;flex-direction:column;gap:12px}
-.nav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--navbg);backdrop-filter:blur(10px);padding:8px 0 calc(env(safe-area-inset-bottom,0px) + 10px)}
+.nav{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(6,1fr);border-top:1px solid var(--line);background:var(--navbg);backdrop-filter:blur(10px);padding:8px 0 calc(env(safe-area-inset-bottom,0px) + 10px)}
 .nav button{font:inherit;font-size:14px;font-weight:600;background:none;border:0;color:var(--ink3);padding:6px 0;cursor:pointer}
 .nav button[aria-current="true"]{color:var(--accent);font-weight:700}
+/* 金色认知成长树 */
+#app.wide{max-width:none}
+.treewrap{flex:1;min-height:0;position:relative;overflow:hidden;background:radial-gradient(130% 95% at 50% 102%,#F3ECDC 0%,#FAF6EC 58%)}
+.treewrap svg{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.treewrap text{font-size:12px;fill:#6B4410;paint-order:stroke;stroke:rgba(250,246,236,.92);stroke-width:3.4px;
+  stroke-linejoin:round;pointer-events:none;user-select:none}
+.tl-root{font-size:16px;font-weight:700;letter-spacing:.1em}
+.tl-project{font-size:15px;font-weight:700}
+.tl-track{font-size:13px;font-weight:600}
+.tl-sop,.tl-main{font-size:12px;font-weight:600;fill:#8A5A12}
+.tl-node,.tl-month{font-size:11px;fill:#96661A}
+.tl-iter{font-size:10px;fill:#B08A4A}
+.thit{fill:transparent;stroke:transparent;cursor:pointer}
+.tbar{position:absolute;left:12px;top:12px;display:flex;gap:7px;flex-wrap:wrap;z-index:3}
+.tbar button{font:inherit;font-size:12px;padding:7px 12px;border:1px solid rgba(243,168,38,.5);
+  border-radius:999px;background:rgba(255,253,246,.9);color:#8A5A12;backdrop-filter:blur(6px);cursor:pointer}
+.tlegend{position:absolute;right:12px;top:12px;z-index:3;background:rgba(255,253,246,.88);
+  border:1px solid rgba(243,168,38,.3);border-radius:12px;padding:9px 11px;font-size:11.5px;
+  color:#8A5A12;line-height:1.85;backdrop-filter:blur(6px);max-width:46vw}
+.tlegend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.tpanel{position:absolute;right:0;top:0;bottom:0;width:min(420px,92vw);background:rgba(255,253,247,.97);
+  border-left:1px solid rgba(243,168,38,.3);box-shadow:-10px 0 40px rgba(170,110,20,.12);
+  transform:translateX(102%);transition:transform .22s ease;z-index:5;display:flex;flex-direction:column}
+.tpanel.on{transform:none}
+.tpanel .th{padding:16px 18px 10px;border-bottom:1px solid rgba(243,168,38,.22)}
+.tpanel .tk{font-size:11px;color:#B08A4A;letter-spacing:.16em}
+.tpanel .tt{font-size:18px;font-weight:700;margin-top:4px;line-height:1.4;color:#6B4410}
+.tpanel .tb{padding:12px 18px 40px;overflow:auto;font-size:13px;line-height:1.75;color:#6B4410}
+.tpanel .tb h4{margin:16px 0 4px;font-size:11.5px;color:#B08A4A;letter-spacing:.12em;font-weight:600}
+.tpanel .tb p{margin:0 0 2px;white-space:pre-wrap;word-break:break-word}
+.tchip{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;background:#FFEFC9;color:#8A5A12;margin:0 6px 6px 0}
+.tclose{position:absolute;right:12px;top:12px;font:inherit;font-size:12px;padding:5px 10px;
+  border:1px solid rgba(243,168,38,.5);border-radius:999px;background:#FFFDF6;color:#8A5A12;cursor:pointer}
+@media(max-width:620px){
+  .tlegend{top:auto;bottom:12px;right:auto;left:12px;max-width:none;font-size:10.5px;padding:8px 10px;line-height:1.7}
+  .tpanel{left:0;right:0;top:auto;height:64%;width:auto;border-left:0;
+    border-top:1px solid rgba(243,168,38,.3);border-radius:16px 16px 0 0;transform:translateY(102%)}
+  .tpanel.on{transform:none}
+}
 button{font:inherit}
 button:focus-visible,.tap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px}
@@ -347,7 +386,7 @@ function widgetFrom(id,P){
 function go(screen,arg){S.stack.push({screen:S.screen,arg:S.arg});S.screen=screen;S.arg=arg;S.open={};S.edit=false;render();window.scrollTo(0,0)}
 function back(){const b=S.stack.pop()||{screen:"today"};S.screen=b.screen;S.arg=b.arg;S.open={};S.edit=false;render()}
 function tab(s){S.stack=[];S.screen=s;S.arg=null;S.open={};S.edit=false;if(s!=="meth"){S.q="";S.mproj=""}render();window.scrollTo(0,0)}
-const nav=a=>`<nav class="nav">${[["today","今天"],["plist","项目"],["meth","方法"],["ilist","迭代"],["system","系统"]].map(([k,l])=>`<button data-tab="${k}" aria-current="${a===k}">${l}</button>`).join("")}</nav>`;
+const nav=a=>`<nav class="nav">${[["today","今天"],["plist","项目"],["meth","方法"],["ilist","迭代"],["tree","树"],["system","系统"]].map(([k,l])=>`<button data-tab="${k}" aria-current="${a===k}">${l}</button>`).join("")}</nav>`;
 const topBar=(title,right="")=>`<div class="top"><button class="back" data-back>‹ 返回</button><span class="meta">${esc(right)}</span></div>${title?`<h2 class="h1" style="font-size:24px">${esc(title)}</h2>`:""}`;
 
 /* ============ 页面 ============ */
@@ -530,7 +569,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-11-07b";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-12a";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1293,17 +1332,363 @@ function system(){
   </div>${nav("system")}`;
 }
 
+/* ============ 金色认知成长树 ============ */
+/* 规则见 rl-data 仓库 claude/5-金色树提示词.md。数据映射：
+   树干=根 / 主枝=项目 / 二级=方向 tracks / 三级=SOP / 四级=SOP 节点(跳过 kind:"plain")
+   / 末梢=rows 每一行 / 金叶=已确认·够用了·已记录 / 花苞=待验·待改·改了未验
+   / 裸枝=已被推翻·不做（什么都不长） / 亮金=最新研究日往前 7 天内。
+   迭代的归属只用仓库里真实存在的字段，不编造：quant 用 mains，其余按月份。 */
+const TROOT_NAME="认知成长树", TROOT_SUB="所有长期项目的共同起点";
+const TLEAF=["已确认","够用了","已记录"], TBUD=["待验","待改","改了未验"];
+const tmark=f=>TLEAF.includes(f)?"leaf":(TBUD.includes(f)?"bud":"bare");
+const TKIND={root:"树根",project:"项目",track:"方向",sop:"SOP",node:"SOP 节点",main:"研究主线",month:"月份",iter:"一次迭代"};
+let TUID=0;
+const tn=(kind,label,extra)=>Object.assign({id:kind+"_"+(++TUID),kind,label,children:[]},extra||{});
+
+function tIter(r){
+  const cols=r.cols||{},detail={};
+  for(const k in cols) if(String(cols[k]).trim()) detail[k]=cols[k];
+  return tn("iter",(r.date||"").slice(5).replace("-","/"),{
+    state:tmark(r.f),f:r.f||"",date:r.date||"",q:r.q||"",detail,
+    reply:r.r||"",replyNote:r.rn||"",closedAt:r.closedAt||""});
+}
+function tSop(name,sop){
+  const ns=sop.nodes||[],steps=ns.filter(n=>n.kind!=="plain"),use=steps.length?steps:ns;
+  const s=tn("sop",name,{version:sop.version||"",note:sop.template||"",source:sop.source||"",skipped:ns.length-use.length});
+  s.children=use.map(n=>tn("node",n.name,{q:n.q||"",whole:n.whole||"",sub:n.sub||"",
+    how:(n.how||[]).map(h=>({n:h.n||"",calc:h.calc||""}))}));
+  return s;
+}
+function tBuild(){
+  TUID=0;
+  const root=tn("root",TROOT_NAME,{sub:TROOT_SUB});
+  let all=[],missing=0;
+  for(const e of (D.index||[])){
+    if(e.state==="archived") continue;
+    const P=D.p[e.id];
+    if(!P){missing++;continue}
+    const pj=P.project||{},rows=P.rows||[],cu=P.current||{};
+    all=all.concat(rows.map(r=>r.date).filter(Boolean));
+    const proj=tn("project",pj.name||e.id,{goal:pj.goal||"",reward:pj.reward||"",
+      reality:pj.reality||"",doing:pj.doing||"",nowQ:cu.q||""});
+    for(const t of (pj.tracks||[])){
+      const tr=tn("track",t.name,{reward:t.reward||""});
+      for(const so of (t.sops||[])){
+        const src=so.ref==="sop"?(pj.sop||{}):so;
+        tr.children.push((src.nodes||[]).length?tSop(so.name,src):tn("sop",so.name,{note:"仓库里还没有节点数据"}));
+      }
+      proj.children.push(tr);
+    }
+    if(!(pj.tracks||[]).length&&(pj.sop||{}).nodes)
+      proj.children.push(tSop(pj.sop.version?(pj.sop.version.split("·").pop()||"").trim()||"SOP":"SOP",pj.sop));
+    const mains=pj.mains||[];
+    if(mains.length&&rows.some(r=>r.main)){
+      for(const m of mains){
+        const rs=rows.filter(r=>r.main===m.id);if(!rs.length)continue;
+        const mn=tn("main",m.name,{st:m.st||"",judge:m.judge||""});
+        mn.children=rs.map(tIter);proj.children.push(mn);
+      }
+      const rest=rows.filter(r=>!mains.some(m=>m.id===r.main));
+      if(rest.length){const o=tn("main","其它研究",{note:"这些行的 main 不在项目主线列表里"});
+        o.children=rest.map(tIter);proj.children.push(o)}
+    }else if(rows.length){
+      const hist=tn("main","历史迭代",{note:"这些迭代在仓库里没有归属字段，暂时按月份排列"});
+      const by=new Map();
+      for(const r of rows){const k=(r.date||"????-??").slice(0,7);if(!by.has(k))by.set(k,[]);by.get(k).push(r)}
+      for(const k of [...by.keys()].sort()){
+        const mo=tn("month",k.slice(5)+" 月");mo.children=by.get(k).map(tIter);hist.children.push(mo)}
+      proj.children.push(hist);
+    }
+    root.children.push(proj);
+  }
+  return {root,latest:all.sort().pop()||"",missing};
+}
+
+/* ---- 几何 ---- */
+const TLEAFW=3.3,TEXP=2.62,TRUNKL=130,TR=470,TSPAN=2.92,TSQ=0.84,TBETA=0.72;
+function thash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0)/4294967295}
+const trnd=s=>thash(s+"#");
+const tbz=(p,a,b,q,t)=>{const u=1-t;return[u*u*u*p[0]+3*u*u*t*a[0]+3*u*t*t*b[0]+t*t*t*q[0],
+  u*u*u*p[1]+3*u*u*t*a[1]+3*u*t*t*b[1]+t*t*t*q[1]]};
+const tdz=(p,a,b,q,t)=>{const u=1-t;return[3*(u*u*(a[0]-p[0])+2*u*t*(b[0]-a[0])+t*t*(q[0]-b[0])),
+  3*(u*u*(a[1]-p[1])+2*u*t*(b[1]-a[1])+t*t*(q[1]-b[1]))]};
+function ttaper(p,a,b,q,w0,w1,M,pw){
+  pw=pw||0.8;const L=[],Rg=[];
+  for(let i=0;i<=M;i++){
+    const t=i/M,pt=tbz(p,a,b,q,t),tg=tdz(p,a,b,q,t);
+    const l=Math.hypot(tg[0],tg[1])||1,nx=-tg[1]/l,ny=tg[0]/l;
+    const w=(w0+(w1-w0)*Math.pow(t,pw))/2;
+    L.push([pt[0]+nx*w,pt[1]+ny*w]);Rg.push([pt[0]-nx*w,pt[1]-ny*w]);
+  }
+  const f=v=>v[0].toFixed(1)+","+v[1].toFixed(1);
+  return "M"+L.map(f).join("L")+"L"+Rg.reverse().map(f).join("L")+"Z";
+}
+function tLayout(root,latest){
+  const hotFrom=(Date.parse(latest+"T00:00:00Z")||0)-7*864e5;
+  (function measure(n){
+    n.leaves=n.children.length?n.children.reduce((s,c)=>s+measure(c),0):1;
+    n.height=n.children.length?1+Math.max.apply(null,n.children.map(c=>c.height)):0;
+    n.hot=n.kind==="iter"?((Date.parse(n.date+"T00:00:00Z")||0)>=hotFrom&&!!n.date):false;
+    if(n.children.length) n.hot=n.children.some(c=>c.hot);
+    return n.leaves;
+  })(root);
+  (function width(n){
+    if(!n.children.length){n.w=TLEAFW;return n.w}
+    let s=0;for(const c of n.children)s+=Math.pow(width(c),TEXP);
+    n.w=Math.pow(s,1/TEXP);return n.w;
+  })(root);
+  // 径向：半径 = depth/(depth+height) → 所有末梢落在同一圆周，树冠是圆的
+  (function place(n,a0,a1,depth){
+    const ang=(a0+a1)/2,t=depth/(depth+n.height);
+    const r=depth===0?0:TR*Math.pow(t,0.80)*(0.86+0.28*trnd(n.id+"R"));
+    const bare=!n.children.length&&n.kind!=="iter"?0.84:1;
+    n.x=Math.cos(ang)*r*TSQ*bare;n.y=Math.sin(ang)*r*bare;
+    let ks=n.children;if(!ks.length)return;
+    const sorted=[...ks].sort((a,b)=>b.leaves-a.leaves||(a.id<b.id?-1:1));   // 大的排中间
+    const L=[],Rg=[];sorted.forEach((c,i)=>(i%2?L:Rg).push(c));
+    ks=L.reverse().concat(Rg);n.children=ks;
+    const wt=ks.map(c=>Math.pow(c.leaves,0.72)),tot=wt.reduce((x,y)=>x+y,0);
+    const pad=(a1-a0)*(depth===0?0:0.06);let a=a0+pad/2;const usable=(a1-a0)-pad;
+    ks.forEach((c,i)=>{const w=usable*wt[i]/tot;place(c,a,a+w,depth+1);a+=w});
+  })(root,-Math.PI/2-TSPAN/2,-Math.PI/2+TSPAN/2,0);
+  // S 形切线：终点切线 = 弦 + (弦 − 父枝切线)×β，起点与终点落在弦的两侧
+  root.dir=-Math.PI/2;
+  (function tangents(n){
+    for(const c of n.children){
+      const ch=Math.atan2(c.y-n.y,c.x-n.x);
+      let d=(ch-n.dir+Math.PI*3)%(Math.PI*2)-Math.PI;
+      d=Math.max(-0.85,Math.min(0.85,d));
+      c.dir=ch+d*TBETA*(0.75+0.5*trnd(c.id+"S"));
+      tangents(c);
+    }
+  })(root);
+  const nodes=[];(function w(n){nodes.push(n);n.children.forEach(w)})(root);
+  return nodes;
+}
+
+/* ---- 画 ---- */
+const TNS="http://www.w3.org/2000/svg";
+const sel=(t,a)=>{const n=document.createElementNS(TNS,t);for(const k in a)if(a[k]!=null)n.setAttribute(k,a[k]);return n};
+const TSHOW={root:0,project:0,track:0,sop:1.15,main:1.15,node:2.0,month:2.0,iter:3.0};
+const TPRIO={root:0,project:1,track:2,sop:3,main:3,node:5,month:5,iter:6};
+const TFS={root:16,project:15,track:13,sop:12,main:12,node:11,month:11,iter:10};
+let TV={z:1,z0:1,tx:0,ty:0,labels:true,inited:false};   // 缩放平移跨 render 保留
+let TSTATE=null;
+
+function treePage(){
+  return `<div class="treewrap"><svg id="tsvg"></svg>
+    <div class="tbar">
+      <button data-tfit>整棵树</button><button data-tzoom="1.4">＋</button>
+      <button data-tzoom="0.714">－</button><button data-tlabels>文字</button>
+    </div>
+    <div class="tlegend">
+      <div><i style="background:linear-gradient(135deg,#FFD54A,#F0A020)"></i><b>金叶</b>＝已结案</div>
+      <div><i style="background:#FFE9A6;border:1px solid #F0A020"></i><b>花苞</b>＝还在推进</div>
+      <div><i style="background:#E8C88A"></i><b>裸枝</b>＝未结案／不做</div>
+      <div><i style="background:#FFF3C0;box-shadow:0 0 7px #FFC82E"></i><b>亮金</b>＝<span id="thot">近 7 天</span></div>
+    </div>
+    <div class="tpanel" id="tpanel"><button class="tclose" data-tclose>关闭</button>
+      <div class="th"><div class="tk" id="tpkind"></div><div class="tt" id="tptitle"></div></div>
+      <div class="tb" id="tpbody"></div></div>
+  </div>${nav("tree")}`;
+}
+
+function drawTree(){
+  const svg=document.getElementById("tsvg");if(!svg)return;
+  const built=tBuild();
+  const nodes=tLayout(built.root,built.latest);
+  const hot=document.getElementById("thot");
+  if(hot) hot.textContent=built.latest?("近 7 天（至 "+built.latest.slice(5)+"）"):"近 7 天";
+  svg.innerHTML="";
+  const defs=sel("defs");
+  defs.innerHTML=`
+  <linearGradient id="tbark" gradientUnits="userSpaceOnUse" x1="0" y1="200" x2="0" y2="-470">
+    <stop offset="0" stop-color="#E8912B"/><stop offset=".30" stop-color="#F3A826"/>
+    <stop offset=".65" stop-color="#FBC02D"/><stop offset="1" stop-color="#FFD54A"/></linearGradient>
+  <linearGradient id="tbarkH" gradientUnits="userSpaceOnUse" x1="0" y1="200" x2="0" y2="-470">
+    <stop offset="0" stop-color="#FFB326"/><stop offset="1" stop-color="#FFEFA0"/></linearGradient>
+  <linearGradient id="tlf" x1="0" y1="1" x2="1" y2="0">
+    <stop offset="0" stop-color="#F0A020"/><stop offset=".45" stop-color="#FFC82E"/>
+    <stop offset="1" stop-color="#FFE57A"/></linearGradient>
+  <linearGradient id="tlfH" x1="0" y1="1" x2="1" y2="0">
+    <stop offset="0" stop-color="#FFB81F"/><stop offset=".5" stop-color="#FFE57A"/>
+    <stop offset="1" stop-color="#FFF8DD"/></linearGradient>
+  <filter id="tglow" x="-70%" y="-70%" width="240%" height="240%">
+    <feGaussianBlur stdDeviation="3.2" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+  svg.appendChild(defs);
+  const world=sel("g",{id:"tworld"}),gB=sel("g"),gK=sel("g"),gL=sel("g"),gT=sel("g"),gH=sel("g");
+  world.append(gB,gK,gL,gT,gH);svg.appendChild(world);
+
+  const RW=built.root.w;
+  // 树干：自身也走 S，底部内凹外扩
+  gB.appendChild(sel("path",{fill:"url(#tbark)",
+    d:ttaper([RW*0.18,TRUNKL],[-RW*0.30,TRUNKL*0.58],[RW*0.34,TRUNKL*0.26],[0,0],RW*2.25,RW*1.02,34,2.2)}));
+  // 树根：纯装饰，不承载数据
+  const roots=[];
+  for(let i=0;i<7;i++){
+    const t=i/6-0.5,side=Math.sign(t)||1,k=Math.abs(t)*2;
+    const reach=(40+130*k)*(0.85+0.3*trnd("rr"+i)),drop=(140-60*k)*(0.85+0.3*trnd("rd"+i));
+    const ex=side*reach,ey=TRUNKL+drop;
+    gB.appendChild(sel("path",{fill:"url(#tbark)",opacity:.95,
+      d:ttaper([t*RW,TRUNKL-16],[side*RW*0.22,TRUNKL+drop*0.70],[ex*1.18,TRUNKL+drop*0.74],[ex,ey],
+               RW*(0.60-0.26*k),0.7,24,1.45)}));
+    roots.push([ex,ey]);
+  }
+  for(const n of nodes){
+    for(const c of n.children){
+      const d=Math.hypot(c.x-n.x,c.y-n.y),k=d*0.36;
+      const tip=c.children.length?c.w*0.92:c.w*0.3;
+      gB.appendChild(sel("path",{"data-tid":c.id,opacity:c.hot?1:.96,fill:c.hot?"url(#tbarkH)":"url(#tbark)",
+        d:ttaper([n.x,n.y],[n.x+Math.cos(n.dir)*k,n.y+Math.sin(n.dir)*k],
+                 [c.x-Math.cos(c.dir)*k,c.y-Math.sin(c.dir)*k],[c.x,c.y],
+                 Math.min(n.w,c.w*1.6),tip,c.w>5?22:14,1.55)}));
+    }
+    if(n.children.length&&n.w>9)
+      gK.appendChild(sel("circle",{cx:n.x,cy:n.y,r:n.w*0.40,fill:n.hot?"url(#tbarkH)":"url(#tbark)"}));
+  }
+  const leafP=(x,y,dir,L,W)=>{
+    const c=Math.cos(dir),s=Math.sin(dir);
+    const T=(px,py)=>(x+px*c-py*s).toFixed(1)+" "+(y+px*s+py*c).toFixed(1);
+    return `M${T(0,0)} C${T(L*0.45,-W)} ${T(L*0.85,-W*0.72)} ${T(L,0)} C${T(L*0.85,W*0.72)} ${T(L*0.45,W)} ${T(0,0)}`;
+  };
+  for(const n of nodes){
+    if(n.kind!=="iter")continue;
+    const d=n.dir+(trnd(n.id+"r")-0.5)*0.9;
+    if(n.state==="leaf"){
+      const L=20+trnd(n.id+"s")*7;
+      for(const [k,sc] of [[0,1],[-0.72,0.66],[0.72,0.66]]){     // 一次结案 = 一簇三小叶
+        const dd=d+k,LL=L*sc;
+        gL.appendChild(sel("path",{d:leafP(n.x,n.y,dd,LL,LL*0.42),"data-tid":n.id,
+          fill:n.hot?"url(#tlfH)":"url(#tlf)",stroke:"#E09A1C","stroke-width":.6,filter:n.hot?"url(#tglow)":null}));
+        gL.appendChild(sel("line",{x1:n.x,y1:n.y,x2:n.x+Math.cos(dd)*LL*0.85,y2:n.y+Math.sin(dd)*LL*0.85,
+          stroke:"#E09A1C","stroke-width":.55,opacity:.45}));
+      }
+    }else if(n.state==="bud"){
+      const L=11+trnd(n.id+"s")*3;
+      gL.appendChild(sel("path",{d:leafP(n.x,n.y,d,L,L*0.62),"data-tid":n.id,
+        fill:n.hot?"#FFF2C8":"#FFE9A6",stroke:"#F0A020","stroke-width":.9,filter:n.hot?"url(#tglow)":null}));
+    }
+  }
+  const texts=[];
+  for(const n of nodes){
+    const t=sel("text",{class:"tl tl-"+n.kind,"text-anchor":"middle"});
+    const s0=n.label.replace(/\s+/g," ").trim();
+    t.textContent=s0.length>20?s0.slice(0,19)+"…":s0;
+    t.__w=t.textContent.length*TFS[n.kind]*0.92;t.__h=TFS[n.kind]*1.25;
+    gT.appendChild(t);texts.push([n,t]);
+  }
+  texts.sort((a,b)=>TPRIO[a[0].kind]-TPRIO[b[0].kind]);
+  const hits=nodes.map(n=>[n,Math.min(16,Math.max(9,n.w*0.7))]).sort((a,b)=>b[1]-a[1]);
+  for(const [n,r] of hits) gH.appendChild(sel("circle",{cx:n.x,cy:n.y,r:r,class:"thit","data-tid":n.id}));
+
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const n of nodes){x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x);y1=Math.max(y1,n.y)}
+  for(const [x,y] of roots){x0=Math.min(x0,x);x1=Math.max(x1,x);y1=Math.max(y1,y)}
+  const m=70,bb={x:x0-m,y:y0-m,w:(x1-x0)+2*m,h:(y1-y0)+2*m};
+  TSTATE={svg,world,texts,nodes,bb};
+  if(!TV.inited){tFit()}else{tDrawView()}
+}
+function tFit(){
+  if(!TSTATE)return;
+  const r=TSTATE.svg.getBoundingClientRect(),bb=TSTATE.bb;
+  if(!r.width||!r.height)return;
+  TV.z=TV.z0=Math.min(r.width/bb.w,r.height/bb.h)*0.97;
+  TV.tx=r.width/2-(bb.x+bb.w/2)*TV.z;
+  TV.ty=Math.min(r.height-16-(bb.y+bb.h)*TV.z,r.height*0.50-(bb.y+bb.h/2)*TV.z);
+  TV.inited=true;tDrawView();
+}
+function tDrawView(){
+  if(!TSTATE)return;
+  TSTATE.world.setAttribute("transform",`translate(${TV.tx} ${TV.ty}) scale(${TV.z})`);
+  const k=1/TV.z,box=[],W=innerWidth,H=innerHeight;
+  for(const [n,t] of TSTATE.texts){
+    if(!TV.labels||TV.z<TSHOW[n.kind]*TV.z0){t.style.display="none";continue}
+    const off=n.kind==="root"?34:(TFS[n.kind]*0.55+n.w*0.6+6);
+    const sx=n.x+(n.kind==="root"?0:Math.cos(n.dir)*off);
+    const sy=n.y+(n.kind==="root"?off:Math.sin(n.dir)*off);
+    const X=TV.tx+sx*TV.z,Y=TV.ty+sy*TV.z,bw=t.__w,bh=t.__h;
+    if(X<-bw||Y<-bh||X>W+bw||Y>H+bh){t.style.display="none";continue}
+    const rc={a:X-bw/2,b:X+bw/2,c:Y-bh*0.8,d:Y+bh*0.3};
+    let clash=false;
+    for(const o of box) if(rc.a<o.b&&rc.b>o.a&&rc.c<o.d&&rc.d>o.c){clash=true;break}
+    if(clash){t.style.display="none";continue}
+    box.push(rc);t.style.display="";
+    t.setAttribute("transform",`translate(${sx} ${sy}) scale(${k})`);
+    t.style.fill=n.hot?"#C97A0A":"";
+  }
+}
+function tZoomAt(cx,cy,f){
+  const nz=Math.max(0.1,Math.min(16,TV.z*f));f=nz/TV.z;
+  TV.tx=cx-(cx-TV.tx)*f;TV.ty=cy-(cy-TV.ty)*f;TV.z=nz;
+}
+function tSec(h,v){return v&&String(v).trim()?`<h4>${esc(h)}</h4><p>${esc(v)}</p>`:""}
+function tOpen(id){
+  if(!TSTATE)return;
+  const n=TSTATE.nodes.find(x=>x.id===id);if(!n)return;
+  document.getElementById("tpkind").textContent=TKIND[n.kind]||n.kind;
+  document.getElementById("tptitle").textContent=n.label;
+  let h=`<div>${n.f?`<span class="tchip">${esc(n.f)}</span>`:""}`
+   +(n.children.length?`<span class="tchip">${n.children.length} 条下级分枝</span>`:"")
+   +(n.kind!=="iter"&&n.leaves?`<span class="tchip">末梢 ${n.leaves}</span>`:"")
+   +(n.hot?'<span class="tchip">近期有变化</span>':"")+`</div>`;
+  h+=tSec("说明",n.sub)+tSec("目标",n.goal)+tSec("奖励函数",n.reward)+tSec("现实",n.reality)
+   +tSec("当前进行",n.doing)+tSec("当前问题",n.nowQ)+tSec("版本",n.version)+tSec("写法",n.note)
+   +tSec("来源文件",n.source)+tSec("状态",n.st)+tSec("判断",n.judge)
+   +tSec("这一步判断什么",n.kind==="node"?n.q:"")+tSec("整体",n.whole);
+  if(n.kind==="iter"){
+    h+=tSec("日期",n.date)+tSec("留给明天的问题",n.q);
+    for(const k in (n.detail||{})) h+=tSec(k,n.detail[k]);
+    h+=tSec("回写",n.reply)+tSec("回写结论",n.replyNote)+tSec("结案时间",n.closedAt);
+  }
+  if((n.how||[]).length) h+=n.how.map(x=>tSec(x.n,x.calc)).join("");
+  if(n.skipped) h+=`<h4>说明</h4><p>另有 ${n.skipped} 个说明性节点（数据源、使用说明）未画成枝。</p>`;
+  document.getElementById("tpbody").innerHTML=h;
+  document.getElementById("tpanel").classList.add("on");
+}
+/* 手势：绑一次在 document 上，页面重建也不会丢 */
+(function tGestures(){
+  let pts=new Map(),base=null,downId=null,moved=false;
+  const inTree=e=>S.screen==="tree"&&e.target.closest&&e.target.closest("#tsvg");
+  const pinch=()=>{const a=[...pts.values()];
+    return{d:Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1])||1,c:[(a[0][0]+a[1][0])/2,(a[0][1]+a[1][1])/2]}};
+  document.addEventListener("pointerdown",e=>{
+    if(!inTree(e))return;
+    downId=e.target.getAttribute?e.target.getAttribute("data-tid"):null;moved=false;
+    pts.set(e.pointerId,[e.clientX,e.clientY]);if(pts.size===2)base=pinch();
+  });
+  document.addEventListener("pointermove",e=>{
+    if(!pts.has(e.pointerId))return;
+    const prev=pts.get(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);
+    if(pts.size===1){TV.tx+=e.clientX-prev[0];TV.ty+=e.clientY-prev[1];moved=true;tDrawView()}
+    else if(pts.size===2&&base){const now=pinch();
+      tZoomAt(now.c[0],now.c[1],now.d/base.d);
+      TV.tx+=now.c[0]-base.c[0];TV.ty+=now.c[1]-base.c[1];base=now;moved=true;tDrawView()}
+  });
+  const end=e=>{if(!pts.has(e.pointerId))return;
+    pts.delete(e.pointerId);if(pts.size<2)base=null;
+    if(!pts.size&&!moved&&downId)tOpen(downId);downId=null};
+  document.addEventListener("pointerup",end);document.addEventListener("pointercancel",end);
+  document.addEventListener("wheel",e=>{
+    if(!inTree(e))return;e.preventDefault();
+    tZoomAt(e.clientX,e.clientY,Math.exp(-e.deltaY*0.0016));tDrawView();
+  },{passive:false});
+  addEventListener("resize",()=>{if(S.screen==="tree"&&TSTATE)tDrawView()});
+})();
+
 /* ============ 渲染 ============ */
 function render(){
   const a=$("#app");if(S.screen==="today"){const d=a.querySelector("#explore-details");if(d)S.exploreOpen=d.open}let h;
   if(!cfg.token||S.screen==="settings") h=settings();
   else if(S.loading&&!D.global) h=`<div class="center">读取数据中…</div>`;
   else if(S.err&&!D.global) h=`<div class="body"><h1 class="h1">读取失败</h1><div class="banner bd">${esc(S.err)}</div><p class="small">检查令牌是否过期、仓库名是否正确，或网络是否正常。</p><button class="btn" data-reload>重试</button><button class="btn ghost" data-tab="settings">修改连接</button></div>`;
-  else h=({today,row:rowPage,detail,project,node:nodePage,res:resPage,meth:methPage,method:methodPage,list:listPage,main:mainPage,iter,gate,system,ppl:pplPage,person:personPage,co:coPage,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
+  else h=({today,row:rowPage,detail,project,node:nodePage,res:resPage,meth:methPage,method:methodPage,list:listPage,main:mainPage,iter,gate,system,ppl:pplPage,person:personPage,co:coPage,plist:()=>plist("p"),ilist:()=>plist("i"),tree:treePage}[S.screen]||today)();
   const vb=S.newver?`<div class="banner ok tap" data-newver="1" style="margin:0 0 8px">有新版本 ${esc(S.newver)}（你现在是 ${APPVER}）· 点这里刷新</div>`:"";
   a.innerHTML=vb+h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
   if(S.screen==="today"&&S.exploreOpen){const d=a.querySelector("#explore-details");if(d)d.open=true}
   if(S.screen==="project"&&!S.edit){drawEdges();fitBoard()}
+  a.classList.toggle("wide",S.screen==="tree");
+  if(S.screen==="tree") requestAnimationFrame(drawTree);
 }
 // GitHub Pages 的 index.html 会被浏览器缓存很久，在手机上尤其顽固。
 // 每次打开和每 10 分钟，拿当前地址带时间戳重取一次，比对里面的 APPVER。
@@ -1554,6 +1939,15 @@ async function decide(id,i,opt){
   try{await put(`projects/${id}/iteration.json`,P.iteration,`Human Gate：${g.title} → ${opt}`);toast("已记录你的决定");render()}
   catch(e){toast("保存失败："+e.message)}
 }
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-tfit],[data-tzoom],[data-tlabels],[data-tclose]");
+  if(!b)return;const d=b.dataset;
+  if(d.tfit!==undefined){TV.inited=false;tFit()}
+  else if(d.tzoom){const r=TSTATE&&TSTATE.svg.getBoundingClientRect();
+    if(r){tZoomAt(r.left+r.width/2,r.top+r.height/2,parseFloat(d.tzoom));tDrawView()}}
+  else if(d.tlabels!==undefined){TV.labels=!TV.labels;tDrawView()}
+  else if(d.tclose!==undefined){document.getElementById("tpanel").classList.remove("on")}
+});
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
   const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
