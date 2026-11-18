@@ -436,7 +436,10 @@ function today(){
     ["RL Data 已经从笔记和方案，变成可以打开使用的网页。","强化学习系统 · 第一版上线"]
   ];
   const changeHTML=(r,i)=>`<div style="padding:${i?13:2}px 0;border-top:${i?"1px solid var(--line)":"0"}"><div style="font-weight:600;line-height:1.6;font-size:${i?"15px":"18px"}">${esc(r[0])}</div><div class="meta" style="margin-top:6px">${esc(r[1])}</div></div>`;
-  const focus=id==="rl"?(P.rows.find(r=>r.q.includes("长期项目为什么缺少即时吸引力"))||focusRowOf(P)):focusRowOf(P),idx=P.rows.indexOf(focus),startArg=idx>=0?`${esc(focus.date)}|${idx}|${esc(id)}`:"";
+  const manualFocus=P.current?.focus?.manual&&P.rows[P.current.focus.idx];
+  const focus=manualFocus||(id==="rl"?P.rows.find(r=>r.q.includes("长期项目为什么缺少即时吸引力")):null)||focusRowOf(P);
+  const progress=focus?.todayTitle&&focus.cols?.["为什么要改动"];
+  const idx=P.rows.indexOf(focus),startArg=idx>=0?`${esc(focus.date)}|${idx}|${esc(id)}`:"";
   return `<div class="body today-new">
     <section class="card" style="padding:24px 22px 20px;background:linear-gradient(130deg,#fbefd0 0%,#fffdf8 70%,#fff 100%);border:1px solid #e7d9b6;border-top:4px solid #d5ac54">
       <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -454,8 +457,9 @@ function today(){
       <span class="chip tap" data-go="project" tabindex="0">${esc(P.project.name)} ›</span>
     </div>
     <section class="card" style="padding:22px 20px;background:linear-gradient(125deg,#fffefa 15%,#fbf3df 100%);border:1px solid #e7d9b6;border-top:3px solid #d5ac54">
-      <div class="h2" style="margin:0 0 12px;color:#8b6b15">⚒ 接下来我想创造什么？</div>
-      <p class="q" style="font-size:18px;line-height:1.65;margin:0 0 12px;overflow-wrap:anywhere;word-break:normal;white-space:normal">${id==="rl"?"让推进长期项目本身成为一件快乐、有收获、愿意继续的事。":esc(P.current?.q||"和 AI 讨论下一步想创造的东西")}</p>
+      ${progress?`<div class="h2">项目进展到哪了</div><p class="small" style="white-space:pre-line;margin:8px 0 18px">${esc(progress)}</p>`:""}
+      <div class="h2" style="margin:0 0 12px;color:#8b6b15">${focus?.todayTitle?"今天的问题":"⚒ 接下来我想创造什么？"}</div>
+      <p class="q" style="font-size:18px;line-height:1.65;margin:0 0 12px;overflow-wrap:anywhere;word-break:normal;white-space:pre-line">${manualFocus?esc(focus.q):id==="rl"?"让推进长期项目本身成为一件快乐、有收获、愿意继续的事。":esc(P.current?.q||"和 AI 讨论下一步想创造的东西")}</p>
       <div class="small" style="margin-bottom:16px">由你与 AI 讨论后确认</div>
       <button class="btn" style="display:block;width:100%;max-width:100%;padding:12px 16px;text-align:center;background:linear-gradient(100deg,#a88729,#80620f);color:#fff;border:0;border-radius:12px" data-go="${startArg?"row":"project"}" ${startArg?`data-arg="${startArg}"`:`data-arg="${esc(id)}"`}>开始 ›</button>
     </section>
