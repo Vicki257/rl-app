@@ -1042,6 +1042,7 @@ function project(){
       ${TS?`<div class="how"><b>这套 SOP 适用于什么情况</b><div class="ed" contenteditable data-ph="还没写。等你分析清楚之后填在这里——同一条路线下有多套 SOP，这一格决定什么时候该用哪一套。" data-p="这套 SOP 适用于什么情况">${esc((SO&&SO.when)||"")}</div></div>`:""}
       ${boardHTML(SO&&SO.sop)}
       ${(SO&&SO.sop&&SO.sop.prompt)?`<details class="sop-prompt"><summary>可复用语音对话提示词</summary><div class="prompt-text">${esc(SO.sop.prompt)}</div><button class="btn ghost" data-copysop="1" style="margin-top:12px">复制提示词</button></details>`:""}
+      ${(SO?.sop?.analyses||[]).map(record=>`<details class="sop-prompt"><summary>${esc(record.title)}</summary><div class="prompt-text">${esc(record.body)}</div></details>`).join("")}
       ${coListHTML(id,SO&&SO.sop)}</div>`
     :`<div class="card"><div class="h2" style="margin:0 0 8px">当前最佳 SOP</div>
       <div class="small">这条路线还没有 SOP。</div>
