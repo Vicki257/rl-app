@@ -434,7 +434,7 @@ function today(){
     ["现在，只用 iPad 也能调用真实量化工具和数据环境。","量化项目 · 已实际调用"],
     ["公司研究已经可以通过可打断的语音讨论逐步理解，而不必只读长报告。","本人首次试用 · 尚未完成整轮验证"],
     ["现在，在家也能通过 ChatGPT 语音自然进入项目状态。","本人近期使用 · 其他用户未验证"],
-    ["真正稀缺的是认知复利：把一生中零散的思考连成线，看清自己真正想要什么，再用一路积累的认知判断下一步，走向想成为的自己。"]
+    ["真正稀缺的是认知复利：把零散的思考连点成线，让用户在各种干扰中，仍能沿着自己真正想推进的方向不断行动、反思和迭代，每一次投入都接着上一次往前走。"]
   ].reverse();
   const changeHTML=(r,i)=>`<div style="padding:${i?13:2}px 0;border-top:${i?"1px solid var(--line)":"0"}"><div style="font-weight:600;line-height:1.6;font-size:${i?"15px":"18px"}">${esc(r[0])}</div>${r[1]?`<div class="meta" style="margin-top:6px">${esc(r[1])}</div>`:""}</div>`;
   const manualFocus=P.current?.focus?.manual&&P.rows[P.current.focus.idx];
