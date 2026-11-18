@@ -425,17 +425,17 @@ function openListHTML(){
 function today(){
   const id=cur(),P=D.p[id];if(!P)return '<div class="center">加载中…</div>';
   const gates=(P.iteration.gates||[]).filter(g=>!g.decision).length;
-  // 人工整理的已发生变化：证据来自项目历史和实际使用，不从问题标题推断成果。
+  // 按发生顺序记录，新增变化追加到末尾，页面按从新到旧展示。
   const changes=[
-    ["现在，在家也能通过 ChatGPT 语音自然进入项目状态。","本人近期使用 · 其他用户未验证"],
-    ["真正稀缺的是认知复利：把一生中零散的思考连成线，看清自己真正想要什么，再用一路积累的认知判断下一步，走向想成为的自己。"],
-    ["公司研究已经可以通过可打断的语音讨论逐步理解，而不必只读长报告。","本人首次试用 · 尚未完成整轮验证"],
-    ["现在，只用 iPad 也能调用真实量化工具和数据环境。","量化项目 · 已实际调用"],
-    ["财富、量化、人与关系三个项目，已经拥有可阅读的 SOP 主线。","跨项目 · 已核对结构"],
-    ["夜间分析已经能够自动运行，并连续两轮写入正确记录。","强化学习系统 · 真实运行记录"],
+    ["RL Data 已经从笔记和方案，变成可以打开使用的网页。","强化学习系统 · 第一版上线"],
     ["长期项目历史已经导入 RL Data，能够被后续分析引用。","强化学习系统 · 已有引用记录"],
-    ["RL Data 已经从笔记和方案，变成可以打开使用的网页。","强化学习系统 · 第一版上线"]
-  ];
+    ["夜间分析已经能够自动运行，并连续两轮写入正确记录。","强化学习系统 · 真实运行记录"],
+    ["财富、量化、人与关系三个项目，已经拥有可阅读的 SOP 主线。","跨项目 · 已核对结构"],
+    ["现在，只用 iPad 也能调用真实量化工具和数据环境。","量化项目 · 已实际调用"],
+    ["公司研究已经可以通过可打断的语音讨论逐步理解，而不必只读长报告。","本人首次试用 · 尚未完成整轮验证"],
+    ["现在，在家也能通过 ChatGPT 语音自然进入项目状态。","本人近期使用 · 其他用户未验证"],
+    ["真正稀缺的是认知复利：把一生中零散的思考连成线，看清自己真正想要什么，再用一路积累的认知判断下一步，走向想成为的自己。"]
+  ].reverse();
   const changeHTML=(r,i)=>`<div style="padding:${i?13:2}px 0;border-top:${i?"1px solid var(--line)":"0"}"><div style="font-weight:600;line-height:1.6;font-size:${i?"15px":"18px"}">${esc(r[0])}</div>${r[1]?`<div class="meta" style="margin-top:6px">${esc(r[1])}</div>`:""}</div>`;
   const manualFocus=P.current?.focus?.manual&&P.rows[P.current.focus.idx];
   const focus=manualFocus||(id==="rl"?P.rows.find(r=>r.q.includes("长期项目为什么缺少即时吸引力")):null)||focusRowOf(P);
