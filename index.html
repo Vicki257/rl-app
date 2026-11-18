@@ -824,6 +824,33 @@ function sopList(pj){
 }
 const cosOf=sop=>((sop&&sop.cos)||[]);
 function findCo(pj,cid){for(const sp of allSops(pj)){const c=(sp.cos||[]).find(x=>String(x.id)===String(cid));if(c)return c}return null}
+function analysisListHTML(pid,sop){
+  const records=sop?.analyses||[];
+  if(!records.length) return "";
+  return `<div style="margin-top:16px">
+    <div class="h2" style="margin:0 0 8px">SOP 推演记录</div>
+    <div class="tbl sm"><table>
+      <thead><tr><th scope="col">名称</th><th scope="col" style="width:26%">详细</th></tr></thead>
+      <tbody>${records.map((record,index)=>{
+        const arg=`${esc(pid)}|${index}`;
+        return `<tr class="tap" data-go="analysis" data-arg="${arg}">
+          <td><b>${esc(record.title)}</b></td>
+          <td><button type="button" class="back" data-go="analysis" data-arg="${arg}" aria-label="查看${esc(record.title)}的详细分析">查看 ›</button></td>
+        </tr>`;
+      }).join("")}</tbody>
+    </table></div>
+  </div>`;
+}
+
+function analysisPage(){
+  const [pid,index]=String(S.arg).split("|"),pj=D.p[pid]?.project;
+  const record=pj&&curSop(pj)?.analyses?.[index];
+  if(!record) return `<div class="body">${topBar("找不到这条推演记录",pj?.name)}</div>`;
+  return `<div class="body">${topBar(record.title,pj.name)}
+    <div class="card" style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75">${esc(record.body)}</div>
+  </div>`;
+}
+
 function coListHTML(pid,sop){
   const cos=cosOf(sop);if(!cos.length) return "";
   const f=S.cof||"all";
@@ -1045,7 +1072,7 @@ function project(){
       ${TS?`<div class="how"><b>这套 SOP 适用于什么情况</b><div class="ed" contenteditable data-ph="还没写。等你分析清楚之后填在这里——同一条路线下有多套 SOP，这一格决定什么时候该用哪一套。" data-p="这套 SOP 适用于什么情况">${esc((SO&&SO.when)||"")}</div></div>`:""}
       ${boardHTML(SO&&SO.sop)}
       ${(SO&&SO.sop&&SO.sop.prompt)?`<details class="sop-prompt"><summary>可复用语音对话提示词</summary><div class="prompt-text">${esc(SO.sop.prompt)}</div><button class="btn ghost" data-copysop="1" style="margin-top:12px">复制提示词</button></details>`:""}
-      ${(SO?.sop?.analyses||[]).map(record=>`<details class="sop-prompt"><summary>${esc(record.title)}</summary><div class="prompt-text">${esc(record.body)}</div></details>`).join("")}
+      ${analysisListHTML(id,SO&&SO.sop)}
       ${coListHTML(id,SO&&SO.sop)}</div>`
     :`<div class="card"><div class="h2" style="margin:0 0 8px">当前最佳 SOP</div>
       <div class="small">这条路线还没有 SOP。</div>
@@ -1303,7 +1330,7 @@ function render(){
   if(!cfg.token||S.screen==="settings") h=settings();
   else if(S.loading&&!D.global) h=`<div class="center">读取数据中…</div>`;
   else if(S.err&&!D.global) h=`<div class="body"><h1 class="h1">读取失败</h1><div class="banner bd">${esc(S.err)}</div><p class="small">检查令牌是否过期、仓库名是否正确，或网络是否正常。</p><button class="btn" data-reload>重试</button><button class="btn ghost" data-tab="settings">修改连接</button></div>`;
-  else h=({today,row:rowPage,detail,project,node:nodePage,res:resPage,meth:methPage,method:methodPage,list:listPage,main:mainPage,iter,gate,system,ppl:pplPage,person:personPage,co:coPage,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
+  else h=({today,row:rowPage,detail,project,node:nodePage,res:resPage,meth:methPage,method:methodPage,list:listPage,main:mainPage,iter,gate,system,ppl:pplPage,person:personPage,co:coPage,analysis:analysisPage,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
   const vb=S.newver?`<div class="banner ok tap" data-newver="1" style="margin:0 0 8px">有新版本 ${esc(S.newver)}（你现在是 ${APPVER}）· 点这里刷新</div>`:"";
   a.innerHTML=vb+h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
   if(S.screen==="today"&&S.exploreOpen){const d=a.querySelector("#explore-details");if(d)d.open=true}
