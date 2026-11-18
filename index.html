@@ -428,6 +428,7 @@ function today(){
   // 人工整理的已发生变化：证据来自项目历史和实际使用，不从问题标题推断成果。
   const changes=[
     ["现在，在家也能通过 ChatGPT 语音自然进入项目状态。","本人近期使用 · 其他用户未验证"],
+    ["真正稀缺的是认知复利：让十年前的思考被找回、被看见，并用在今天的判断里。"],
     ["公司研究已经可以通过可打断的语音讨论逐步理解，而不必只读长报告。","本人首次试用 · 尚未完成整轮验证"],
     ["现在，只用 iPad 也能调用真实量化工具和数据环境。","量化项目 · 已实际调用"],
     ["财富、量化、人与关系三个项目，已经拥有可阅读的 SOP 主线。","跨项目 · 已核对结构"],
@@ -435,10 +436,9 @@ function today(){
     ["长期项目历史已经导入 RL Data，能够被后续分析引用。","强化学习系统 · 已有引用记录"],
     ["RL Data 已经从笔记和方案，变成可以打开使用的网页。","强化学习系统 · 第一版上线"]
   ];
-  const changeHTML=(r,i)=>`<div style="padding:${i?13:2}px 0;border-top:${i?"1px solid var(--line)":"0"}"><div style="font-weight:600;line-height:1.6;font-size:${i?"15px":"18px"}">${esc(r[0])}</div><div class="meta" style="margin-top:6px">${esc(r[1])}</div></div>`;
+  const changeHTML=(r,i)=>`<div style="padding:${i?13:2}px 0;border-top:${i?"1px solid var(--line)":"0"}"><div style="font-weight:600;line-height:1.6;font-size:${i?"15px":"18px"}">${esc(r[0])}</div>${r[1]?`<div class="meta" style="margin-top:6px">${esc(r[1])}</div>`:""}</div>`;
   const manualFocus=P.current?.focus?.manual&&P.rows[P.current.focus.idx];
   const focus=manualFocus||(id==="rl"?P.rows.find(r=>r.q.includes("长期项目为什么缺少即时吸引力")):null)||focusRowOf(P);
-  const progress=focus?.todayTitle&&focus.cols?.["为什么要改动"];
   const idx=P.rows.indexOf(focus),startArg=idx>=0?`${esc(focus.date)}|${idx}|${esc(id)}`:"";
   return `<div class="body today-new">
     <section class="card" style="padding:24px 22px 20px;background:linear-gradient(130deg,#fbefd0 0%,#fffdf8 70%,#fff 100%);border:1px solid #e7d9b6;border-top:4px solid #d5ac54">
@@ -457,10 +457,9 @@ function today(){
       <span class="chip tap" data-go="project" tabindex="0">${esc(P.project.name)} ›</span>
     </div>
     <section class="card" style="padding:22px 20px;background:linear-gradient(125deg,#fffefa 15%,#fbf3df 100%);border:1px solid #e7d9b6;border-top:3px solid #d5ac54">
-      ${progress?`<div class="h2">项目进展到哪了</div><p class="small" style="white-space:pre-line;margin:8px 0 18px">${esc(progress)}</p>`:""}
-      <div class="h2" style="margin:0 0 12px;color:#8b6b15">${focus?.todayTitle?"今天的问题":"⚒ 接下来我想创造什么？"}</div>
+      ${focus?.todayTitle?"":`<div class="h2" style="margin:0 0 12px;color:#8b6b15">⚒ 接下来我想创造什么？</div>`}
       <p class="q" style="font-size:18px;line-height:1.65;margin:0 0 12px;overflow-wrap:anywhere;word-break:normal;white-space:pre-line">${manualFocus?esc(focus.q):id==="rl"?"让推进长期项目本身成为一件快乐、有收获、愿意继续的事。":esc(P.current?.q||"和 AI 讨论下一步想创造的东西")}</p>
-      <div class="small" style="margin-bottom:16px">由你与 AI 讨论后确认</div>
+      ${focus?.todayTitle?"":`<div class="small" style="margin-bottom:16px">由你与 AI 讨论后确认</div>`}
       <button class="btn" style="display:block;width:100%;max-width:100%;padding:12px 16px;text-align:center;background:linear-gradient(100deg,#a88729,#80620f);color:#fff;border:0;border-radius:12px" data-go="${startArg?"row":"project"}" ${startArg?`data-arg="${startArg}"`:`data-arg="${esc(id)}"`}>开始 ›</button>
     </section>
     <div class="card" style="padding:16px 18px;background:linear-gradient(115deg,#fffefa,#fbf2dc);border:1px solid #e7d9b6">
