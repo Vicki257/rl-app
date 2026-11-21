@@ -295,6 +295,18 @@ function applyRemoteUid(before,local,remote){
         if(!same(base[i],draft[i])&&
            draft.slice(0,base.length).some((x,j)=>j!==i&&same(base[i],x)))
           throw new Error("记录顺序已经变化，请刷新后重试，未覆盖远端数据");
+      // 持久化列表的原有元素不能就地重排/替换；新增只允许安全尾部追加。
+      // 远端刚补 UID 时，若原元素没有 UID 且没有唯一 id/date，内容改动后身份无法证明：
+      // 即使两行 date 相同且两行同时被修改，也必须拒绝，不能错配永久身份。
+      for(let i=0;i<base.length;i++){
+        const original=base[i],changed=draft[i],latest=current[i];
+        if(!original||typeof original!=="object"||Array.isArray(original)||
+           original.uid!=null||!latest||latest.uid==null)continue;
+        const uniqueField=k=>original[k]!=null&&changed&&changed[k]===original[k]&&
+          base.filter(v=>v&&v[k]===original[k]).length===1;
+        if(!uniqueField("id")&&!uniqueField("date")&&!same(original,changed))
+          throw new Error("无法确认旧记录的永久身份，请刷新后重试，未覆盖远端数据");
+      }
       for(let i=0;i<base.length;i++)inspect(base[i],draft[i],current[i]);
     }else if(base&&typeof base==="object"){
       if(!draft||typeof draft!=="object"||Array.isArray(draft)||
