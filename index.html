@@ -269,26 +269,123 @@ applyTheme(theme());
 function saveCfg(){try{localStorage.setItem(LS,JSON.stringify(cfg))}catch(e){}}
 const b64e=s=>{const b=new TextEncoder().encode(s);let x="";b.forEach(c=>x+=String.fromCharCode(c));return btoa(x)};
 const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
-const SHA={};
+const SHA={},BASE={};
+const copyJSON=v=>JSON.parse(JSON.stringify(v));
+function withoutUid(v){
+  if(Array.isArray(v))return v.map(withoutUid);
+  if(v&&typeof v==="object")return Object.fromEntries(
+    Object.entries(v).filter(([k])=>k!=="uid").map(([k,x])=>[k,withoutUid(x)]));
+  return v;
+}
+// 只合并 GitHub Actions 新增的 UID；结构变化时宁可拒绝，也不按位置猜编号。
+function applyRemoteUid(before,local,remote){
+  const pending=[];
+  const same=(a,b)=>JSON.stringify(withoutUid(a))===JSON.stringify(withoutUid(b));
+  function inspect(base,draft,current){
+    if(Array.isArray(base)){
+      // 允许尾部新增；服务端列表必须仍和 BASE 同长，否则不是单纯的补号。
+      if(!Array.isArray(draft)||!Array.isArray(current)||
+         draft.length<base.length||current.length!==base.length)
+        throw new Error("数据结构已经变化，请刷新后重试，未覆盖远端数据");
+      // 无稳定键的列表不可随意重排；能识别的换位直接拒绝，防止 UID 错配。
+      // 只有原有前缀未被改动时才认定为尾部追加；防止插在开头时 UID 错配。
+      if(draft.length>base.length&&base.some((x,i)=>!same(x,draft[i])))
+        throw new Error("记录不是安全的尾部追加，请刷新后重试，未覆盖远端数据");
+      for(let i=0;i<base.length;i++)
+        if(!same(base[i],draft[i])&&
+           draft.slice(0,base.length).some((x,j)=>j!==i&&same(base[i],x)))
+          throw new Error("记录顺序已经变化，请刷新后重试，未覆盖远端数据");
+      // 持久化列表的原有元素不能就地重排/替换；新增只允许安全尾部追加。
+      // 远端刚补 UID 时，若原元素没有 UID 且没有唯一 id/date，内容改动后身份无法证明：
+      // 即使两行 date 相同且两行同时被修改，也必须拒绝，不能错配永久身份。
+      for(let i=0;i<base.length;i++){
+        const original=base[i],changed=draft[i],latest=current[i];
+        if(!original||typeof original!=="object"||Array.isArray(original)||
+           original.uid!=null||!latest||latest.uid==null)continue;
+        const uniqueField=k=>original[k]!=null&&changed&&changed[k]===original[k]&&
+          base.filter(v=>v&&v[k]===original[k]).length===1;
+        if(!uniqueField("id")&&!uniqueField("date")&&!same(original,changed))
+          throw new Error("无法确认旧记录的永久身份，请刷新后重试，未覆盖远端数据");
+      }
+      for(let i=0;i<base.length;i++)inspect(base[i],draft[i],current[i]);
+    }else if(base&&typeof base==="object"){
+      if(!draft||typeof draft!=="object"||Array.isArray(draft)||
+         !current||typeof current!=="object"||Array.isArray(current))
+        throw new Error("数据结构已经变化，请刷新后重试，未覆盖远端数据");
+      for(const k of ["uid","id","date"])
+        if(base[k]!=null&&draft[k]!=null&&base[k]!==draft[k])
+          throw new Error("记录身份已变化，请刷新后重试，未覆盖远端数据");
+      if(current.uid!=null){
+        if(draft.uid!=null&&draft.uid!==current.uid)
+          throw new Error("永久编号存在冲突，已阻止覆盖");
+        pending.push([draft,current.uid]);
+      }
+      for(const k of Object.keys(base))
+        if(k!=="uid"&&k in draft&&k in current)inspect(base[k],draft[k],current[k]);
+    }
+  }
+  inspect(before,local,remote);
+  // 全部身份核验通过后才修改内存，避免中途报错留下半合并状态。
+  for(const [obj,uid] of pending)obj.uid=uid;
+}
 async function gh(path,opt={}){
   const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/data/${path}`,{...opt,headers:{Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json",...(opt.headers||{})},cache:"no-store"});
   if(!r.ok){const t=await r.text();throw new Error(`${r.status} ${path}：${t.slice(0,120)}`)}
   return r.json();
 }
-async function get(path){const j=await gh(path);SHA[path]=j.sha;return JSON.parse(b64d(j.content))}
+async function get(path){
+  const j=await gh(path),v=JSON.parse(b64d(j.content));
+  SHA[path]=j.sha;BASE[path]=copyJSON(v);
+  return v;
+}
 async function put(path,obj,msg){
-  if(!SHA[path]){try{const j=await gh(path);SHA[path]=j.sha}catch(e){}}
-  const body={message:msg||`更新 ${path}`,content:b64e(JSON.stringify(obj,null,2)+"\n")};
-  if(SHA[path]) body.sha=SHA[path];
-  try{const j=await gh(path,{method:"PUT",body:JSON.stringify(body)});SHA[path]=j.content.sha;}
-  catch(e){
-    const m=String(e.message);
-    if(m.startsWith("422")||m.startsWith("409")){
-      try{const cur=await gh(path);body.sha=SHA[path]=cur.sha;
-          const j2=await gh(path,{method:"PUT",body:JSON.stringify(body)});SHA[path]=j2.content.sha;return}
-      catch(e2){throw new Error("数据在别处被改过了，下拉刷新后再试")}
+  const message=msg||`更新 ${path}`;
+  const payload=sha=>{
+    const body={message,content:b64e(JSON.stringify(obj,null,2)+"\n")};
+    if(sha)body.sha=sha;
+    return body;
+  };
+  if(!SHA[path]){
+    try{
+      const j=await gh(path);
+      SHA[path]=j.sha;BASE[path]=JSON.parse(b64d(j.content));
+    }catch(e){
+      if(!String(e.message).startsWith("404"))throw e;
+      // 缺少目标文件时保留原来的首次创建能力（不带 sha）。
+      try{
+        const j=await gh(path,{method:"PUT",body:JSON.stringify(payload())});
+        SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
+        return;
+      }catch(err){
+        const m=String(err.message);
+        if(m.startsWith("409")||m.startsWith("422"))
+          throw new Error("该文件已被其他会话创建，请刷新后再试，未覆盖远端数据");
+        throw err;
+      }
     }
-    throw e}
+  }
+  try{
+    const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(SHA[path]))});
+    SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
+    return;
+  }catch(e){
+    const m=String(e.message);
+    if(!m.startsWith("422")&&!m.startsWith("409"))throw e;
+  }
+  // 远端有新内容时禁止陈旧整文件覆盖；只有补发 UID 可按相同对象合并。
+  const latest=await gh(path),server=JSON.parse(b64d(latest.content));
+  if(!BASE[path]||JSON.stringify(withoutUid(BASE[path]))!==JSON.stringify(withoutUid(server)))
+    throw new Error("数据已在别处更新，请刷新后重试；本次未覆盖远端数据");
+  applyRemoteUid(BASE[path],obj,server);
+  try{
+    const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(latest.sha))});
+    SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
+  }catch(e){
+    const m=String(e.message);
+    if(m.startsWith("422")||m.startsWith("409"))
+      throw new Error("保存期间又有新的修改，请刷新后重试；本次未覆盖远端数据");
+    throw e;
+  }
 }
 
 /* ============ 状态 ============ */
