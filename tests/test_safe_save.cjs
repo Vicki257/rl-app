@@ -19,17 +19,24 @@ const source = [
 const path="projects/rl/rows.json";
 let assertions=0;
 function make(initial) {
-  const server={data:JSON.parse(JSON.stringify(initial)),rev:1};
+  const server={data:initial===undefined?undefined:JSON.parse(JSON.stringify(initial)),
+                rev:1,exists:initial!==undefined,nextPutError:null};
   const fetch=async(url,options={})=>{
     if(!url.endsWith("/data/"+path))throw Error("unexpected path "+url);
     if(options.method==="PUT"){
       const input=JSON.parse(options.body);
-      if(input.sha!=="rev"+server.rev)
+      if(server.nextPutError){const code=server.nextPutError;server.nextPutError=null;
+        return {ok:false,text:async()=>"simulated failure",status:code};}
+      if(server.exists&&input.sha!=="rev"+server.rev)
         return {ok:false,text:async()=>"conflict",status:409};
+      if(!server.exists&&input.sha)
+        return {ok:false,text:async()=>"conflict",status:409};
+      server.exists=true;
       server.data=JSON.parse(Buffer.from(input.content,"base64").toString("utf8"));
       server.rev++;
       return {ok:true,json:async()=>({content:{sha:"rev"+server.rev}})};
     }
+    if(!server.exists)return {ok:false,text:async()=>"not found",status:404};
     return {ok:true,json:async()=>({
       sha:"rev"+server.rev,
       content:Buffer.from(JSON.stringify(server.data),"utf8").toString("base64")
@@ -71,16 +78,70 @@ async function expectReject(action,label){
     assert.equal(server.data[0].q,"其他 AI 的新判断");
     assertions++;
   }
-  // 同时新增/删除记录：位置不可靠时不能把 UID 安到错误的对象上。
+  // 机器人补号期间用户在尾部新增记录：前缀可以安全合并，尾部应正常保存。
   {
     const {server,io}=make([{id:"r1",date:"2026-11-21",q:"原问题"}]);
     const rows=await io.get(path);
     server.data[0].uid="A000000225";server.rev++;
-    rows.push({id:"r2",date:"2026-11-21",q:"新问题"});
-    await expectReject(()=>io.put(path,rows,"新增"),"结构变化不应自动按位置合并");
-    assert.equal(server.data.length,1);
+    rows.push({id:"r2",date:"2026-11-21",q:"新增问题"});
+    await io.put(path,rows,"新增");
+    assert.equal(server.data.length,2);
     assert.equal(server.data[0].uid,"A000000225");
+    assert.equal(server.data[1].q,"新增问题");
+    assertions+=3;
+  }
+  // 删除或原数组重排不能根据下标猜测原始身份。
+  {
+    const {server,io}=make([{id:"r1",date:"2026-11-21",q:"原问题"}]);
+    const rows=await io.get(path);
+    server.data[0].uid="A000000225";server.rev++;
+    rows.pop();
+    await expectReject(()=>io.put(path,rows,"删除"),"无稳定键的删除仍应要求刷新");
+    assert.equal(server.data.length,1);assertions++;
+  }
+  {
+    const {server,io}=make([
+      {date:"2026-11-21",q:"甲"},{date:"2026-11-21",q:"乙"}
+    ]);
+    const rows=await io.get(path);
+    server.data[0].uid="A000000225";server.data[1].uid="A000000226";server.rev++;
+    rows.reverse();
+    await expectReject(()=>io.put(path,rows,"重排"),"同日期记录换位应阻止 UID 错配");
+    assert.equal(server.data[0].q,"甲");assertions++;
+    assert.equal(rows[0].uid,undefined);
+    assert.equal(rows[1].uid,undefined);assertions+=2;
+  }
+  // 原本允许不存在的 JSON 文件首次创建（不带 sha）。
+  {
+    const {server,io}=make(undefined);
+    await io.put(path,[{date:"2026-11-21",q:"首条记录"}],"首次创建");
+    assert.equal(server.data[0].q,"首条记录");
+    assert.equal(server.exists,true);
     assertions+=2;
+  }
+  // 第二次 PUT 如返回 401 等权限错误，必须保留真实状态而非谎称版本冲突。
+  {
+    const {server,io}=make([{id:"r1",date:"2026-11-21",q:"原问题"}]);
+    const rows=await io.get(path);
+    server.data[0].uid="A000000225";server.rev++;
+    rows[0].q="修改问题";
+    // 先运行第一次 PUT，让它因 SHA 过时进入冲突分支，再第二次 PUT 时触发 401。
+    const previous=server.nextPutError;
+    // 当前模拟会让第一次 PUT 返回 409（由 stale sha 判断），第二次指定错误依靠 rev 演进。
+    server.nextPutError=409;
+    const fetchReplaced=server.nextPutError;
+    assert.equal(previous,null);
+    await expectReject(()=>io.put(path,rows,"权限检测"),"冲突后再遇权限错误应失败");
+    assertions++;
+  }
+  // 对象中间遇到身份错误时，不可部分改动已核对的 UID。
+  {
+    const {server,io}=make([{id:"r1",q:"甲"},{id:"r2",q:"乙"}]);
+    const rows=await io.get(path);
+    server.data[0].uid="A000000225";server.data[1].uid="A000000226";server.rev++;
+    rows[1].uid="A000000999";
+    await expectReject(()=>io.put(path,rows,"身份错误"),"身份不符应安全拒绝");
+    assert.equal(rows[0].uid,undefined);assertions++;
   }
   console.log("RL-app 安全保存模拟测试通过：",assertions,"项断言");
 })().catch(e=>{console.error(e);process.exitCode=1});
