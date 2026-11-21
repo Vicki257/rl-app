@@ -111,6 +111,18 @@ async function expectReject(action,label){
     assert.equal(rows[0].uid,undefined);
     assert.equal(rows[1].uid,undefined);assertions+=2;
   }
+  // 数组头部插入而不是尾部追加时，不可把旧行的 UID 配给新行。
+  {
+    const {server,io}=make([{date:"2026-11-21",q:"甲"}]);
+    const rows=await io.get(path);
+    server.data[0].uid="A000000225";server.rev++;
+    rows.unshift({date:"2026-11-21",q:"新插入"});
+    await expectReject(()=>io.put(path,rows,"插入首条"),"数组头部插入不得误认尾部追加");
+    assert.equal(server.data.length,1);
+    assert.equal(server.data[0].q,"甲");
+    assert.equal(rows[0].uid,undefined);
+    assertions+=3;
+  }
   // 原本允许不存在的 JSON 文件首次创建（不带 sha）。
   {
     const {server,io}=make(undefined);
