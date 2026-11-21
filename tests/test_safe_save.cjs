@@ -123,6 +123,35 @@ async function expectReject(action,label){
     assert.equal(rows[0].uid,undefined);
     assertions+=3;
   }
+  // 同一天的多条记录还没 uid，且其中两条换位并改了内容时，不能只凭日期配号。
+  {
+    const {server,io}=make([
+      {date:"2026-11-21",q:"甲"},{date:"2026-11-21",q:"乙"}
+    ]);
+    const rows=await io.get(path);
+    server.data[0].uid="A000000225";server.data[1].uid="A000000226";server.rev++;
+    rows[0].q="乙改";rows[1].q="甲改";
+    await expectReject(()=>io.put(path,rows,"同日重排并修改"),
+                       "同日期无稳定身份的两条改动必须拒绝");
+    assert.equal(server.data[0].uid,"A000000225");
+    assert.equal(server.data[1].uid,"A000000226");
+    assert.equal(rows[0].uid,undefined);
+    assert.equal(rows[1].uid,undefined);
+    assertions+=4;
+  }
+  // 唯一日期的行身份可验证，不能因为新的保护而拒绝正常文字修改。
+  {
+    const {server,io}=make([
+      {date:"2026-11-20",q:"甲"},{date:"2026-11-21",q:"乙"}
+    ]);
+    const rows=await io.get(path);
+    server.data[0].uid="A000000225";server.data[1].uid="A000000226";server.rev++;
+    rows[1].q="乙改";
+    await io.put(path,rows,"唯一日期正常修改");
+    assert.equal(server.data[1].uid,"A000000226");
+    assert.equal(server.data[1].q,"乙改");
+    assertions+=2;
+  }
   // 原本允许不存在的 JSON 文件首次创建（不带 sha）。
   {
     const {server,io}=make(undefined);
