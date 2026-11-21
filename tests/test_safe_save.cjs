@@ -20,12 +20,12 @@ const path="projects/rl/rows.json";
 let assertions=0;
 function make(initial) {
   const server={data:initial===undefined?undefined:JSON.parse(JSON.stringify(initial)),
-                rev:1,exists:initial!==undefined,nextPutError:null};
+                rev:1,exists:initial!==undefined,putErrors:[]};
   const fetch=async(url,options={})=>{
     if(!url.endsWith("/data/"+path))throw Error("unexpected path "+url);
     if(options.method==="PUT"){
       const input=JSON.parse(options.body);
-      if(server.nextPutError){const code=server.nextPutError;server.nextPutError=null;
+      if(server.putErrors.length){const code=server.putErrors.shift();
         return {ok:false,text:async()=>"simulated failure",status:code};}
       if(server.exists&&input.sha!=="rev"+server.rev)
         return {ok:false,text:async()=>"conflict",status:409};
@@ -125,12 +125,7 @@ async function expectReject(action,label){
     const rows=await io.get(path);
     server.data[0].uid="A000000225";server.rev++;
     rows[0].q="修改问题";
-    // 先运行第一次 PUT，让它因 SHA 过时进入冲突分支，再第二次 PUT 时触发 401。
-    const previous=server.nextPutError;
-    // 当前模拟会让第一次 PUT 返回 409（由 stale sha 判断），第二次指定错误依靠 rev 演进。
-    server.nextPutError=409;
-    const fetchReplaced=server.nextPutError;
-    assert.equal(previous,null);
+    server.putErrors.push(409,401);
     await expectReject(()=>io.put(path,rows,"权限检测"),"冲突后再遇权限错误应失败");
     assertions++;
   }
