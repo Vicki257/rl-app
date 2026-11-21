@@ -269,26 +269,73 @@ applyTheme(theme());
 function saveCfg(){try{localStorage.setItem(LS,JSON.stringify(cfg))}catch(e){}}
 const b64e=s=>{const b=new TextEncoder().encode(s);let x="";b.forEach(c=>x+=String.fromCharCode(c));return btoa(x)};
 const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
-const SHA={};
+const SHA={},BASE={};
+const copyJSON=v=>JSON.parse(JSON.stringify(v));
+function withoutUid(v){
+  if(Array.isArray(v))return v.map(withoutUid);
+  if(v&&typeof v==="object")return Object.fromEntries(
+    Object.entries(v).filter(([k])=>k!=="uid").map(([k,x])=>[k,withoutUid(x)]));
+  return v;
+}
+// 只合并 GitHub Actions 新增的 UID；结构变化时宁可拒绝，也不按位置猜编号。
+function applyRemoteUid(before,local,remote){
+  if(Array.isArray(before)){
+    if(!Array.isArray(local)||!Array.isArray(remote)||
+       before.length!==local.length||before.length!==remote.length)
+      throw new Error("数据结构已经变化，请刷新后重试，未覆盖远端数据");
+    for(let i=0;i<before.length;i++)applyRemoteUid(before[i],local[i],remote[i]);
+  }else if(before&&typeof before==="object"){
+    if(!local||typeof local!=="object"||Array.isArray(local)||
+       !remote||typeof remote!=="object"||Array.isArray(remote))
+      throw new Error("数据结构已经变化，请刷新后重试，未覆盖远端数据");
+    for(const k of ["uid","id","date"])
+      if(before[k]!=null&&local[k]!=null&&before[k]!==local[k])
+        throw new Error("记录身份已变化，请刷新后重试，未覆盖远端数据");
+    if(remote.uid!=null){
+      if(local.uid!=null&&local.uid!==remote.uid)
+        throw new Error("永久编号存在冲突，已阻止覆盖");
+      local.uid=remote.uid;
+    }
+    for(const k of Object.keys(before))
+      if(k!=="uid"&&k in local&&k in remote)applyRemoteUid(before[k],local[k],remote[k]);
+  }
+}
 async function gh(path,opt={}){
   const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/data/${path}`,{...opt,headers:{Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json",...(opt.headers||{})},cache:"no-store"});
   if(!r.ok){const t=await r.text();throw new Error(`${r.status} ${path}：${t.slice(0,120)}`)}
   return r.json();
 }
-async function get(path){const j=await gh(path);SHA[path]=j.sha;return JSON.parse(b64d(j.content))}
+async function get(path){
+  const j=await gh(path),v=JSON.parse(b64d(j.content));
+  SHA[path]=j.sha;BASE[path]=copyJSON(v);
+  return v;
+}
 async function put(path,obj,msg){
-  if(!SHA[path]){try{const j=await gh(path);SHA[path]=j.sha}catch(e){}}
-  const body={message:msg||`更新 ${path}`,content:b64e(JSON.stringify(obj,null,2)+"\n")};
-  if(SHA[path]) body.sha=SHA[path];
-  try{const j=await gh(path,{method:"PUT",body:JSON.stringify(body)});SHA[path]=j.content.sha;}
-  catch(e){
+  if(!SHA[path]){
+    const j=await gh(path);
+    SHA[path]=j.sha;BASE[path]=JSON.parse(b64d(j.content));
+  }
+  const message=msg||`更新 ${path}`;
+  const payload=sha=>({message,sha,content:b64e(JSON.stringify(obj,null,2)+"\n")});
+  try{
+    const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(SHA[path]))});
+    SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
+    return;
+  }catch(e){
     const m=String(e.message);
-    if(m.startsWith("422")||m.startsWith("409")){
-      try{const cur=await gh(path);body.sha=SHA[path]=cur.sha;
-          const j2=await gh(path,{method:"PUT",body:JSON.stringify(body)});SHA[path]=j2.content.sha;return}
-      catch(e2){throw new Error("数据在别处被改过了，下拉刷新后再试")}
-    }
-    throw e}
+    if(!m.startsWith("422")&&!m.startsWith("409"))throw e;
+  }
+  // 版本冲突时只自动接受远端新增 UID；任何其他远端修改都拒绝旧数据覆盖。
+  const latest=await gh(path),server=JSON.parse(b64d(latest.content));
+  if(!BASE[path]||JSON.stringify(withoutUid(BASE[path]))!==JSON.stringify(withoutUid(server)))
+    throw new Error("数据已在别处更新，请刷新后重试；本次未覆盖远端数据");
+  applyRemoteUid(BASE[path],obj,server);
+  try{
+    const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(latest.sha))});
+    SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
+  }catch(e){
+    throw new Error("保存期间又有新的修改，请刷新后重试；本次未覆盖远端数据");
+  }
 }
 
 /* ============ 状态 ============ */
