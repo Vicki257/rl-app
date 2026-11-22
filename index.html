@@ -1188,14 +1188,9 @@ function project(){
       edv("主线",m.main,"一句话")+
       edv("由主线演化出来的",(m.evolved||[]).join("；"),"分号隔开")+
       edv("支线",(m.branches||[]).join("；"),"分号隔开"))}
-    ${fold("ins","沉淀",`${(pj.ppl||[]).length} 人 · ${(pj.insights||[]).length} 条认知`,
-      `<div class="card tap" data-go="ppl" data-arg="${esc(id)}" style="margin:0 0 8px">
-        <div class="row"><b>人</b><span class="meta" style="margin-left:auto">${(pj.ppl||[]).length} 人</span><span class="chev">›</span></div>
-        <div class="small" style="margin-top:4px">一行一个人，一列一个 SOP 节点</div></div>`+
-      `<div class="small" style="margin:10px 0 4px;opacity:.7">认知</div>`+
-      ((pj.insights||[]).map(x=>`<div class="kv"><span class="v">${esc(x)}</span></div>`).join("")
-        ||`<div class="small">还没有沉淀下来的认知</div>`))}
-    ${pj.metrics?fold("met","指标","只看迭代清单闭合",`<div class="kv"><span class="v">${esc(pj.metrics)}</span></div>`):""}
+    ${id==="people"?`<div class="card tap" data-go="ppl" data-arg="${esc(id)}">
+      <div class="row"><b>人</b><span class="meta" style="margin-left:auto">${(pj.ppl||[]).length} 人</span><span class="chev">›</span></div>
+      <div class="small" style="margin-top:4px">一行一个人，一列一个 SOP 节点</div></div>`:""}
     <div class="meta" style="text-align:center;opacity:.5;margin-top:4px">${APPVER}</div>
   </div>${nav("plist")}`;
 }
