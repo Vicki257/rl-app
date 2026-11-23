@@ -443,12 +443,13 @@ function applyRemoteUid(before,local,remote){
   // 全部身份核验通过后才修改内存，避免中途报错留下半合并状态。
   for(const [obj,uid] of pending)obj.uid=uid;
 }
-// 开发版只读写配置里的那个分支。没配就是 main（仓库默认分支）。
+// 开发版未指定数据分支只读；部署在 main 的正式版保持原实现不受影响。
 function branch(){return (cfg.branch||"").trim()}
+const sourceKey=()=>[cfg.owner||"",cfg.repo||"",branch()].join("|");
 let branchOK=null;                       // null 没查过 / true 存在 / 字符串 失败原因
 async function ensureBranch(){
   const b=branch();
-  if(!b) return true;                    // 没指定分支＝用仓库默认分支，不需要校验
+  if(!b) throw new Error("开发版未指定数据分支，禁止写入默认分支");
   if(branchOK===true) return true;
   if(typeof branchOK==="string") throw new Error(branchOK);
   const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/branches/${encodeURIComponent(b)}`,
@@ -464,28 +465,30 @@ async function gh(path,opt={}){
   return r.json();
 }
 async function get(path){
-  const j=await gh(path),v=JSON.parse(b64d(j.content));
+  const source=sourceKey(),j=await gh(path),v=JSON.parse(b64d(j.content));
+  if(source!==sourceKey())throw new Error("仓库或分支已切换，请重新加载");
   SHA[path]=j.sha;BASE[path]=copyJSON(v);
   return v;
 }
 async function put(path,obj,msg){
+  const source=sourceKey(),guard=()=>{if(source!==sourceKey())throw new Error("数据源已切换，禁止使用旧文件 SHA")};
   const message=msg||`更新 ${path}`;
   const payload=sha=>{
     const body={message,content:b64e(JSON.stringify(obj,null,2)+"\n")};
     if(sha)body.sha=sha;
-    const b=branch();if(b)body.branch=b;          // 不带就会写进默认分支
+    body.branch=branch();                       // 绝不隐式写入默认分支
     return body;
   };
-  await ensureBranch();                            // 分支不存在就在这里停住，一个字节都不写
+  await ensureBranch();guard();              // 未配置或分支不存在，不写任何内容
   if(!SHA[path]){
     try{
-      const j=await gh(path);
+      const j=await gh(path);guard();
       SHA[path]=j.sha;BASE[path]=JSON.parse(b64d(j.content));
     }catch(e){
       if(!String(e.message).startsWith("404"))throw e;
       // 缺少目标文件时保留原来的首次创建能力（不带 sha）。
       try{
-        const j=await gh(path,{method:"PUT",body:JSON.stringify(payload())});
+        guard();const j=await gh(path,{method:"PUT",body:JSON.stringify(payload())});guard();
         SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
         return;
       }catch(err){
@@ -497,7 +500,7 @@ async function put(path,obj,msg){
     }
   }
   try{
-    const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(SHA[path]))});
+    guard();const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(SHA[path]))});guard();
     SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
     return;
   }catch(e){
@@ -505,12 +508,12 @@ async function put(path,obj,msg){
     if(!m.startsWith("422")&&!m.startsWith("409"))throw e;
   }
   // 远端有新内容时禁止陈旧整文件覆盖；只有补发 UID 可按相同对象合并。
-  const latest=await gh(path),server=JSON.parse(b64d(latest.content));
+  const latest=await gh(path);guard();const server=JSON.parse(b64d(latest.content));
   if(!BASE[path]||JSON.stringify(withoutUid(BASE[path]))!==JSON.stringify(withoutUid(server)))
     throw new Error("数据已在别处更新，请刷新后重试；本次未覆盖远端数据");
   applyRemoteUid(BASE[path],obj,server);
   try{
-    const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(latest.sha))});
+    guard();const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(latest.sha))});guard();
     SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
   }catch(e){
     const m=String(e.message);
@@ -587,11 +590,11 @@ const topBar=(title,right="")=>`<div class="top"><button class="back" data-back>
 /* ============ 页面 ============ */
 function settings(){
   return `<div class="body"><h1 class="h1">连接数据</h1>
-  <p class="small">第一次使用需要填写存数据的 GitHub 私有仓库。令牌只保存在这台手机的浏览器里。</p>
+  <p class="small">数据源：${esc(cfg.owner||"未配置")}/${esc(cfg.repo||"未配置")} · ${esc(branch()||"未配置分支（只读）")}。令牌只保存在本浏览器。</p>
   <div class="card" style="display:flex;flex-direction:column;gap:10px">
     <label class="small" for="owner">GitHub 用户名</label><input id="owner" value="${esc(cfg.owner||"")}" autocapitalize="off">
     <label class="small" for="repo">数据仓库名</label><input id="repo" value="${esc(cfg.repo||"rl-data")}" autocapitalize="off">
-    <label class="small" for="dbranch">分支（开发版填开发分支；留空＝仓库默认分支）</label><input id="dbranch" value="${esc(cfg.branch||"")}" autocapitalize="off" placeholder="claude/loving-cerf-ufxzgm">
+    <label class="small" for="dbranch">分支（开发版必填，留空禁止写入）</label><input id="dbranch" value="${esc(cfg.branch||"")}" autocapitalize="off" placeholder="claude/loving-cerf-ufxzgm">
     <label class="small" for="token">令牌（需要该仓库 Contents 读写权限）</label><input id="token" type="password" value="${esc(cfg.token||"")}">
   </div>
   <button class="btn" data-savecfg>保存并连接</button></div>`;
@@ -1323,7 +1326,7 @@ function buildTree(){
       // 研究完成就是完成，结论是不投资也一样；没完成的还在研究中
       kids.push(add(c.uid,{name:c.name,d:md?md[1]:"",detail:det,
         status:c.state==="已完成"?"done":c.state==="待研究"?"pending":"active",
-        go:"co",arg:c.id}));
+        go:"co",arg:pid+"|"+c.id}));
     });
     add("proj:"+pid,{name:pj.name,children:kids});
   });
@@ -2236,7 +2239,8 @@ document.addEventListener("click",async e=>{
   if(d.ttoggle){S.topen=S.topen||{};S.topen[d.ttoggle]?delete S.topen[d.ttoggle]:S.topen[d.ttoggle]=1;return render()}
   if(d.tcollapse){S.topen={};return render()}
   if(d.tfocus){S.topen={};openPath().forEach(k=>S.topen[k]=1);render();
-    setTimeout(()=>document.querySelector(".tn.cur")?.scrollIntoView({block:"center",behavior:"smooth"}),30);return}
+    setTimeout(()=>{const t=TREE||buildTree(),id=t.inChain[curUid()]||curUid();
+      Array.from(document.querySelectorAll("#tree .item.current")).find(el=>el.dataset.id===id)?.scrollIntoView({block:"center",behavior:"smooth"});},30);return}
   if(d.chaingo||d.cogjump){
     const u=d.chaingo||d.cogjump,n=(TREE||buildTree()).T[u];
     if(!n)return;
@@ -2286,7 +2290,10 @@ document.addEventListener("click",async e=>{
   if(d.savenode){const [pid,nid]=d.savenode.split("|");return saveNode(pid,nid)}
   if("saveboard" in d) return saveProject(S.arg||cur(),"调整 SOP 图的节点位置");
   if(d.decide){const [id,i,o]=d.decide.split("|");return decide(id,+i,o)}
-  if("savecfg" in d){cfg.owner=$("#owner").value.trim();cfg.repo=$("#repo").value.trim();cfg.branch=$("#dbranch").value.trim();cfg.token=$("#token").value.trim();branchOK=null;saveCfg();S.screen="today";return loadAll()}
+  if("savecfg" in d){cfg.owner=$("#owner").value.trim();cfg.repo=$("#repo").value.trim();cfg.branch=$("#dbranch").value.trim();cfg.token=$("#token").value.trim();branchOK=null;
+    Object.keys(SHA).forEach(k=>delete SHA[k]);Object.keys(BASE).forEach(k=>delete BASE[k]);
+    D.p={};D.global=null;D.index=[];D.rels=null;D.cogtree=null;D.hist=[];S.topen=null;treeDirty();
+    saveCfg();S.screen="today";return loadAll()}
   if("reload" in d){D.p={};return loadAll()}
 });
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches(".tap")) e.target.click()});
