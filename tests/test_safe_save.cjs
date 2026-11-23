@@ -9,22 +9,29 @@ const start = html.indexOf("const SHA={},BASE={};");
 const end = html.indexOf("/* ============ 状态 ============ */", start);
 assert(start >= 0 && end > start, "未找到 RL-app GitHub 存取代码");
 const source = [
-  'const cfg={owner:"test",repo:"test",token:"fake"};',
+  'const cfg={owner:"test",repo:"test",branch:"dev",token:"fake"};',
   "const b64e=s=>Buffer.from(s,'utf8').toString('base64');",
   "const b64d=s=>Buffer.from(s,'base64').toString('utf8');",
   html.slice(start, end),
-  "this.io={get,put};",
+  "this.io={get,put,cfg,SHA,BASE};",
 ].join("\n");
 
 const path="projects/rl/rows.json";
 let assertions=0;
 function make(initial) {
   const server={data:initial===undefined?undefined:JSON.parse(JSON.stringify(initial)),
-                rev:1,exists:initial!==undefined,putErrors:[]};
+                rev:1,exists:initial!==undefined,putErrors:[],branchExists:true,requests:[]};
   const fetch=async(url,options={})=>{
-    if(!url.endsWith("/data/"+path))throw Error("unexpected path "+url);
+    server.requests.push({url,method:options.method||"GET"});
+    if(url.endsWith("/branches/dev"))
+      return server.branchExists?{ok:true,json:async()=>({name:"dev"})}:{ok:false,status:404};
+    if(!url.startsWith("https://api.github.com/repos/test/test/contents/data/"+path))
+      throw Error("unexpected path "+url);
+    if(options.method!=="PUT"&&!url.endsWith("?ref=dev"))
+      throw Error("读取未显式指定开发分支："+url);
     if(options.method==="PUT"){
       const input=JSON.parse(options.body);
+      assert.equal(input.branch,"dev","写入必须显式绑定开发分支");
       if(server.putErrors.length){const code=server.putErrors.shift();
         return {ok:false,text:async()=>"simulated failure",status:code};}
       if(server.exists&&input.sha!=="rev"+server.rev)
