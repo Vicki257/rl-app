@@ -208,6 +208,17 @@ ok(evoRels.length>0,"应该有可以成链的演化关系");
     }
   }
 }
+// 新方法在 ids.py 分配 UID 前只是待发号记录，不得伪装为认知节点。
+{
+  const methods=D.meth.methods;
+  const unnumbered={id:"m-pending-test",name:"尚未领取永久 UID",cat:"测试分类",what:"等待发号"};
+  methods.push(unnumbered);
+  const pendingTree=buildTree();
+  ok(!pendingTree.T["m:m-pending-test"],"无 UID 的已提交方法不得出现为认知叶节点");
+  ok(!Object.values(pendingTree.T).some(n=>n.name===unnumbered.name),
+     "待发号方法不能通过别的名称进入认知树");
+  methods.pop();
+}
 // 目标/奖励和 pains 只保留在详情，不得成为没有 UID 的独立叶节点。
 {
   const t=buildTree();
