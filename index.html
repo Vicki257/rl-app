@@ -281,6 +281,87 @@ tr.add:hover>td{background:var(--accentSoft)}
 .cend.failed{color:var(--bad)}.cend.pending{color:var(--ink3)}
 .cend .meta{display:block;margin-bottom:3px}
 .cmid{display:flex;align-items:center;gap:8px;padding:6px 0 6px 13px;border-left:2px solid var(--line);margin-left:11px;font-size:13px}
+
+/* ===== 认知树：原样搬自已验收的「认知树.html」，只把选择器收进 .cog 里， 免得影响 app 其它页面。改动仅限于作用域前缀。 ===== */
+.cog{display:block;padding:0 0 70px}
+
+.cog{color-scheme:light;--bg:#f9f9f7;--paper:#fff;--ink:#262a29;--muted:#858b88;--line:#e7e9e5;--green:#087841;--yellow:#ad8000;--red:#d92f35;--gray:#797f7c;--yellow-bg:#fff8d9;--hover:#f7f8f5;--indent:25px}
+.cog *{box-sizing:border-box}.cog{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}.cog button{font:inherit;color:inherit;cursor:pointer}.cog button:focus-visible{outline:2px solid #d6a800;outline-offset:3px}.cog{max-width:930px;margin:0 auto;padding:36px 34px 52px}.cog header{display:flex;justify-content:space-between;align-items:center;margin:0 0 22px}.cog h1{font-size:23px;letter-spacing:-.03em;margin:0;font-weight:700}.cog .sub{color:var(--muted);font-size:12px;margin-top:4px}.cog .tools{display:flex;gap:6px}.cog .tool{border:1px solid var(--line);background:var(--paper);border-radius:9px;padding:7px 11px;font-size:12px;white-space:nowrap}.cog .tool:hover{background:var(--hover)}.cog .canvas{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px 27px 30px;box-shadow:0 3px 17px #202c1d04}.cog .root{font-size:19px;font-weight:750;margin:0 0 16px;letter-spacing:-.025em}.cog .branch{margin-left:var(--indent);position:relative}.cog .branch:before{content:"";position:absolute;top:0;bottom:19px;left:8px;border-left:1px solid var(--line)}.cog .branch>.item{position:relative}.cog .line{display:flex;align-items:center;min-height:40px;gap:7px;border-radius:8px;position:relative;padding:5px 8px 5px 0}.cog .line:hover{background:var(--hover)}.cog .toggle{display:grid;place-items:center;width:19px;height:26px;border:0;background:none;padding:0;flex:none;color:#7e8780}.cog .toggle svg{width:13px;height:13px;transition:transform .15s}.cog .toggle[aria-expanded="true"] svg{transform:rotate(90deg)}.cog .toggle:disabled{cursor:default;visibility:hidden}.cog .name{display:flex;align-items:center;gap:8px;min-width:0;text-align:left;flex:1;border:0;background:none;padding:3px 0;line-height:1.6;font-weight:530}.cog .name span:last-child{min-width:0;overflow-wrap:anywhere}.cog .struct .name{font-weight:650}.cog .active .name{color:var(--yellow)}.cog .done .name{color:var(--green)}.cog .failed .name{color:var(--red)}.cog .pending .name{color:var(--gray)}.cog .status-icon{width:16px;height:16px;flex:none;display:block;color:inherit}.cog .status-icon svg{display:block;width:100%;height:100%}.cog .active .name,.cog .done .name,.cog .failed .name,.cog .pending .name{font-weight:550}.cog .name .node-label{min-width:0;overflow-wrap:anywhere}.cog .current .name{display:block;padding:7px 0}.cog .current .current-heading{display:block;font-size:11px;font-weight:650;letter-spacing:.03em;margin-bottom:4px;color:inherit}.cog .current .current-title{display:flex;align-items:center;gap:8px}.cog .current .current-question{display:block;color:var(--ink);font-size:13px;font-weight:500;margin:4px 0 0 24px}.cog .current .line{border:1px solid color-mix(in srgb,var(--yellow) 35%,var(--line));padding-left:3px;align-items:center}.cog .current .line:before{display:none}.cog .current .line:hover{background:var(--yellow-bg)}.cog .current .line{background:var(--yellow-bg)}.cog .current .line:before{content:"";position:absolute;left:-2px;top:7px;bottom:7px;width:3px;background:#e8ba15;border-radius:3px}.cog .flag{font-size:11px;font-weight:650;white-space:nowrap;color:#947000}.cog .alias{color:var(--muted);display:flex;flex:none;align-items:center}.cog .alias svg{width:14px;height:14px}.cog .detail{margin:3px 5px 12px 27px;padding:13px 15px;background:#fafbf9;border-left:2px solid #d9dfd7;border-radius:0 9px 9px 0;color:#47524b;font-size:13px}.cog .detail p{margin:0 0 10px}.cog .detail p:last-child{margin:0}.cog .detail strong{color:#29332d;display:block;font-size:12px;margin-bottom:3px}.cog .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding:18px 3px 0}.cog .legend span{display:flex;align-items:center;gap:6px}.cog .legend i{width:8px;height:8px;border-radius:50%;background:var(--c)}.cog .legend .empty i{background:transparent;border:1px solid var(--gray)}.cog .note{font-size:11px;color:var(--muted);margin:15px 3px 0}.cog .topbranch>.line .name{font-size:16px}.cog .topbranch:not(:first-child){margin-top:4px}.cog .children[hidden],.cog .detail[hidden]{display:none}.cog .next .flag{color:var(--gray)}
+@media(max-width:600px){.cog{--indent:12px}.cog{padding:23px 12px 30px}.cog header{margin-bottom:14px}.cog h1{font-size:21px}.cog .canvas{padding:18px 10px 22px;border-radius:13px}.cog .root{font-size:16px;padding:0 5px}.cog .line{gap:3px;min-height:39px;padding-right:4px}.cog .toggle{width:15px}.cog .branch:before{left:6px}.cog .name{font-size:14px;gap:6px}.cog .status-icon{width:14px;height:14px}.cog .current .current-question{margin-left:20px;font-size:12px}.cog .flag{font-size:10px}.cog .detail{margin-left:18px;padding:10px}.cog .legend{gap:12px}.cog .tool{padding:6px 8px}.cog .tools{gap:4px}}@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .cog{color-scheme:dark;--bg:#151716;--paper:#1e211f;--ink:#e9ede9;--muted:#949e97;--line:#343b36;--green:#7cda9b;--yellow:#f1d04c;--red:#ff8484;--gray:#939b95;--yellow-bg:#39331b;--hover:#282e29}:root:not([data-theme=light]) .cog .detail{background:#262c28;color:#c4cdc6;border-color:#4a564c}:root:not([data-theme=light]) .cog .detail strong{color:var(--ink)}:root:not([data-theme=light]) .cog .flag{color:#f1d04c}}:root[data-theme=dark] .cog{color-scheme:dark;--bg:#151716;--paper:#1e211f;--ink:#e9ede9;--muted:#949e97;--line:#343b36;--green:#7cda9b;--yellow:#f1d04c;--red:#ff8484;--gray:#939b95;--yellow-bg:#39331b;--hover:#282e29}:root[data-theme=dark] .cog .detail{background:#262c28;color:#c4cdc6;border-color:#4a564c}:root[data-theme=dark] .cog .detail strong{color:var(--ink)}:root[data-theme=dark] .cog .flag{color:#f1d04c}
+
+.cog [hidden]{display:none!important}.cog .back{display:inline-flex;align-items:center;gap:7px;border:0;background:none;padding:8px 0;color:var(--muted);font-size:14px;margin-bottom:24px}.cog .back:hover{color:var(--ink)}.cog .detail-path{font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:12px}.cog .page-title{font-size:25px;line-height:1.4;margin:0 0 12px;font-weight:700;letter-spacing:-.02em}.cog .page-status{display:flex;align-items:center;gap:7px;font-size:13px;margin:0 0 23px}.cog .page-status.active{color:var(--yellow)}.cog .page-status.done{color:var(--green)}.cog .page-status.failed{color:var(--red)}.cog .page-status.pending{color:var(--gray)}.cog .detail-card{background:var(--paper);border:1px solid var(--line);border-radius:17px;padding:26px 29px}.cog .detail-section+ .detail-section{border-top:1px solid var(--line);margin-top:22px;padding-top:22px}.cog .detail-section h2{font-size:13px;margin:0 0 9px;font-weight:650;color:var(--muted)}.cog .detail-section p{font-size:15px;line-height:1.85;margin:0;white-space:pre-wrap}.cog .detail-empty{color:var(--muted);font-size:14px}.cog .page-note{color:var(--muted);font-size:12px;line-height:1.7;margin:20px 2px 0}.cog .back svg{width:17px;height:17px}.cog .current .current-question{color:inherit}
+@media(max-width:600px){.cog .detail-card{padding:21px 19px}.cog .page-title{font-size:23px}.cog .back{margin-bottom:15px}}
+
+.cog .record-editor{display:block;width:100%;min-height:340px;resize:vertical;border:0;background:transparent;color:inherit;font:inherit;line-height:1.9;padding:0;outline:none}.cog .record-editor:focus{outline:none}.cog .record-editor::placeholder{color:var(--muted)}.cog .record-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:15px;padding-top:15px;border-top:1px solid var(--line)}.cog .save-note{font-size:12px;color:var(--muted);margin-right:auto}.cog .save-record{background:var(--ink);color:var(--paper);border:0;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600}.cog .save-record:disabled{opacity:.35;cursor:default}
+
+.cog .item.dragging>.line{opacity:.45}
+.cog .item.dropok>.line{outline:2px dashed var(--yellow);outline-offset:1px;border-radius:9px}
+.cog .item.merging>.line{transform:translateY(6px) scaleY(.4);opacity:0;transition:all .5s cubic-bezier(.4,0,.2,1)}
+.cog .item.merged>.line{animation:pop .5s ease}
+@keyframes pop{0%{background:var(--yellow-bg)}45%{background:var(--yellow-bg);box-shadow:0 0 0 4px color-mix(in srgb,var(--yellow) 22%,transparent)}100%{background:transparent;box-shadow:none}}
+.cog .relsheet{position:fixed;inset:0;background:#0b0d0c5c;display:grid;place-items:end center;z-index:50;padding:16px}
+.cog .relcard{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;width:min(420px,100%);
+  box-shadow:0 12px 40px #0000002e;display:grid;gap:7px}
+.cog .relq{font-size:12.5px;color:var(--muted);margin-bottom:2px;font-weight:600}
+.cog .relpair{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:9px;flex-wrap:wrap}
+.cog .relpair b{font-weight:600}.cog .relpair span{color:var(--muted)}
+.cog .relbtn{display:flex;align-items:baseline;gap:9px;width:100%;text-align:left;border:1px solid var(--line);
+  background:none;border-radius:11px;padding:11px 14px;font-size:14px;font-weight:600}
+.cog .relbtn em{font-style:normal;font-size:12px;font-weight:400;color:var(--muted)}
+.cog .relbtn:hover{background:var(--hover);border-color:var(--yellow)}
+.cog .relbtn.cancel{justify-content:center;font-weight:500;color:var(--muted);border-color:transparent}
+
+.cog .relnote{font-size:13px;color:var(--muted);line-height:1.7;margin:2px 0 20px;max-width:62ch}
+.cog .relnote b{color:var(--ink);font-weight:600}
+.cog .relgrp{margin-bottom:26px}
+.cog .relgrp>h3{font-size:14px;font-weight:600;margin:0 0 3px;display:flex;align-items:center;gap:8px}
+.cog .relgrp>p{font-size:12px;color:var(--muted);margin:0 0 11px}
+.cog .reltag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--hover);color:var(--muted)}
+.cog .relrow{border:1px solid var(--line);border-radius:13px;padding:13px 15px;margin-bottom:9px;display:grid;gap:7px}
+.cog .relrow.ok{border-color:var(--green);background:color-mix(in srgb,var(--green) 6%,transparent)}
+.cog .relends{display:grid;gap:5px;font-size:13.5px;line-height:1.5}
+.cog .relends i{font-style:normal;font-size:11px;color:var(--muted);margin-right:6px}
+.cog .relarrow{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.cog .relarrow b{color:var(--ink);font-weight:600}
+.cog .relwhy{font-size:12px;color:var(--muted);line-height:1.65;border-left:2px solid var(--line);padding-left:10px}
+.cog .relamb{font-size:11.5px;color:var(--yellow-ink,#8a6400);font-weight:500}
+.cog .relact{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.cog .relact button{border:1px solid var(--line);background:none;border-radius:8px;padding:6px 13px;font-size:12.5px;font-weight:600}
+.cog .relact button.yes{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.cog .relact button:disabled{opacity:.4}
+.cog .relact .done{font-size:12px;color:var(--green);margin-right:auto;font-weight:600}
+.cog .chainbox{border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:11px;margin-bottom:14px}
+.cog .chainend{display:block;width:100%;text-align:left;border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:13.5px;line-height:1.5;background:none;color:var(--ink)}
+.cog .chainend:hover{background:var(--hover);border-color:var(--yellow)}
+.cog .chainend.done{color:var(--green)}.cog .chainend.active{color:var(--yellow)}
+.cog .chainend.failed{color:var(--red)}.cog .chainend.pending{color:var(--gray)}
+.cog .chainend i .status-icon{margin-right:5px}
+.cog .chainend i{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-bottom:3px}
+.cog .chainmid{display:flex;align-items:center;gap:10px;font-size:13px;padding-left:4px}
+.cog .chainmid .bar{width:2px;height:20px;background:var(--line)}
+.cog .chainmid b{font-weight:600}
+.cog .chainmid em{font-style:normal;color:var(--muted);font-size:12px}
+.cog .fldcard{border:1px solid var(--line);border-radius:16px;padding:4px 18px 8px;margin-bottom:14px}
+.cog .fld{padding:14px 0;border-bottom:1px solid var(--line)}
+.cog .fld:last-child{border-bottom:0}
+.cog .fld h4{font-size:12.5px;font-weight:600;color:var(--yellow-deep,#8a6a12);margin:0 0 7px;letter-spacing:.02em}
+.cog .fld p{margin:0;font-size:14.5px;line-height:1.75}
+.cog .fld p.muted{color:var(--muted);font-size:13.5px}
+.cog .chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cog .chip{border:1px solid var(--line);border-radius:999px;padding:5px 15px;font-size:13px;color:var(--muted)}
+.cog .chip.on{border-color:var(--yellow);background:var(--yellow-bg);color:var(--ink);font-weight:600}
+.cog .chips em{font-style:normal;font-size:12px;color:var(--muted)}
+.cog .crumblink{border:0;background:none;padding:0;font:inherit;color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.cog .setrel{border:1px dashed var(--line);background:none;border-radius:8px;padding:4px 11px;font-size:12px;color:var(--muted)}
+.cog .setrel:hover{border-color:var(--yellow);color:var(--ink)}
+.cog .offchain{margin-top:16px;border-top:1px solid var(--line);padding-top:13px}
+.cog .offchain h4{font-size:12.5px;font-weight:600;margin:0 0 7px;color:var(--muted)}
+.cog .offchain ul{margin:0;padding-left:18px;font-size:13px;line-height:1.8}
+.cog .offchain b{font-weight:600}
+.cog .nameask input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;background:none;color:var(--ink)}
+.cog .page-title[contenteditable]{outline:none;border-radius:6px}
+.cog .page-title[contenteditable]:focus{box-shadow:0 0 0 2px color-mix(in srgb,var(--yellow) 45%,transparent)}
+
 </style>
 </head>
 <body>
@@ -362,8 +443,23 @@ function applyRemoteUid(before,local,remote){
   // 全部身份核验通过后才修改内存，避免中途报错留下半合并状态。
   for(const [obj,uid] of pending)obj.uid=uid;
 }
+// 开发版只读写配置里的那个分支。没配就是 main（仓库默认分支）。
+function branch(){return (cfg.branch||"").trim()}
+let branchOK=null;                       // null 没查过 / true 存在 / 字符串 失败原因
+async function ensureBranch(){
+  const b=branch();
+  if(!b) return true;                    // 没指定分支＝用仓库默认分支，不需要校验
+  if(branchOK===true) return true;
+  if(typeof branchOK==="string") throw new Error(branchOK);
+  const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/branches/${encodeURIComponent(b)}`,
+    {headers:{Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json"},cache:"no-store"});
+  if(!r.ok){branchOK=`分支 ${b} 在 ${cfg.owner}/${cfg.repo} 上不存在（${r.status}），没有写任何东西`;throw new Error(branchOK)}
+  branchOK=true;return true;
+}
 async function gh(path,opt={}){
-  const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/data/${path}`,{...opt,headers:{Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json",...(opt.headers||{})},cache:"no-store"});
+  const b=branch();
+  const q=b&&(!opt.method||opt.method==="GET")?`?ref=${encodeURIComponent(b)}`:"";
+  const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/data/${path}${q}`,{...opt,headers:{Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json",...(opt.headers||{})},cache:"no-store"});
   if(!r.ok){const t=await r.text();throw new Error(`${r.status} ${path}：${t.slice(0,120)}`)}
   return r.json();
 }
@@ -377,8 +473,10 @@ async function put(path,obj,msg){
   const payload=sha=>{
     const body={message,content:b64e(JSON.stringify(obj,null,2)+"\n")};
     if(sha)body.sha=sha;
+    const b=branch();if(b)body.branch=b;          // 不带就会写进默认分支
     return body;
   };
+  await ensureBranch();                            // 分支不存在就在这里停住，一个字节都不写
   if(!SHA[path]){
     try{
       const j=await gh(path);
@@ -493,6 +591,7 @@ function settings(){
   <div class="card" style="display:flex;flex-direction:column;gap:10px">
     <label class="small" for="owner">GitHub 用户名</label><input id="owner" value="${esc(cfg.owner||"")}" autocapitalize="off">
     <label class="small" for="repo">数据仓库名</label><input id="repo" value="${esc(cfg.repo||"rl-data")}" autocapitalize="off">
+    <label class="small" for="dbranch">分支（开发版填开发分支；留空＝仓库默认分支）</label><input id="dbranch" value="${esc(cfg.branch||"")}" autocapitalize="off" placeholder="claude/loving-cerf-ufxzgm">
     <label class="small" for="token">令牌（需要该仓库 Contents 读写权限）</label><input id="token" type="password" value="${esc(cfg.token||"")}">
   </div>
   <button class="btn" data-savecfg>保存并连接</button></div>`;
@@ -507,13 +606,14 @@ function focusRow(P){
 // 用户手动定过焦点就以用户的为准；没定过才回落到优先分最高的那一条
 function focusRowOf(P){
   const f=P.current?.focus;
-  if(f&&f.uid){const r=P.rows.find(x=>x.uid===f.uid);if(r) return r}   // 下标会随插入漂移，UID 不会
+  if(f&&f.focusUid){const r=P.rows.find(x=>x.uid===f.focusUid);if(r) return r}  // 下标会随插入漂移，UID 不会
+  if(f&&(f.date||f.q)){const r=P.rows.find(x=>(!f.date||x.date===f.date)&&(!f.q||x.q===f.q));if(r) return r}
   if(f&&f.manual&&P.rows[f.idx]) return P.rows[f.idx];
   return focusRow(P);
 }
 async function setFocus(pid,i){
   const P=D.p[pid];if(!P) return;const r=P.rows[i];if(!r) return;
-  P.current.focus={uid:r.uid||null,date:r.date||null,idx:i,q:r.q||"",manual:true,at:new Date().toISOString()};
+  P.current.focus={focusUid:r.uid||null,date:r.date||null,idx:i,q:r.q||"",manual:true,at:new Date().toISOString()};
   P.current.rowDate=r.date||P.current.rowDate;
   P.current.q=r.q||"";                       // 只动 current.json，不碰 rows 的状态和优先分
   try{
@@ -528,9 +628,9 @@ async function syncFocus(id){
   if(P.current.focus&&P.current.focus.manual) return;   // 用户定过了，AI 不许覆盖
   const row=focusRow(P),idx=P.rows.indexOf(row);
   const f=P.current.focus;
-  if(f&&f.uid&&row?.uid&&f.uid===row.uid) return;          // 认永久 UID：下标变了也不算换人
-  if(f&&!f.uid&&f.idx===idx&&f.date===(row?.date||null)) return;
-  P.current.focus={uid:row?.uid||null,date:row?.date||null,idx,q:row?.q||""};
+  if(f&&f.focusUid&&row?.uid&&f.focusUid===row.uid) return;   // 认永久 UID：下标变了也不算换人
+  if(f&&!f.focusUid&&f.idx===idx&&f.date===(row?.date||null)) return;
+  P.current.focus={focusUid:row?.uid||null,date:row?.date||null,idx,q:row?.q||""};
   P.current.rowDate=row?.date||P.current.rowDate;
   P.current.q=row?.q||"";
   try{
@@ -1150,15 +1250,18 @@ function treeDirty(){TREE=null}
 function relsOf(){return D.rels?.rels||[]}
 function chainsOf(){return D.rels?.chains||[]}
 function okRels(){return relsOf().filter(r=>r.state==="已确认")}
-// 这两个 UID 之间确认过的关系。方向写死在 rels.json 里，不按时间倒推。
-function relBetween(a,b){return okRels().find(r=>(r.from===a&&r.to===b)||(r.from===b&&r.to===a))||null}
+// 这两个 UID 之间确认过的关系。可能不止一条，全给出来，不替人挑第一条。
+function relsBetween(a,b){return okRels().filter(r=>(r.from===a&&r.to===b)||(r.from===b&&r.to===a))}
+function relBetween(a,b){const r=relsBetween(a,b);return r.length===1?r[0]:null}
 function relsTouching(u){return okRels().filter(r=>r.from===u||r.to===u)}
 
 function buildTree(){
   const CT=D.cogtree||{up:{},struct:{roots:[],nodes:{}}},T={};
   const add=(id,o)=>{T[id]=Object.assign({id:id,children:[]},o);return id};
   (Object.entries(CT.struct?.nodes||{})).forEach(([k,v])=>add(k,{name:v.name,children:(v.children||[]).slice()}));
-  const PRJ=(D.index||[]).filter(x=>x.state!=="archived").map(x=>x.id);
+  // 每日思考日志不是正式项目，不在树上单独占一枝（它的认知已经迁进各项目了）
+  const HIDE=new Set((CT.hideProjects)||["journal"]);
+  const PRJ=(D.index||[]).filter(x=>x.state!=="archived"&&!HIDE.has(x.id)).map(x=>x.id);
   PRJ.forEach(pid=>{
     const P=D.p[pid];if(!P)return;
     const pj=P.project,kids=[],used={};
@@ -1180,12 +1283,16 @@ function buildTree(){
         detail:[["这一步要回答什么",n.q||""],["整体是怎么跑的",n.whole||n.how||""],
                 ["目前的结论",n.concl||""]].filter(x=>x[1])});
     };
-    if(pj.sop?.nodes?.length)
-      kids.push(add(pid+":sop",{name:"SOP",children:pj.sop.nodes.map((n,i)=>ringOf(n,"n"+i))}));
+    // 和 ids.py 的 is_cognitive 保持一致：装饰节点（kind=plain 且没有任何内容）不进树
+    const CONT=["q","whole","how","judge","concl","so","pains","res","rules","note"];
+    const isCog=n=>("cog" in n)?!!n.cog:(n.kind!=="plain"||CONT.some(k=>n[k]));
+    const sopNodes=(pj.sop?.nodes||[]).filter(isCog);
+    if(sopNodes.length)
+      kids.push(add(pid+":sop",{name:"SOP",children:sopNodes.map((n,i)=>ringOf(n,"n"+i))}));
     // tracks 下面每一套 SOP 也要进树，之前整块漏掉了
     (pj.tracks||[]).forEach((tk,ti)=>{
       const sk=(tk.sops||[]).map((so,si)=>{
-        const nn=(so.nodes||[]).map((n,ni)=>ringOf(n,"t"+ti+"s"+si+"n"+ni));
+        const nn=(so.nodes||[]).filter(isCog).map((n,ni)=>ringOf(n,"t"+ti+"s"+si+"n"+ni));
         return add("track:"+pid+":"+ti+":"+si,{name:so.name,children:nn,
           detail:[["什么时候用",so.when||""],["版本",so.version||""]].filter(x=>x[1])});
       });
@@ -1231,7 +1338,8 @@ function buildTree(){
     children:Object.entries(cats).map(([c,ids])=>add("mcat:"+c,{name:c+" "+ids.length+" 条",children:ids}))});
   const hk=[];
   (D.hist||[]).forEach(h=>{if(!h.uid)return;
-    hk.push(add(h.uid,{name:(h.text||"").slice(0,40),status:"done",d:h.date||"",
+    // 历史记录只是「当时记下的」，没有验收结论，不默认标成已完成
+    hk.push(add(h.uid,{name:(h.text||"").slice(0,40),d:h.date||"",
       detail:[["当时记下的",h.text||""]]}))});
   add("history",{name:"历史认知 "+hk.length+" 条",children:hk});
   // 结构里写了但没建出来的项目入口，不要静默丢掉
@@ -1277,7 +1385,7 @@ function treeMark(s){const M={done:'<circle cx="8" cy="8" r="6.3"/><path d="m5 8
 function curUid(){
   const P=D.p[cur()];if(!P)return"";
   const f=P.current?.focus||{};
-  if(f.uid&&P.rows.some(r=>r.uid===f.uid))return f.uid;
+  if(f.focusUid&&P.rows.some(r=>r.uid===f.focusUid))return f.focusUid;
   if(f.date||f.q){
     const r=P.rows.find(r=>(!f.date||r.date===f.date)&&(!f.q||r.q===f.q));
     if(r?.uid)return r.uid;
@@ -1293,96 +1401,103 @@ function openPath(){
   for(let i=1;i<seg.length;i++)out.push(seg.slice(0,i).join("/"));
   return out;
 }
+// 以下四个页面的结构、类名和 SVG 全部照搬已验收的「认知树.html」，只把数据换成仓库实时数据。
+const CHEV='<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const BACKSVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 function treeNode(id,path,anc){
   const t=TREE,d=t.T[id];if(!d||anc.includes(id))return"";
-  const key=path?path+"/"+id:id,has=!!d.children?.length,on=!!S.topen?.[key],
+  const key=path?path+"/"+id:id,has=!!d.children?.length,shown=!!S.topen?.[key],
         isCur=(id===curUid()||id===t.inChain[curUid()]);
-  return `<div class="tn ${d.status||"struct"}${isCur?" cur":""}" data-tpath="${esc(key)}" data-tid="${esc(id)}" draggable="true">
-    <div class="tline">
-      <button class="tchev" data-ttoggle="${esc(key)}" aria-expanded="${on}" ${has?"":"disabled"} aria-label="${on?"折叠":"展开"}">${has?(on?"⌄":"›"):""}</button>
-      <button class="tname" data-topen="${esc(key)}">${treeMark(d.status)}<span>${esc(d.name)}</span></button>
-    </div>
-    ${has?`<div class="tkids"${on?"":" hidden"}>${d.children.map(c=>treeNode(c,key,anc.concat([id]))).join("")}</div>`:""}</div>`;
+  return `<div draggable="true" class="item ${d.status||'struct'} ${isCur?'current':''} ${!path?'topbranch':''}" data-id="${esc(id)}" data-path="${esc(key)}"><div class="line"><button class="toggle" data-ttoggle="${esc(key)}" aria-label="${shown?'折叠':'展开'}${esc(d.name)}" aria-expanded="${shown}" ${has?'':'disabled'}>${CHEV}</button><button class="name" data-topen="${esc(key)}" aria-label="查看${esc(d.name)}详情">${isCur?`<span class="current-heading">当前研究位置</span><span class="current-title">${treeMark(d.status)}<span class="node-label">${esc(d.name)}</span></span>${d.question?`<span class="current-question">${esc(d.question)}</span>`:""}`:`${treeMark(d.status)}<span class="node-label">${esc(d.name)}</span>`}</button>${d.chain?'<span class="alias" title="认知演化链">'+treeMark("")+'</span>':''}</div>${has?`<div class="branch children" ${shown?'':'hidden'}>${d.children.map(c=>treeNode(c,key,anc.concat([id]))).join('')}</div>`:''}</div>`;
 }
 function treePage(){
   const t=buildTree();
   if(!S.topen){S.topen={};openPath().forEach(k=>S.topen[k]=1)}
   const n=Object.keys(t.T).length,cand=relsOf().filter(r=>r.state!=="已确认").length;
-  return `<div class="body">
-    <h1 class="h1">认知树</h1>
-    <p class="small" style="margin:0 0 10px">${n} 个节点，全部从仓库现有数据现算。黄框那条是今天停在的位置。</p>
-    <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px">
-      <button class="chip" data-tcollapse="1">折叠全部</button>
-      <button class="chip" data-tfocus="1">定位当前</button>
-      <button class="chip" data-go="rels">认知关系 ${cand}</button></div>
-    <div class="tree">${t.roots.map(r=>treeNode(r,"",[])).join("")}</div>
-    <div class="tlegend">${[["done","已结案"],["active","研究中"],["failed","验证失败"],["pending","未开始"]]
-      .map(([k,l])=>`<span class="${k}">${treeMark(k)}${l}</span>`).join("")}
-      <span>没有依据判断状态的节点不上色</span></div>
-    ${t.missing.length?`<div class="card bd small">有 ${t.missing.length} 处指向了不存在的节点：${esc(t.missing.slice(0,5).join("、"))}</div>`:""}
-  </div>${nav("tree")}`;
+  const legend=[["done","已完成"],["active","研究中"],["failed","验证失败"],["pending","未开始"]]
+    .map(([k,l])=>`<span>${treeMark(k)}${l}</span>`).join("")
+    +'<span class="empty"><i></i>没有依据判断状态的不上色</span>';
+  return `<div class="cog"><div id="tree-page">
+    <header><div><h1>认知树</h1><div class="sub">${n} 个节点 · 来自 ${esc(cfg.owner||"")}/${esc(cfg.repo||"")} 分支 ${esc(branch()||"默认分支")} · 拖两条认知相叠 → 生成一条演化链</div></div>
+    <div class="tools"><button class="tool" data-tcollapse="1">折叠全部</button><button class="tool" data-tfocus="1">定位当前</button><button class="tool" data-go="rels">认知关系 ${cand}</button></div></header>
+    <section class="canvas"><h2 class="root">我要杰出，我要做出伟大的公司</h2>
+      <div id="tree">${t.roots.map(r=>treeNode(r,"",[])).join("")}</div></section>
+    <div class="legend">${legend}</div>
+    ${t.missing.length?`<div class="note">有 ${t.missing.length} 处指向了不存在的节点：${esc(t.missing.slice(0,5).join("、"))}</div>`:""}
+    <div class="note">节点来自仓库现有数据，每次打开现算，不另存一份。关系只认 rels.json 里确认过的那几条。</div>
+  </div></div>${nav("tree")}`;
 }
 function relsPage(){
   buildTree();const rs=relsOf(),by={};
   rs.forEach((r,i)=>(by[r.rel]=by[r.rel]||[]).push([r,i]));
   const nm=u=>esc((TREE.T[u]||{}).name||u),dt=u=>(TREE.T[u]||{}).d||"";
-  const head=k=>isEvo(k)?"确认后这两条会合成一条演化链":"确认后两条都留在原位，只是互相连上";
-  return `<div class="body">${topBar("认知关系","")}
-    <p class="small">从真实记录里找出来的候选关系，每条都带原文依据。推翻／修正／继承会合成演化链；迁移／支持／关联只连线，不动树上的位置。</p>
+  return `<div class="cog"><section id="rel-page">
+    <button class="back" data-back>${BACKSVG}返回认知树</button>
+    <h1 class="page-title">认知关系</h1>
+    <div class="relnote">从真实数据里找出来的<b>候选</b>认知对，每一对都带原文依据。<b>推翻／修正／继承</b>确认后会合成一条演化链，接在原来的树干上；<b>迁移／支持／关联</b>只连线，两条都留在树上原来的位置。</div>
     ${REL6.map(([k,desc])=>{const g=by[k]||[];if(!g.length)return"";
-      return `<div style="margin-top:18px"><div class="row"><b>${k}</b><span class="meta">${desc} · ${g.length} 对</span></div>
-      <div class="meta" style="margin:2px 0 6px">${head(k)}</div>
-      ${g.map(([r,i])=>`<div class="card relc${r.state==="已确认"?" ok":""}">
-        <div class="small" style="color:var(--ink)"><b>${nm(r.from)}</b>${dt(r.from)?`　${dt(r.from)}`:""}</div>
-        <div class="meta" style="margin:4px 0">└ <b style="color:var(--ink)">${k}</b>　${esc(r.dir||desc)}</div>
-        <div class="small" style="color:var(--ink)"><b>${nm(r.to)}</b>${dt(r.to)?`　${dt(r.to)}`:""}</div>
-        <div class="relwhy">${esc(r.why||"")}${r.src?`<br><span class="meta">依据：${esc(r.src)}</span>`:""}</div>
-        ${r.note?`<div class="relnote">⚠ ${esc(r.note)}</div>`:""}
-        <div class="row" style="margin-top:8px">${r.state==="已确认"?'<span class="meta" style="color:var(--fx)">已确认</span>':""}
-          <button class="btn ghost" style="margin-left:auto;width:auto;padding:7px 14px" data-relok="${i}" ${r.state==="已确认"?"disabled":""}>${isEvo(k)?"确认，生成演化链":"确认这条关系"}</button></div>
+      return `<div class="relgrp"><h3>${k}<span class="reltag">${g.length} 对</span></h3><p>${desc}　${isEvo(k)?"确认后合成演化链":"确认后只连线，不动树上的位置"}</p>
+      ${g.map(([r,i])=>`<div class="relrow${r.state==="已确认"?" ok":""}">
+        <div class="relends"><div><i>${isEvo(r.rel)?"旧":r.rel==="支持"?"证据":"一端"}</i>${nm(r.from)}${dt(r.from)?"　"+dt(r.from):""}</div>
+        <div class="relarrow"><span>└</span><b>${k}</b><span>${esc(r.dir||desc)}</span></div>
+        <div><i>${isEvo(r.rel)?"新":r.rel==="支持"?"被支持":"另一端"}</i>${nm(r.to)}${dt(r.to)?"　"+dt(r.to):""}</div></div>
+        <div class="relwhy">${esc(r.why||"")}${r.src?`<br>${esc(r.src)}`:""}</div>
+        ${r.note?`<div class="relamb">⚠ ${esc(r.note)}</div>`:""}
+        <div class="relact">${r.state==="已确认"?'<span class="done">已确认</span>':""}
+          <button class="yes" data-relok="${i}" ${r.state==="已确认"?"disabled":""}>${isEvo(k)?"确认，生成演化链":"确认这条关系"}</button></div>
       </div>`).join("")}</div>`}).join("")}
-  </div>${nav("tree")}`;
+  </section></div>${nav("tree")}`;
 }
 function chainPage(){
   buildTree();const c=chainsOf().find(x=>x.id===S.arg);
-  if(!c)return `<div class="body">${topBar("找不到这条链","")}${nav("tree")}</div>`;
+  if(!c)return `<div class="cog"><section id="node-page"><button class="back" data-back>${BACKSVG}返回认知树</button><h1 class="page-title">找不到这条链</h1></section></div>${nav("tree")}`;
   const ms=(c.members||[]).filter(u=>TREE.T[u]).slice().sort((a,b)=>{
-    const x=TREE.T[a].d||"",y=TREE.T[b].d||"";
-    return x&&y?(x<y?-1:x>y?1:0):x?-1:y?1:0});
+    const x=TREE.T[a].d||"",y=TREE.T[b].d||"";return x&&y?(x<y?-1:x>y?1:0):x?-1:y?1:0});
   let h="";
   ms.forEach((u,i)=>{
-    if(i){const r=relBetween(ms[i-1],u);
-      h+=r?`<div class="cmid"><b>${esc(r.rel)}</b>　<span class="meta">${esc(r.from===ms[i-1]?"前面那条被后面这条"+r.rel:"后面那条被前面这条"+r.rel)}</span></div>`
-         :`<div class="cmid"><span class="meta">这一段没有确认过的关系</span></div>`}
+    if(i){const rr=relsBetween(ms[i-1],u);
+      h+=rr.length?rr.map(r=>`<div class="chainmid"><span class="bar"></span><b>${esc(r.rel)}</b><em>${esc(r.from===ms[i-1]?"前面那条被后面这条"+r.rel:"后面那条被前面这条"+r.rel)}</em></div>`).join("")
+        :`<div class="chainmid"><span class="bar"></span><em>这一段没有确认过的关系</em></div>`}
     const n=TREE.T[u];
-    h+=`<div class="cend ${n.status||""}" ${n.go?`data-go="${esc(n.go)}" data-arg="${esc(n.arg)}"`:`data-go="cog" data-arg="${esc(u)}"`}>
-      <div class="meta">${treeMark(n.status)}认知 ${i+1}${n.d?" · "+n.d:" · 没有记录时间"}</div>${esc(n.name||u)}</div>`});
-  // 链上确认过、但现在不相邻的演化关系
+    h+=`<button class="chainend ${n.status||""}" data-chaingo="${esc(u)}"><i>${treeMark(n.status)}认知 ${i+1}${n.d?" · "+n.d:" · 没有记录时间"}</i>${esc(n.name||u)}</button>`});
   const ex=[];
-  for(let i=0;i<ms.length;i++)for(let j=i+2;j<ms.length;j++){const r=relBetween(ms[i],ms[j]);
-    if(r)ex.push(`<li><b>${esc(r.rel)}</b>　${esc(TREE.T[r.from].name)} → ${esc(TREE.T[r.to].name)}</li>`)}
-  return `<div class="body">${topBar(c.name,"认知演化链")}
-    <p class="small">${ms.length} 条认知，按记录时间排，没有时间的排在最后。段与段之间显示的是 rels.json 里确认过的那一条，不按时间倒推。点任一条进它原本的页面。</p>
-    <div class="card">${h}</div>
-    ${ex.length?`<div class="card"><b class="small">这条链上还确认过这些关系（现在不相邻）</b><ul class="small">${ex.join("")}</ul></div>`:""}
-  </div>${nav("tree")}`;
+  for(let i=0;i<ms.length;i++)for(let j=i+2;j<ms.length;j++)
+    relsBetween(ms[i],ms[j]).forEach(r=>ex.push(`<li><b>${esc(r.rel)}</b>　${esc(TREE.T[r.from].name)} → ${esc(TREE.T[r.to].name)}</li>`));
+  return `<div class="cog"><section id="node-page">
+    <button class="back" data-back>${BACKSVG}返回认知树</button>
+    <div class="detail-path">认知演化链 · ${ms.length} 条认知 · 按记录时间排，没有时间的排在最后</div>
+    <h1 class="page-title" id="ctitle" contenteditable>${esc(c.name)}</h1>
+    <div class="chainbox">${h}</div>
+    ${ex.length?`<div class="offchain"><h4>这条链上还确认过这些关系（现在不相邻）</h4><ul>${ex.join("")}</ul></div>`:""}
+    <div class="page-note">每段关系都来自 rels.json 里确认过的那一条，不按时间倒推。点任一条进它原本的页面。改标题后点页面别处即保存。</div>
+  </section></div>${nav("tree")}`;
 }
 function cogPage(){
   buildTree();const n=TREE.T[S.arg];
-  if(!n)return `<div class="body">${topBar("找不到这一条","")}${nav("tree")}</div>`;
+  if(!n)return `<div class="cog"><section id="node-page"><button class="back" data-back>${BACKSVG}返回认知树</button><h1 class="page-title">找不到这一条</h1></section></div>${nav("tree")}`;
   const c=chainOfUid(S.arg),FS=["待改","改了未验","够用了","不做"];
   const side=relsTouching(S.arg).filter(r=>!isEvo(r.rel));
-  return `<div class="body">${topBar(n.name,n.d||"")}
-    ${c?`<div class="row"><span class="meta">在演化链里：</span><button class="chip" data-go="chain" data-arg="${esc(c.id)}">${esc(c.name)}</button></div>`:""}
-    ${n.status?`<div class="row"><span class="meta ${n.status}">${treeMark(n.status)}${STATES[n.status]}</span></div>`:""}
-    ${n.fs?`<div class="card"><b class="small">状态</b><div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">${FS.map(v=>`<span class="chip${v===n.fs?" on":""}">${esc(v)}</span>`).join("")}</div></div>`:""}
-    ${(n.detail||[]).map(([k,v])=>k==="碰现实了吗"
-      ?`<div class="card"><b class="small">碰现实了吗</b><div class="row" style="gap:6px;margin-top:6px">${["有","无"].map(x=>`<span class="chip${x===v?" on":""}">${x}</span>`).join("")}<span class="meta">有＝这次改动是现实逼出来的</span></div></div>`
-      :`<div class="card"><b class="small">${esc(k)}</b><div class="kv"><span class="v">${esc(v)}</span></div></div>`).join("")}
-    ${side.length?`<div class="card"><b class="small">和别的认知的横向关系</b>${side.map(r=>{
+  const flds=(n.detail||[]).filter(p=>p[0]&&p[1]);
+  const body=flds.length?flds.map(p=>p[0]==="碰现实了吗"
+    ?`<div class="fld"><h4>碰现实了吗</h4><div class="chips">${["有","无"].map(v=>`<span class="chip${v===p[1]?" on":""}">${v}</span>`).join("")}<em>有＝这次改动是现实逼出来的</em></div></div>`
+    :`<div class="fld"><h4>${esc(p[0])}</h4><p>${esc(p[1])}</p></div>`).join("")
+    :'<div class="fld"><p class="muted">这一条还没有记录内容。</p></div>';
+  return `<div class="cog"><section id="node-page">
+    <button class="back" data-back>${BACKSVG}返回认知树</button>
+    <div class="detail-path">${c?`在演化链里：<button class="crumblink" data-go="chain" data-arg="${esc(c.id)}">${esc(c.name)}</button>`:""}${n.d?(c?" · ":"")+esc(n.d):""}</div>
+    <h1 class="page-title">${esc(n.name)}</h1>
+    ${n.status?`<div class="page-status ${n.status}">${treeMark(n.status)}${STATES[n.status]}</div>`:""}
+    <div class="fldcard">
+      ${n.fs?`<div class="fld"><h4>状态</h4><div class="chips">${FS.map(v=>`<span class="chip${v===n.fs?" on":""}">${esc(v)}</span>`).join("")}</div></div>`:""}
+      ${body}
+    </div>
+    ${side.length?`<div class="offchain"><h4>和别的认知的横向关系</h4><ul>${side.map(r=>{
       const o=r.from===S.arg?r.to:r.from,on=TREE.T[o];
-      return `<div class="line3 tap" data-go="cog" data-arg="${esc(o)}"><span class="txt"><b>${esc(r.rel)}</b>　${esc(on?on.name:o)}<div class="meta" style="margin-top:2px">${esc(r.dir||RELD[r.rel])}</div></span><span class="chev">›</span></div>`}).join("")}</div>`:""}
-  </div>${nav("tree")}`;
+      return `<li><b>${esc(r.rel)}</b>　<button class="crumblink" data-cogjump="${esc(o)}">${esc(on?on.name:o)}</button>　${esc(r.dir||RELD[r.rel])}</li>`}).join("")}</ul></div>`:""}
+    <div class="detail-card"><textarea class="record-editor" aria-label="补充记录" placeholder="要补充什么，写在这里…"></textarea>
+      <div class="record-actions"><span class="save-note" role="status"></span><button class="save-record" disabled>保存</button></div></div>
+    <div class="page-note">上面的字段来自仓库现有数据，只读。下面那一栏是你自己补的自由文本，存在本浏览器。</div>
+  </section></div>${nav("tree")}`;
 }
 async function saveRels(next,msg){
   // 先写仓库，写成功才换内存：保存失败时界面不会显示「已确认」
@@ -1409,6 +1524,77 @@ function mergeChain(from,to,name){
   while(taken.includes(id))id="chain-"+Date.now().toString(36)+"-"+(++k);
   D.rels.chains.push({id:id,name:name,parent:par,members:all});
   return id;
+}
+// 拖两条认知相叠 → 选关系 → 取名 → 生成演化链。交互和已验收的 HTML 一致。
+let dragId=null;
+function bindCog(){
+  const host=document.querySelector(".cog");if(!host)return;
+  const tree=host.querySelector("#tree");
+  if(tree){
+    tree.addEventListener("dragstart",e=>{const it=e.target.closest(".item");if(!it)return;
+      dragId=it.dataset.id;e.dataTransfer.effectAllowed="link";it.classList.add("dragging")});
+    tree.addEventListener("dragend",()=>{dragId=null;
+      tree.querySelectorAll(".dragging,.dropok").forEach(n=>n.classList.remove("dragging","dropok"))});
+    tree.addEventListener("dragover",e=>{const it=e.target.closest(".item");
+      if(!it||!dragId||it.dataset.id===dragId)return;e.preventDefault();e.dataTransfer.dropEffect="link";
+      tree.querySelectorAll(".dropok").forEach(n=>n.classList.remove("dropok"));it.classList.add("dropok")});
+    tree.addEventListener("drop",e=>{const it=e.target.closest(".item");
+      if(!it||!dragId||it.dataset.id===dragId)return;e.preventDefault();
+      const from=dragId;dragId=null;askRel(from,it.dataset.id)});
+  }
+  const ct=host.querySelector("#ctitle");
+  if(ct)ct.addEventListener("blur",async()=>{
+    const v=ct.textContent.trim(),c=chainsOf().find(x=>x.id===S.arg);
+    if(!c||!v||v===c.name)return;
+    const next=JSON.parse(JSON.stringify(D.rels));
+    (next.chains.find(x=>x.id===c.id)||{}).name=v;
+    if(await saveRels(next,"演化链改名："+v)){toast("已写回仓库");render()}else render();
+  });
+  const ed=host.querySelector(".record-editor");
+  if(ed){
+    const id=S.arg,btn=host.querySelector(".save-record"),msg=host.querySelector(".save-note");
+    let saved="";try{saved=localStorage.getItem("rl.cognote:"+id)||""}catch(e){}
+    ed.value=saved;
+    ed.addEventListener("input",()=>{btn.disabled=ed.value===saved;msg.textContent=btn.disabled?"":"尚未保存"});
+    btn.addEventListener("click",()=>{
+      try{localStorage.setItem("rl.cognote:"+id,ed.value);saved=ed.value;btn.disabled=true;msg.textContent="已保存在本浏览器"}
+      catch(e){msg.textContent="浏览器不允许本地保存，请复制内容留存"}});
+  }
+}
+function cogSheet(html,onclick){
+  const m=document.createElement("div");m.className="cog";
+  m.innerHTML='<div class="relsheet"><div class="relcard">'+html+'</div></div>';
+  document.body.appendChild(m);
+  m.addEventListener("click",ev=>{if(ev.target===m.firstChild){m.remove();return}onclick(ev,m)});
+  return m;
+}
+function askRel(from,to){
+  const t=TREE||buildTree(),an=esc((t.T[from]||{}).name||from),bn=esc((t.T[to]||{}).name||to);
+  cogSheet('<div class="relpair"><b>'+an+'</b><span>→</span><b>'+bn+'</b></div>'+
+    '<div class="relq">新认知改变了旧认知吗？</div>'+
+    REL6.slice(0,3).map((r,i)=>'<button class="relbtn" data-i="'+i+'">'+r[0]+'<em>'+r[1]+'</em></button>').join("")+
+    '<div class="relq" style="margin-top:9px">没改变。那是别的什么联系？</div>'+
+    REL6.slice(3).map((r,i)=>'<button class="relbtn" data-i="'+(i+3)+'">'+r[0]+'<em>'+r[1]+'</em></button>').join("")+
+    '<button class="relbtn cancel">取消</button>',
+   (ev,m)=>{const b=ev.target.closest(".relbtn");if(!b)return;m.remove();
+     if(!b.classList.contains("cancel"))confirmRel(from,to,REL6[+b.dataset.i][0])});
+}
+async function confirmRel(from,to,rel){
+  const t=TREE||buildTree(),an=(t.T[from]||{}).name||from,bn=(t.T[to]||{}).name||to;
+  let next=JSON.parse(JSON.stringify(D.rels));next.chains=next.chains||[];
+  next.rels=next.rels||[];
+  if(isEvo(rel)){
+    const nm=(prompt("这条演化链叫什么？\n\n"+an+"\n  └ "+rel+"\n"+bn,"")||"").trim();
+    if(!nm)return;
+    const keep=D.rels;D.rels=next;try{mergeChain(from,to,nm)}finally{next=D.rels;D.rels=keep}
+  }
+  const hit=next.rels.find(r=>r.from===from&&r.to===to&&r.rel===rel);
+  if(hit){hit.state="已确认";hit.at=new Date().toISOString().slice(0,10)}
+  else next.rels.push({from,to,rel,dir:RELD[rel],why:"在认知树上拖动相叠后确认",
+    src:"手动确认（"+new Date().toISOString().slice(0,10)+"）",state:"已确认",
+    at:new Date().toISOString().slice(0,10)});
+  if(await saveRels(next,"确认关系："+from+" "+rel+" "+to))toast("已写回仓库");
+  render();
 }
 function parentIn(t,id){for(const k in t.T)if((t.T[k].children||[]).includes(id))return k;return null}
 
@@ -1617,7 +1803,7 @@ async function reanalyze(id){
   const P=D.p[id];
   // 锁定今天页这一刻显示的就是哪一行。同一天可能有好几行，所以必须带下标。
   const row=focusRow(P),idx=P.rows.indexOf(row);
-  P.current.focus={uid:row?.uid||null,date:row?.date||null,idx,q:row?.q||""};
+  P.current.focus={focusUid:row?.uid||null,date:row?.date||null,idx,q:row?.q||""};
   P.current.rowDate=row?.date||P.current.rowDate;
   P.current.q=row?.q||P.current.q;
   P.current.night={status:"wait",deadline:next8(),retries:0,error:null,
@@ -1704,7 +1890,7 @@ function gate(){
 function system(){
   const q=D.status?.nightQueue;
   return `<div class="body"><h1 class="h1">系统</h1>
-    <div class="card row"><b>数据仓库</b><span class="meta">${esc(cfg.owner)}/${esc(cfg.repo)}</span><button class="back" style="margin-left:auto" data-tab="settings">修改</button></div>
+    <div class="card row"><b>数据仓库</b><span class="meta">${esc(cfg.owner)}/${esc(cfg.repo)} · 分支 ${esc(cfg.branch||"默认分支")}</span><button class="back" style="margin-left:auto" data-tab="settings">修改</button></div>
     <div class="card"><div class="row"><b>夜间分析队列</b><span class="meta" style="margin-left:auto">${esc(q?.date||"还没有运行过")}</span></div>
       ${Object.entries(q?.projects||{}).map(([k,v])=>`<div class="line3"><span class="txt">${esc(D.index.find(x=>x.id===k)?.name||k)}</span><span class="meta">${esc(v.status)}${v.finishedAt?" · "+esc(String(v.finishedAt).slice(0,10)):""}${v.retries?" · 重试 "+v.retries:""}${v.error?" · "+esc(v.error):""}</span></div>`).join("")||'<div class="small" style="margin-top:6px">今晚没有项目要分析——队列只放在网页上点过「重新分析」的项目。</div>'}</div>
     <div class="card"><div class="row"><b>外观</b></div>
@@ -1725,6 +1911,7 @@ function render(){
   const vb=S.newver?`<div class="banner ok tap" data-newver="1" style="margin:0 0 8px">有新版本 ${esc(S.newver)}（你现在是 ${APPVER}）· 点这里刷新</div>`:"";
   a.innerHTML=vb+h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
   if(S.screen==="today"&&S.exploreOpen){const d=a.querySelector("#explore-details");if(d)d.open=true}
+  if(["tree","rels","chain","cog"].includes(S.screen))bindCog();
   if(S.screen==="project"&&!S.edit){drawEdges();fitBoard()}
 }
 // GitHub Pages 的 index.html 会被浏览器缓存很久，在手机上尤其顽固。
@@ -1978,7 +2165,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-relok],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-relok],[data-chaingo],[data-cogjump],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
   if(d.copysop){
     const id=S.arg||cur(),so=curSop(D.p[id]?.project);
@@ -2050,6 +2237,12 @@ document.addEventListener("click",async e=>{
   if(d.tcollapse){S.topen={};return render()}
   if(d.tfocus){S.topen={};openPath().forEach(k=>S.topen[k]=1);render();
     setTimeout(()=>document.querySelector(".tn.cur")?.scrollIntoView({block:"center",behavior:"smooth"}),30);return}
+  if(d.chaingo||d.cogjump){
+    const u=d.chaingo||d.cogjump,n=(TREE||buildTree()).T[u];
+    if(!n)return;
+    if(n.go)return go(n.go,n.arg);
+    return go("cog",u);
+  }
   if(d.topen){
     const id=d.topen.split("/").pop(),n=(TREE||buildTree()).T[id];if(!n)return;
     if(n.chain)return go("chain",id);
@@ -2093,7 +2286,7 @@ document.addEventListener("click",async e=>{
   if(d.savenode){const [pid,nid]=d.savenode.split("|");return saveNode(pid,nid)}
   if("saveboard" in d) return saveProject(S.arg||cur(),"调整 SOP 图的节点位置");
   if(d.decide){const [id,i,o]=d.decide.split("|");return decide(id,+i,o)}
-  if("savecfg" in d){cfg.owner=$("#owner").value.trim();cfg.repo=$("#repo").value.trim();cfg.token=$("#token").value.trim();saveCfg();S.screen="today";return loadAll()}
+  if("savecfg" in d){cfg.owner=$("#owner").value.trim();cfg.repo=$("#repo").value.trim();cfg.branch=$("#dbranch").value.trim();cfg.token=$("#token").value.trim();branchOK=null;saveCfg();S.screen="today";return loadAll()}
   if("reload" in d){D.p={};return loadAll()}
 });
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches(".tap")) e.target.click()});

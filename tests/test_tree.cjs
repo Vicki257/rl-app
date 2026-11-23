@@ -59,8 +59,8 @@ const ctx={D,S:{},console,Date,Object,Array,JSON,Math,String,Number,Boolean,RegE
   topBar:()=>"",nav:()=>"",put:async()=>{},toast:()=>{},go:()=>{},render:()=>{},
 };
 vm.createContext(ctx);
-vm.runInContext(CODE+"\nthis.api={buildTree,mergeChain,relsOf,chainsOf,okRels,relBetween,relsTouching,chainOfUid,openPath,curUid,isEvo,TREEOF:()=>TREE};",ctx);
-const {buildTree,mergeChain,relsOf,chainsOf,okRels,relBetween,relsTouching,chainOfUid,openPath,curUid,isEvo}=ctx.api;
+vm.runInContext(CODE+"\nthis.api={buildTree,mergeChain,relsOf,chainsOf,okRels,relBetween,relsBetween,relsTouching,chainOfUid,openPath,curUid,isEvo,TREEOF:()=>TREE};",ctx);
+const {buildTree,mergeChain,relsOf,chainsOf,okRels,relBetween,relsBetween,relsTouching,chainOfUid,openPath,curUid,isEvo}=ctx.api;
 
 let n=0;const ok=(c,m)=>{assert(c,m);n++};
 const t=buildTree();
@@ -163,6 +163,29 @@ ok(evoRels.length>0,"应该有可以成链的演化关系");
   t5.roots.forEach(walk);
   ok(!cyc,"树里出现了环，起点 "+cyc);
   ok(!t5.missing.length,"有指向不存在节点的边："+t5.missing.slice(0,3).join("、"));
+}
+// 每日思考日志不作为独立树枝
+{
+  const t7=buildTree();
+  ok(!t7.T["proj:journal"],"每日思考日志不该在树上单独占一枝");
+  if(has)ok((D.index||[]).some(x=>x.id==="journal"),"但它仍然在项目清单里（数据照常加载）");
+}
+// 同一对 UID 有多条关系时，不能只挑第一条
+{
+  const r=relsOf()[0];
+  const extra={from:r.from,to:r.to,rel:r.rel==="修正"?"支持":"修正",dir:"测试用",why:"测试用",state:"已确认"};
+  const keep=r.state;r.state="已确认";D.rels.rels.push(extra);
+  const all=relsBetween(r.from,r.to);
+  ok(all.length===2,"两条关系都要拿回来，实际 "+all.length);
+  ok(all.includes(r)&&all.includes(extra),"不能漏掉任何一条");
+  D.rels.rels.pop();r.state=keep;
+}
+// 历史认知不默认已完成
+if(has){
+  const t8=buildTree();
+  const h=(D.hist||[]).filter(x=>x.uid);
+  ok(h.length>0,"应该读到历史认知");
+  ok(h.every(x=>!(t8.T[x.uid]||{}).status),"历史认知没有验收记录，不该默认标成已完成");
 }
 // 公司必须用真实 UID 当身份
 if(has){
