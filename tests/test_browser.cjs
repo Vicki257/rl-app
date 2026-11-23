@@ -9,7 +9,7 @@ const focus=current.focus?.focusUid;
 assert(focus&&rows.some(x=>x.uid===focus),"必须有真实 focusUid");
 const others=rows.filter(x=>x.uid!==focus).map(x=>x.uid);
 assert(others.length>=2,"至少还需要两条真实认知");
-const [selected,target]=others;
+const selected=others[0];let target=others[1];
 const branch="claude/loving-cerf-ufxzgm";
 const server=http.createServer((req,res)=>{
   if(req.url!=="/"){res.writeHead(404);res.end();return}
@@ -101,6 +101,17 @@ async function scenario(browser,device){
     await page.locator("[data-back]").click();
   }
   // 拖动的是认知标题到链标题，不能把带子节点的整块容器中心当作落点。
+  // 用户在同一视野内拖到链标题；避免 Playwright 自动滚动造成远处拖动起点被覆盖。
+  target=await page.evaluate(candidates=>{
+    const host=document.querySelector('#tree .item[data-id="chain-browser"] > .line');
+    const y=host.getBoundingClientRect().top+window.scrollY;
+    return candidates.map(uid=>{
+      const el=Array.from(document.querySelectorAll("#tree .item")).find(x=>x.dataset.id===uid);
+      const rect=el?.querySelector(":scope > .line")?.getBoundingClientRect();
+      return {uid,distance:rect?Math.abs(rect.top+window.scrollY-y):Infinity};
+    }).sort((a,b)=>a.distance-b.distance)[0].uid;
+  },others.slice(1));
+  console.log("拖动源 UID："+target);
   const from=page.locator('#tree .item[data-id="'+target+'"] > .line > .name');
   const to=page.locator('#tree .item[data-id="chain-browser"] > .line > .name');
   await from.waitFor({state:"visible"});await to.waitFor({state:"visible"});
