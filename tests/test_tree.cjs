@@ -77,6 +77,23 @@ goable.forEach(x=>ok(x.arg!==undefined&&x.arg!=="","节点 "+x.id+" 缺少跳转
 // 当前位置找得到，并且能展开到它
 ok(curUid(),"应该能算出当前停在哪一条");
 ok(openPath().length>0,"应该能把当前位置那条路径展开");
+ // 反例：数组重排或旧下标不能让「定位当前」指到别人的认知。
+ {
+   const P=D.p.rl,uid=curUid(),saved=JSON.parse(JSON.stringify(P.current.focus||{}));
+   P.rows.reverse();ok(curUid()===uid,"行重排不能改变当前认知 UID");
+   P.rows.reverse();
+   P.current.focus={focusUid:"__missing_uid__",idx:0,manual:true};
+   ok(curUid()==="","失效的 UID 不能回退到易漂移的 idx");
+   P.current.focus=saved;
+   const other=P.rows.find(r=>r.uid&&r.uid!==uid)?.uid;
+   if(other&&uid){
+     D.rels.chains=[{id:"chain-focus-test",name:"定位测试链",parent:"proj:rl",members:[uid,other]}];
+     buildTree();
+     ok((ctx.api.TREEOF().inChain||{})[uid]==="chain-focus-test","链内当前认知应指向它所在的链");
+     ok(openPath().length>0,"链内当前认知的父路径可展开");
+     D.rels.chains=[];buildTree();
+   }
+ }
 // 关系 → 链（只有演化关系才成链）
 const r=relsOf().find(x=>["推翻","修正","继承"].includes(x.rel)&&t.T[x.from]&&t.T[x.to]);
 ok(r,"应该有可以成链的演化关系");
