@@ -228,6 +228,18 @@ async function scenario(browser,device){
     device+": 删除方法只能归档，不删除原文或 UID");
   assert(store.get("methods.json").methods[0].uid===originalUID,
     device+": 原方法 UID 不能改变");
+  // 方法保存 401 时保留输入框文字，D.meth 与真实 methods.json 均不改变。
+  denyWrites=true;
+  await page.evaluate(id=>go("method",id),realMethods[0].id);
+  await page.locator('[data-edit]').click();
+  await page.locator('#m_name').fill("故意保存失败的方法");
+  await page.locator('[data-savem]').click();
+  await page.waitForFunction(()=>document.querySelector(".save-method-note")?.textContent?.includes("保存失败"));
+  assert(await page.locator('#m_name').inputValue()==="故意保存失败的方法",
+    device+": 方法保存失败后输入不能被清空");
+  assert(store.get("methods.json").methods[0].name===realMethods[0].name,
+    device+": 失败不能修改原方法内容或 UID");
+  denyWrites=false;
   // 新增内容正式落仓库而非本地草稿，模拟换设备重新读取。
   await page.evaluate(uid=>go("cog",uid),outsider);
   await page.locator('.record-editor').fill("跨设备长期认知补充验证");
@@ -238,6 +250,19 @@ async function scenario(browser,device){
   await page.evaluate(uid=>go("cog",uid),outsider);
   assert(await page.locator(".record-editor").inputValue()==="跨设备长期认知补充验证",
     device+": 跨设备应从仓库读取正式补充内容");
+  // 补充记录保存失败不改变仓库值，也不清空当前及重新打开后的本机草稿。
+  denyWrites=true;
+  await page.locator('.record-editor').fill("保存失败但必须保留的草稿");
+  await page.locator('.save-record').click();
+  await page.waitForFunction(()=>document.querySelector(".save-note")?.textContent?.includes("保存失败"));
+  assert(await page.locator(".record-editor").inputValue()==="保存失败但必须保留的草稿");
+  assert(store.get("cognotes.json")[outsider]==="跨设备长期认知补充验证",
+    device+": 写入失败不能覆盖正式补充");
+  await page.reload();await page.waitForFunction(()=>!!D.p.rl);
+  await page.evaluate(uid=>go("cog",uid),outsider);
+  assert(await page.locator(".record-editor").inputValue()==="保存失败但必须保留的草稿",
+    device+": 草稿应保留并不自动覆盖远端");
+  denyWrites=false;
   // 三文件写入中间失败后保留 pending，并在重新打开时自动补完。
   await page.waitForFunction(()=>!!D.p.quant);
   denyFile="global.json";
