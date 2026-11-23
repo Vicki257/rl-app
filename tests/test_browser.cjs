@@ -155,8 +155,16 @@ async function scenario(browser,device){
     };
     t.roots.forEach(id=>walk(id,"",[]));render();
   });
-  const outsider=rows.map(x=>x.uid).find(x=>![focus,selected,target].includes(x));
-  assert(outsider,"缺少额外认知用于失败反例");
+  const outsider=await page.evaluate(({candidates,id})=>{
+    const dst=document.querySelector('#tree .item[data-id="'+id+'"] > .line');
+    const y=dst.getBoundingClientRect().top+window.scrollY;
+    return candidates.map(uid=>{
+      const item=Array.from(document.querySelectorAll("#tree .item")).find(x=>x.dataset.id===uid);
+      const rect=item?.querySelector(":scope > .line")?.getBoundingClientRect();
+      return {uid,distance:rect?Math.abs(rect.top+window.scrollY-y):Infinity};
+    }).sort((a,b)=>a.distance-b.distance)[0]?.uid;
+  },{candidates:rows.map(x=>x.uid).filter(x=>![focus,selected,target].includes(x)),id:newId});
+  assert(outsider,"缺少链旁的额外认知用于失败反例");
   const countBefore=store.get("rels.json").rels.length;
   await page.locator('#tree .item[data-id="'+outsider+'"] > .line > .name')
     .dragTo(page.locator('#tree .item[data-id="'+newId+'"] > .line > .name'));
