@@ -169,9 +169,9 @@ async function scenario(browser,device){
   const countBefore=store.get("rels.json").rels.length;
   await page.locator('#tree .item[data-id="'+outsider+'"] > .line > .name')
     .dragTo(page.locator('#tree .item[data-id="'+newId+'"] > .line > .name'));
-  await activate(page.locator(".relsheet [data-member='0']"));
+  await page.locator(".relsheet [data-member='0']").click();
   await page.locator(".relsheet [data-i='4']").click(); // 支持：横向
-  await activate(page.locator(".relsheet [data-dir='0']"));
+  await page.locator(".relsheet [data-dir='0']").click();
   await page.waitForFunction(()=>S.toast?.includes("没能写回仓库"));
   assert(store.get("rels.json").rels.length===countBefore,device+": 失败保存不应修改正式数据");
   console.log("保存失败诊断："+JSON.stringify({putCount:writeCount,toast:await page.evaluate(()=>S.toast)}));
@@ -182,9 +182,9 @@ async function scenario(browser,device){
   await activate(page.locator('[data-rpick]'));
   await activate(page.locator('#tree .item[data-id="'+newId+'"] > .line > .name'));
   await activate(page.locator('#tree .item[data-id="'+outsider+'"] > .line > .name'));
-  await page.locator(".relsheet [data-member='0']").click();
+  await activate(page.locator(".relsheet [data-member='0']"));
   await activate(page.locator(".relsheet [data-i='5']")); // 关联，不改变归属
-  await page.locator(".relsheet [data-dir='0']").click();
+  await activate(page.locator(".relsheet [data-dir='0']"));
   await page.waitForFunction(()=>S.toast?.includes("已写回仓库"));
   assert(store.get("rels.json").rels.some(r=>r.from===focus&&r.to===outsider&&r.rel==="关联"),
     device+": 触摸点选必须建立真实 UID 关系");
