@@ -507,12 +507,13 @@ function focusRow(P){
 // 用户手动定过焦点就以用户的为准；没定过才回落到优先分最高的那一条
 function focusRowOf(P){
   const f=P.current?.focus;
+  if(f&&f.uid){const r=P.rows.find(x=>x.uid===f.uid);if(r) return r}   // 下标会随插入漂移，UID 不会
   if(f&&f.manual&&P.rows[f.idx]) return P.rows[f.idx];
   return focusRow(P);
 }
 async function setFocus(pid,i){
   const P=D.p[pid];if(!P) return;const r=P.rows[i];if(!r) return;
-  P.current.focus={date:r.date||null,idx:i,q:r.q||"",manual:true,at:new Date().toISOString()};
+  P.current.focus={uid:r.uid||null,date:r.date||null,idx:i,q:r.q||"",manual:true,at:new Date().toISOString()};
   P.current.rowDate=r.date||P.current.rowDate;
   P.current.q=r.q||"";                       // 只动 current.json，不碰 rows 的状态和优先分
   try{
@@ -527,8 +528,9 @@ async function syncFocus(id){
   if(P.current.focus&&P.current.focus.manual) return;   // 用户定过了，AI 不许覆盖
   const row=focusRow(P),idx=P.rows.indexOf(row);
   const f=P.current.focus;
-  if(f&&f.idx===idx&&f.date===(row?.date||null)) return;   // 没换人，什么都不做
-  P.current.focus={date:row?.date||null,idx,q:row?.q||""};
+  if(f&&f.uid&&row?.uid&&f.uid===row.uid) return;          // 认永久 UID：下标变了也不算换人
+  if(f&&!f.uid&&f.idx===idx&&f.date===(row?.date||null)) return;
+  P.current.focus={uid:row?.uid||null,date:row?.date||null,idx,q:row?.q||""};
   P.current.rowDate=row?.date||P.current.rowDate;
   P.current.q=row?.q||"";
   try{
@@ -1125,18 +1127,32 @@ function findM(id){return ML().find(m=>m.id===id)}
 
 /* ============ 认知树 ============ */
 /* 树不另存一份。每次从已经载入的项目、方法、历史现算，所以不会和仓库里的数据脱节。
-   只有两样东西是算不出来的，放在 data/cogtree.json：
-   rl 的复盘挂在哪个 SOP 环下（内容判断），以及顶两层结构。 */
-const ST_ROW=f=>({"够用了":"done","已确认":"done","已记录":"done","改了未验":"active","待验":"active",
-                  "已被推翻":"failed","不做":"failed"}[f]||"pending");
+   只有两样东西算不出来，放在 data/cogtree.json：
+   rl 的复盘挂在哪个 SOP 环下（内容判断），以及顶两层结构。
+
+   关系只有一个来源：rels.json 里 state=已确认 的那几条。链不另存一份关系，
+   相邻两条之间显示什么，一律回去查那张表里「这两个 UID」的那一条。
+   查不到就写「这一段没有确认过的关系」，不猜、不按时间倒推方向。 */
+
+// 已结案（够用了／已确认／不做：问题有了答案，不再推进）
+// 在研（待改／改了未验／待验）／推翻（已被推翻）。没有依据的一律不上色。
+const ST_ROW=f=>({"够用了":"done","已确认":"done","不做":"done",
+                  "待改":"active","改了未验":"active","待验":"active",
+                  "已被推翻":"failed"}[f]||"");
 const REL6=[["推翻","核心被否定"],["修正","部分判断改变"],["继承","有效部分明确保留"],
             ["迁移","旧认知被用于新情境"],["支持","一方提供事实依据"],["关联","只是有意义的联系"]];
 const RELD=Object.fromEntries(REL6);
-const STATES={done:"已完成",active:"研究中",failed:"验证失败",pending:"未开始"};
+const EVO_REL=["推翻","修正","继承"];            // 这三种才构成演化链
+const isEvo=r=>EVO_REL.includes(r);
+const STATES={done:"已结案",active:"研究中",failed:"验证失败",pending:"未开始"};
 let TREE=null;
 function treeDirty(){TREE=null}
 function relsOf(){return D.rels?.rels||[]}
 function chainsOf(){return D.rels?.chains||[]}
+function okRels(){return relsOf().filter(r=>r.state==="已确认")}
+// 这两个 UID 之间确认过的关系。方向写死在 rels.json 里，不按时间倒推。
+function relBetween(a,b){return okRels().find(r=>(r.from===a&&r.to===b)||(r.from===b&&r.to===a))||null}
+function relsTouching(u){return okRels().filter(r=>r.from===u||r.to===u)}
 
 function buildTree(){
   const CT=D.cogtree||{up:{},struct:{roots:[],nodes:{}}},T={};
@@ -1145,39 +1161,69 @@ function buildTree(){
   const PRJ=(D.index||[]).filter(x=>x.state!=="archived").map(x=>x.id);
   PRJ.forEach(pid=>{
     const P=D.p[pid];if(!P)return;
-    const pj=P.project,kids=[];
+    const pj=P.project,kids=[],used={};
     if(pj.goal)  kids.push(add(pid+":goal",{name:"目标",detail:[["这个项目要什么",trF(pj,"goal")]]}));
     if(pj.reward)kids.push(add(pid+":reward",{name:"奖励",detail:[["什么算有进展",trF(pj,"reward")]]}));
-    const used={};
-    if(pj.sop?.nodes?.length){
-      const rings=pj.sop.nodes.map(n=>{
-        const rk=[];
-        P.rows.forEach((r,i)=>{if(r.uid&&CT.up[r.uid]===n.id){used[r.uid]=1;rk.push(rowNode(T,add,r,i,pid,pj))}});
-        (n.pains||[]).forEach((pn,i)=>{
-          if(!pn.text)return;
-          const det=[];if(pn.part)det.push(["属于哪一步",pn.part]);
-          det.push(["哪里不够用",pn.text]);
-          if(pn.fix)det.push(["解法",pn.fix]);if(pn.gap)det.push(["缺口",pn.gap]);
-          rk.push(add(n.id+":pain"+i,{name:pn.text.slice(0,40),status:pn.solved?"done":"pending",d:pn.ref||"",detail:det}));
-        });
-        return add(n.uid||("sop:"+pid+":"+n.id),{name:n.name,status:"active",children:rk,
-          detail:[["这一步要回答什么",n.q||""],["整体是怎么跑的",n.whole||n.how||""],["目前的结论",n.concl||""]].filter(x=>x[1])});
+    const ringOf=(n,idFallback)=>{
+      const rk=[];
+      P.rows.forEach((r,i)=>{if(r.uid&&CT.up[r.uid]===n.id){used[r.uid]=1;rk.push(rowNode(T,add,r,i,pid))}});
+      (n.pains||[]).forEach((pn,i)=>{
+        if(!pn.text)return;
+        const det=[];if(pn.part)det.push(["属于哪一步",pn.part]);
+        det.push(["哪里不够用",pn.text]);
+        if(pn.fix)det.push(["解法",pn.fix]);if(pn.gap)det.push(["缺口",pn.gap]);
+        rk.push(add((n.id||idFallback)+":pain"+i,{name:pn.text.slice(0,40),
+          status:pn.solved?"done":"pending",d:pn.ref||"",detail:det}));
       });
-      kids.push(add(pid+":sop",{name:"SOP",children:rings}));
-    }
-    const rest=[];P.rows.forEach((r,i)=>{if(r.uid&&!used[r.uid])rest.push(rowNode(T,add,r,i,pid,pj))});
+      // SOP 环本身没有验收记录，不编造状态
+      return add(n.uid||("sop:"+pid+":"+(n.id||idFallback)),{name:n.name,children:rk,
+        detail:[["这一步要回答什么",n.q||""],["整体是怎么跑的",n.whole||n.how||""],
+                ["目前的结论",n.concl||""]].filter(x=>x[1])});
+    };
+    if(pj.sop?.nodes?.length)
+      kids.push(add(pid+":sop",{name:"SOP",children:pj.sop.nodes.map((n,i)=>ringOf(n,"n"+i))}));
+    // tracks 下面每一套 SOP 也要进树，之前整块漏掉了
+    (pj.tracks||[]).forEach((tk,ti)=>{
+      const sk=(tk.sops||[]).map((so,si)=>{
+        const nn=(so.nodes||[]).map((n,ni)=>ringOf(n,"t"+ti+"s"+si+"n"+ni));
+        return add("track:"+pid+":"+ti+":"+si,{name:so.name,children:nn,
+          detail:[["什么时候用",so.when||""],["版本",so.version||""]].filter(x=>x[1])});
+      });
+      if(sk.length)kids.push(add("track:"+pid+":"+ti,{name:tk.name,children:sk}));
+    });
+    // 投资项目按已有的研究主线分组，不再平铺
+    const mains=(pj.mains||[]),byMain={};
+    const rest=[];
+    P.rows.forEach((r,i)=>{
+      if(!r.uid||used[r.uid])return;
+      const n=rowNode(T,add,r,i,pid);
+      if(r.main&&mains.some(m=>m.id===r.main))(byMain[r.main]=byMain[r.main]||[]).push(n);
+      else rest.push(n);
+    });
+    mains.forEach(m=>{
+      const k=byMain[m.id];if(!k||!k.length)return;
+      kids.push(add("main:"+pid+":"+m.id,{name:m.name,
+        status:{"已闭环":"done","在验":"active","已被推翻":"failed"}[m.st]||"",
+        children:k,detail:[["这条主线现在怎么样",m.judge||""],["状态",m.st||""]].filter(x=>x[1])}));
+    });
     if(rest.length)kids.push(add(pid+":rows",{name:"复盘与研究 "+rest.length+" 条",children:rest}));
+    // 公司档案用它自己的永久 UID 当身份
     (pj.sop?.cos||[]).forEach(c=>{
-      const det=[["为什么看它",c.why||""],["读完的结论",c.sum||""],["发现",c.find||""],["判断",c.verdict||""],["反馈",c.fb||""]].filter(x=>x[1]);
+      if(!c.uid)return;
+      const det=[["为什么看它",c.why||""],["读完的结论",c.sum||""],["发现",c.find||""],
+                 ["判断",c.verdict||""],["反馈",c.fb||""]].filter(x=>x[1]);
       const md=/^(\d{4}-\d{2}-\d{2})/.exec(String(c.at||""));
-      kids.push(add(pid+":co:"+c.id,{name:c.name,d:md?md[1]:"",detail:det,
-        status:c.state!=="已完成"?"pending":(/不投资|推翻/.test(c.verdict||"")?"failed":"done")}));
+      // 研究完成就是完成，结论是不投资也一样；没完成的还在研究中
+      kids.push(add(c.uid,{name:c.name,d:md?md[1]:"",detail:det,
+        status:c.state==="已完成"?"done":c.state==="待研究"?"pending":"active",
+        go:"co",arg:c.id}));
     });
     add("proj:"+pid,{name:pj.name,children:kids});
   });
   const cats={};
   (D.meth?.methods||[]).forEach(m=>{
-    add(m.uid||("m:"+m.id),{name:m.name,status:"done",d:(m.refs||[])[0]||"",go:"method",arg:m.id,
+    // 方法库里没有逐条验收记录，不默认标成已完成
+    add(m.uid||("m:"+m.id),{name:m.name,d:(m.refs||[])[0]||"",go:"method",arg:m.id,
       detail:[["这是什么",m.what||""],["什么时候用得上",m.when||""],["出处",m.src||""]].filter(x=>x[1])});
     (cats[m.cat||"未分类"]=cats[m.cat||"未分类"]||[]).push(m.uid||("m:"+m.id));
   });
@@ -1185,28 +1231,39 @@ function buildTree(){
     children:Object.entries(cats).map(([c,ids])=>add("mcat:"+c,{name:c+" "+ids.length+" 条",children:ids}))});
   const hk=[];
   (D.hist||[]).forEach(h=>{if(!h.uid)return;
-    hk.push(add(h.uid,{name:(h.text||"").slice(0,40),status:"done",d:h.date||"",detail:[["当时记下的",h.text||""]]}))});
+    hk.push(add(h.uid,{name:(h.text||"").slice(0,40),status:"done",d:h.date||"",
+      detail:[["当时记下的",h.text||""]]}))});
   add("history",{name:"历史认知 "+hk.length+" 条",children:hk});
+  // 结构里写了但没建出来的项目入口，不要静默丢掉
+  Object.entries(CT.struct?.nodes||{}).forEach(([k,v])=>{
+    (v.children||[]).forEach(c=>{if(!T[c]&&c.indexOf("proj:")===0)
+      add(c,{name:c.slice(5)+"（这个项目还没有数据）"})})});
   let roots=(CT.struct?.roots||[]).filter(k=>T[k]);
-  Object.values(T).forEach(n=>{n.children=(n.children||[]).filter(c=>T[c])});
+  const missing=[];
+  Object.values(T).forEach(n=>{n.children=(n.children||[]).filter(c=>{
+    if(T[c])return true;missing.push(n.id+" → "+c);return false})});
   // 演化链：占住它接管的那条认知在树上的位置
   const inChain={};
   chainsOf().forEach(c=>{
-    const st=(c.members||[]).map(u=>(T[u]||{}).status||"pending");
-    const s=!st.length?"pending":st.every(x=>x==="done")?"done":st.includes("active")?"active":st.includes("failed")?"failed":st.includes("done")?"active":"pending";
-    add(c.id,{name:c.name,status:s,chain:c,d:(c.members||[]).map(u=>(T[u]||{}).d||"").filter(Boolean).sort()[0]||""});
-    (c.members||[]).forEach(u=>inChain[u]=c.id);
+    const mem=(c.members||[]).filter(u=>T[u]);
+    const st=mem.map(u=>T[u].status).filter(Boolean);
+    const s=!st.length?"":st.every(x=>x==="done")?"done":st.includes("active")?"active"
+            :st.includes("failed")?"failed":st.includes("done")?"active":"pending";
+    add(c.id,{name:c.name,status:s,chain:c,
+      d:mem.map(u=>T[u].d||"").filter(Boolean).sort()[0]||""});
+    mem.forEach(u=>inChain[u]=c.id);
     const p=T[c.parent];if(p&&!p.children.includes(c.id))p.children.push(c.id);
   });
   if(Object.keys(inChain).length)Object.values(T).forEach(n=>{
     if(n.chain)return;n.children=n.children.filter(c=>!inChain[c])});
-  TREE={T:T,roots:roots,inChain:inChain};
+  TREE={T:T,roots:roots,inChain:inChain,missing:missing};
   return TREE;
 }
-function rowNode(T,add,r,i,pid,pj){
+function rowNode(T,add,r,i,pid){
   const cols=r.cols||{},det=[];
   if(!cols["哪里不够用"]&&r.q)det.push(["哪里不够用",r.q]);
-  ["哪里不够用","碰现实了吗","为什么要改动","改了什么（第几版）","改后验证","假设","实验","做了什么","下一步","详细","对方","原预测","实际反应","假设更新"]
+  ["哪里不够用","碰现实了吗","为什么要改动","改了什么（第几版）","改后验证","假设","实验",
+   "做了什么","下一步","详细","对方","原预测","实际反应","假设更新"]
     .forEach(k=>{if(cols[k])det.push([k,String(cols[k])])});
   return add(r.uid,{name:(r.q||"").slice(0,40),status:ST_ROW(r.f),fs:r.f||"",d:r.date||"",
     detail:det,go:"row",arg:[r.date||"",i,pid].join("|")});
@@ -1216,7 +1273,17 @@ function treeMark(s){const M={done:'<circle cx="8" cy="8" r="6.3"/><path d="m5 8
   active:'<circle cx="8" cy="8" r="5.8"/><circle cx="8" cy="8" r="3" fill="currentColor" stroke="none"/>',
   failed:'<path d="m4.5 4.5 7 7m0-7-7 7"/>',pending:'<circle cx="8" cy="8" r="6"/>'};
   return s?`<span class="tmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${M[s]}</svg></span>`:""}
-function curUid(){const P=D.p[cur()];if(!P)return"";const r=focusRowOf(P)||curRow(P);return r?.uid||""}
+// 当前停在哪一条：先认永久 UID，认不到才退回日期和正文，最后才用下标
+function curUid(){
+  const P=D.p[cur()];if(!P)return"";
+  const f=P.current?.focus||{};
+  if(f.uid&&P.rows.some(r=>r.uid===f.uid))return f.uid;
+  if(f.date||f.q){
+    const r=P.rows.find(r=>(!f.date||r.date===f.date)&&(!f.q||r.q===f.q));
+    if(r?.uid)return r.uid;
+  }
+  const r2=focusRowOf(P)||curRow(P);return r2?.uid||"";
+}
 function openPath(){
   const t=TREE||buildTree(),u=t.inChain[curUid()]||curUid();if(!u)return[];
   let hit=null;(function w(ids,pre,anc){for(const id of ids){if(hit||anc.includes(id))continue;
@@ -1228,7 +1295,8 @@ function openPath(){
 }
 function treeNode(id,path,anc){
   const t=TREE,d=t.T[id];if(!d||anc.includes(id))return"";
-  const key=path?path+"/"+id:id,has=!!d.children?.length,on=!!S.topen?.[key],isCur=(id===curUid()||id===t.inChain[curUid()]);
+  const key=path?path+"/"+id:id,has=!!d.children?.length,on=!!S.topen?.[key],
+        isCur=(id===curUid()||id===t.inChain[curUid()]);
   return `<div class="tn ${d.status||"struct"}${isCur?" cur":""}" data-tpath="${esc(key)}" data-tid="${esc(id)}" draggable="true">
     <div class="tline">
       <button class="tchev" data-ttoggle="${esc(key)}" aria-expanded="${on}" ${has?"":"disabled"} aria-label="${on?"折叠":"展开"}">${has?(on?"⌄":"›"):""}</button>
@@ -1242,95 +1310,108 @@ function treePage(){
   const n=Object.keys(t.T).length,cand=relsOf().filter(r=>r.state!=="已确认").length;
   return `<div class="body">
     <h1 class="h1">认知树</h1>
-    <p class="small" style="margin:0 0 10px">${n} 个节点，全部从仓库现有数据现算。黄色那条是今天停在的位置。</p>
+    <p class="small" style="margin:0 0 10px">${n} 个节点，全部从仓库现有数据现算。黄框那条是今天停在的位置。</p>
     <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px">
       <button class="chip" data-tcollapse="1">折叠全部</button>
       <button class="chip" data-tfocus="1">定位当前</button>
       <button class="chip" data-go="rels">认知关系 ${cand}</button></div>
     <div class="tree">${t.roots.map(r=>treeNode(r,"",[])).join("")}</div>
-    <div class="tlegend">${[["done","已完成"],["active","研究中"],["failed","验证失败"],["pending","未开始"]]
-      .map(([k,l])=>`<span class="${k}">${treeMark(k)}${l}</span>`).join("")}</div>
-  </div>${nav("tree")}`;
-}
-function cogPage(){
-  buildTree();const n=TREE.T[S.arg];
-  if(!n)return `<div class="body">${topBar("找不到这一条","")}${nav("tree")}</div>`;
-  const c=chainOfUid(S.arg);
-  const FS=["待改","改了未验","够用了","不做"];
-  return `<div class="body">${topBar(n.name,n.d||"")}
-    ${c?`<div class="row"><span class="meta">在演化链里：</span><button class="chip" data-go="chain" data-arg="${esc(c.id)}">${esc(c.name)}</button></div>`:""}
-    ${n.status?`<div class="row"><span class="meta ${n.status}">${treeMark(n.status)}${STATES[n.status]}</span></div>`:""}
-    ${n.fs?`<div class="card"><b class="small">状态</b><div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">${FS.map(v=>`<span class="chip${v===n.fs?" on":""}">${v}</span>`).join("")}</div></div>`:""}
-    ${(n.detail||[]).map(([k,v])=>k==="碰现实了吗"
-      ?`<div class="card"><b class="small">碰现实了吗</b><div class="row" style="gap:6px;margin-top:6px">${["有","无"].map(x=>`<span class="chip${x===v?" on":""}">${x}</span>`).join("")}<span class="meta">有＝这次改动是现实逼出来的</span></div></div>`
-      :`<div class="card"><b class="small">${esc(k)}</b><div class="kv"><span class="v">${esc(v)}</span></div></div>`).join("")}
+    <div class="tlegend">${[["done","已结案"],["active","研究中"],["failed","验证失败"],["pending","未开始"]]
+      .map(([k,l])=>`<span class="${k}">${treeMark(k)}${l}</span>`).join("")}
+      <span>没有依据判断状态的节点不上色</span></div>
+    ${t.missing.length?`<div class="card bd small">有 ${t.missing.length} 处指向了不存在的节点：${esc(t.missing.slice(0,5).join("、"))}</div>`:""}
   </div>${nav("tree")}`;
 }
 function relsPage(){
   buildTree();const rs=relsOf(),by={};
   rs.forEach((r,i)=>(by[r.rel]=by[r.rel]||[]).push([r,i]));
   const nm=u=>esc((TREE.T[u]||{}).name||u),dt=u=>(TREE.T[u]||{}).d||"";
+  const head=k=>isEvo(k)?"确认后这两条会合成一条演化链":"确认后两条都留在原位，只是互相连上";
   return `<div class="body">${topBar("认知关系","")}
-    <p class="small">从真实记录里找出来的候选关系，每条都带原文依据。确认之后会生成一条认知演化链，接在原来的树干上。</p>
+    <p class="small">从真实记录里找出来的候选关系，每条都带原文依据。推翻／修正／继承会合成演化链；迁移／支持／关联只连线，不动树上的位置。</p>
     ${REL6.map(([k,desc])=>{const g=by[k]||[];if(!g.length)return"";
       return `<div style="margin-top:18px"><div class="row"><b>${k}</b><span class="meta">${desc} · ${g.length} 对</span></div>
+      <div class="meta" style="margin:2px 0 6px">${head(k)}</div>
       ${g.map(([r,i])=>`<div class="card relc${r.state==="已确认"?" ok":""}">
         <div class="small" style="color:var(--ink)"><b>${nm(r.from)}</b>${dt(r.from)?`　${dt(r.from)}`:""}</div>
-        <div class="meta" style="margin:4px 0">└ <b style="color:var(--ink)">${k}</b>　${desc}</div>
+        <div class="meta" style="margin:4px 0">└ <b style="color:var(--ink)">${k}</b>　${esc(r.dir||desc)}</div>
         <div class="small" style="color:var(--ink)"><b>${nm(r.to)}</b>${dt(r.to)?`　${dt(r.to)}`:""}</div>
-        <div class="relwhy">${esc(r.why||"")}</div>
+        <div class="relwhy">${esc(r.why||"")}${r.src?`<br><span class="meta">依据：${esc(r.src)}</span>`:""}</div>
         ${r.note?`<div class="relnote">⚠ ${esc(r.note)}</div>`:""}
-        <div class="row" style="margin-top:8px">${r.state==="已确认"?'<span class="meta" style="color:var(--ok)">已生成演化链</span>':""}
-          <button class="btn ghost" style="margin-left:auto;width:auto;padding:7px 14px" data-relok="${i}" ${r.state==="已确认"?"disabled":""}>确认，生成演化链</button></div>
+        <div class="row" style="margin-top:8px">${r.state==="已确认"?'<span class="meta" style="color:var(--fx)">已确认</span>':""}
+          <button class="btn ghost" style="margin-left:auto;width:auto;padding:7px 14px" data-relok="${i}" ${r.state==="已确认"?"disabled":""}>${isEvo(k)?"确认，生成演化链":"确认这条关系"}</button></div>
       </div>`).join("")}</div>`}).join("")}
   </div>${nav("tree")}`;
 }
 function chainPage(){
   buildTree();const c=chainsOf().find(x=>x.id===S.arg);
   if(!c)return `<div class="body">${topBar("找不到这条链","")}${nav("tree")}</div>`;
-  const ms=(c.members||[]).slice().sort((a,b)=>{
-    const x=(TREE.T[a]||{}).d||"",y=(TREE.T[b]||{}).d||"";
+  const ms=(c.members||[]).filter(u=>TREE.T[u]).slice().sort((a,b)=>{
+    const x=TREE.T[a].d||"",y=TREE.T[b].d||"";
     return x&&y?(x<y?-1:x>y?1:0):x?-1:y?1:0});
-  const L=(a,b)=>c.links?.[a+">"+b]||c.links?.[b+">"+a]||"";
   let h="";
   ms.forEach((u,i)=>{
-    if(i){const r=L(ms[i-1],u);
-      h+=r?`<div class="cmid"><b>${esc(r)}</b>　<span class="meta">${esc(RELD[r]||"")}</span></div>`
-         :`<div class="cmid"><button class="chip" data-setrel="${esc(ms[i-1])}|${esc(u)}">这一段还没定，点一下补上</button></div>`}
-    const n=TREE.T[u]||{};
-    h+=`<div class="cend ${n.status||""}" ${n.go?`data-go="${esc(n.go)}" data-arg="${esc(n.arg)}"`:""}>
+    if(i){const r=relBetween(ms[i-1],u);
+      h+=r?`<div class="cmid"><b>${esc(r.rel)}</b>　<span class="meta">${esc(r.from===ms[i-1]?"前面那条被后面这条"+r.rel:"后面那条被前面这条"+r.rel)}</span></div>`
+         :`<div class="cmid"><span class="meta">这一段没有确认过的关系</span></div>`}
+    const n=TREE.T[u];
+    h+=`<div class="cend ${n.status||""}" ${n.go?`data-go="${esc(n.go)}" data-arg="${esc(n.arg)}"`:`data-go="cog" data-arg="${esc(u)}"`}>
       <div class="meta">${treeMark(n.status)}认知 ${i+1}${n.d?" · "+n.d:" · 没有记录时间"}</div>${esc(n.name||u)}</div>`});
+  // 链上确认过、但现在不相邻的演化关系
   const ex=[];
-  for(let i=0;i<ms.length;i++)for(let j=i+2;j<ms.length;j++){const r=L(ms[i],ms[j]);
-    if(r)ex.push(`<li><b>${esc(r)}</b>　${esc((TREE.T[ms[i]]||{}).name||"")} ↔ ${esc((TREE.T[ms[j]]||{}).name||"")}</li>`)}
+  for(let i=0;i<ms.length;i++)for(let j=i+2;j<ms.length;j++){const r=relBetween(ms[i],ms[j]);
+    if(r)ex.push(`<li><b>${esc(r.rel)}</b>　${esc(TREE.T[r.from].name)} → ${esc(TREE.T[r.to].name)}</li>`)}
   return `<div class="body">${topBar(c.name,"认知演化链")}
-    <p class="small">${ms.length} 条认知，按记录时间排，没有时间的排在最后。点任一条进它原本的页面。</p>
+    <p class="small">${ms.length} 条认知，按记录时间排，没有时间的排在最后。段与段之间显示的是 rels.json 里确认过的那一条，不按时间倒推。点任一条进它原本的页面。</p>
     <div class="card">${h}</div>
     ${ex.length?`<div class="card"><b class="small">这条链上还确认过这些关系（现在不相邻）</b><ul class="small">${ex.join("")}</ul></div>`:""}
   </div>${nav("tree")}`;
 }
-async function saveRels(msg){
-  D.rels.chains=D.rels.chains||[];
-  await put("rels.json",D.rels,msg||"认知关系");
+function cogPage(){
+  buildTree();const n=TREE.T[S.arg];
+  if(!n)return `<div class="body">${topBar("找不到这一条","")}${nav("tree")}</div>`;
+  const c=chainOfUid(S.arg),FS=["待改","改了未验","够用了","不做"];
+  const side=relsTouching(S.arg).filter(r=>!isEvo(r.rel));
+  return `<div class="body">${topBar(n.name,n.d||"")}
+    ${c?`<div class="row"><span class="meta">在演化链里：</span><button class="chip" data-go="chain" data-arg="${esc(c.id)}">${esc(c.name)}</button></div>`:""}
+    ${n.status?`<div class="row"><span class="meta ${n.status}">${treeMark(n.status)}${STATES[n.status]}</span></div>`:""}
+    ${n.fs?`<div class="card"><b class="small">状态</b><div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">${FS.map(v=>`<span class="chip${v===n.fs?" on":""}">${esc(v)}</span>`).join("")}</div></div>`:""}
+    ${(n.detail||[]).map(([k,v])=>k==="碰现实了吗"
+      ?`<div class="card"><b class="small">碰现实了吗</b><div class="row" style="gap:6px;margin-top:6px">${["有","无"].map(x=>`<span class="chip${x===v?" on":""}">${x}</span>`).join("")}<span class="meta">有＝这次改动是现实逼出来的</span></div></div>`
+      :`<div class="card"><b class="small">${esc(k)}</b><div class="kv"><span class="v">${esc(v)}</span></div></div>`).join("")}
+    ${side.length?`<div class="card"><b class="small">和别的认知的横向关系</b>${side.map(r=>{
+      const o=r.from===S.arg?r.to:r.from,on=TREE.T[o];
+      return `<div class="line3 tap" data-go="cog" data-arg="${esc(o)}"><span class="txt"><b>${esc(r.rel)}</b>　${esc(on?on.name:o)}<div class="meta" style="margin-top:2px">${esc(r.dir||RELD[r.rel])}</div></span><span class="chev">›</span></div>`}).join("")}</div>`:""}
+  </div>${nav("tree")}`;
 }
-function mergeChain(from,to,rel,name){
+async function saveRels(next,msg){
+  // 先写仓库，写成功才换内存：保存失败时界面不会显示「已确认」
+  const before=D.rels;
+  D.rels=next;
+  try{await put("rels.json",next,msg||"认知关系");treeDirty();return true}
+  catch(e){D.rels=before;treeDirty();toast("没能写回仓库，这次确认没算数："+e.message);return false}
+}
+/* 合并成链：只用用户实际确认的那两个 UID，关系本身不存在链里。
+   链里只有成员和名字；相邻两条之间显示什么，回 rels.json 查。 */
+function mergeChain(from,to,name){
   const t=TREE||buildTree();
-  // from / to 可能本身就是一条链（接长的情形），也可能是一条认知
   const asChain=u=>chainsOf().find(c=>c.id===u)||chainOfUid(u);
-  const mem=u=>{const c=asChain(u);return c?c.members.slice():[u]};
-  const A=mem(from),B=mem(to),all=[...new Set(A.concat(B))];
-  all.sort((a,b)=>{const x=(t.T[a]||{}).d||"",y=(t.T[b]||{}).d||"";return x&&y?(x<y?-1:x>y?1:0):x?-1:y?1:0});
-  const links={};[asChain(from),asChain(to)].forEach(c=>{if(c)Object.assign(links,c.links||{})});
-  for(let i=1;i<all.length;i++){const x=all[i-1],y=all[i];
-    if(A.includes(x)===A.includes(y))continue;
-    if(links[x+">"+y]||links[y+">"+x])continue;links[x+">"+y]=rel;break}
-  const par=(asChain(to)||{}).parent||parentIn(t,to)||(asChain(from)||{}).parent||parentIn(t,from)||"history";
-  D.rels.chains=(D.rels.chains||[]).filter(c=>c.id!==from&&c.id!==to);
-  const id="chain-"+Date.now().toString(36);
-  D.rels.chains.push({id:id,name:name,parent:par,members:all,links:links});
+  const cf=asChain(from),ct=asChain(to);
+  const mem=(u,c)=>c?c.members.slice():[u];
+  const all=[...new Set(mem(from,cf).concat(mem(to,ct)))];
+  const par=(ct||{}).parent||parentIn(t,to)||(cf||{}).parent||parentIn(t,from)||"history";
+  // 旧链按它自己的 id 删掉，不管传进来的是链 id 还是链里的某个成员
+  const drop=[cf&&cf.id,ct&&ct.id].filter(Boolean);
+  D.rels.chains=(D.rels.chains||[]).filter(c=>!drop.includes(c.id));
+  // 同一毫秒内连建两条会撞 id；刚被取代的旧链 id 也不能马上再用
+  const taken=D.rels.chains.map(c=>c.id).concat(drop);
+  let id="chain-"+Date.now().toString(36),k=0;
+  while(taken.includes(id))id="chain-"+Date.now().toString(36)+"-"+(++k);
+  D.rels.chains.push({id:id,name:name,parent:par,members:all});
   return id;
 }
 function parentIn(t,id){for(const k in t.T)if((t.T[k].children||[]).includes(id))return k;return null}
+
 
 
 function methodPage(){
@@ -1536,7 +1617,7 @@ async function reanalyze(id){
   const P=D.p[id];
   // 锁定今天页这一刻显示的就是哪一行。同一天可能有好几行，所以必须带下标。
   const row=focusRow(P),idx=P.rows.indexOf(row);
-  P.current.focus={date:row?.date||null,idx,q:row?.q||""};
+  P.current.focus={uid:row?.uid||null,date:row?.date||null,idx,q:row?.q||""};
   P.current.rowDate=row?.date||P.current.rowDate;
   P.current.q=row?.q||P.current.q;
   P.current.night={status:"wait",deadline:next8(),retries:0,error:null,
@@ -1897,7 +1978,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-relok],[data-setrel],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-relok],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
   if(d.copysop){
     const id=S.arg||cur(),so=curSop(D.p[id]?.project);
@@ -1976,23 +2057,22 @@ document.addEventListener("click",async e=>{
     return go("cog",id);
   }
   if(d.relok!==undefined){
-    const r=relsOf()[+d.relok];if(!r)return;
-    const nm=(prompt("这条演化链叫什么？\n\n"+(TREE.T[r.from]||{}).name+"\n  └ "+r.rel+"\n"+(TREE.T[r.to]||{}).name,"")||"").trim();
-    if(!nm)return;
-    mergeChain(r.from,r.to,r.rel,nm);r.state="已确认";
-    treeDirty();render();
-    try{await saveRels("确认关系："+r.from+" "+r.rel+" "+r.to);toast("已写回仓库")}
-    catch(e){toast("没能写回仓库："+e.message)}
-    return;
-  }
-  if(d.setrel){
-    const [x,y]=d.setrel.split("|"),c=chainsOf().find(z=>z.id===S.arg);if(!c)return;
-    const pick=(prompt("这一段是什么关系？\n"+REL6.map((r,i)=>(i+1)+" "+r[0]+"（"+r[1]+"）").join("\n"),"")||"").trim();
-    const r=REL6[+pick-1]?.[0]||REL6.find(z=>z[0]===pick)?.[0];
-    if(!r)return;
-    c.links=c.links||{};c.links[x+">"+y]=r;treeDirty();render();
-    try{await saveRels("补上一段关系："+r)}catch(e){toast("没能写回仓库："+e.message)}
-    return;
+    const i=+d.relok,r=relsOf()[i];if(!r||r.state==="已确认")return;
+    buildTree();
+    const an=(TREE.T[r.from]||{}).name||r.from,bn=(TREE.T[r.to]||{}).name||r.to;
+    let next=JSON.parse(JSON.stringify(D.rels));next.chains=next.chains||[];
+    if(isEvo(r.rel)){
+      const nm=(prompt("这条演化链叫什么？\n\n"+an+"\n  └ "+r.rel+"\n"+bn,"")||"").trim();
+      if(!nm)return;
+      const keep=D.rels;D.rels=next;             // 在副本上算，算完换回去
+      try{mergeChain(r.from,r.to,nm)}finally{next=D.rels;D.rels=keep}
+    }else if(!confirm(an+"\n  └ "+r.rel+"\n"+bn+"\n\n这是横向关系：两条都留在树上原来的位置，只是互相连上。确认吗？")){
+      return;
+    }
+    next.rels[i].state="已确认";
+    next.rels[i].at=new Date().toISOString().slice(0,10);
+    if(await saveRels(next,"确认关系："+r.from+" "+r.rel+" "+r.to))toast("已写回仓库");
+    render();return;
   }
   if(d.go){if((d.go==="project"||d.go==="iter")&&!d.arg){go(d.go,cur())}else go(d.go,d.arg);return}
   if("back" in d) return back();

@@ -1,9 +1,9 @@
-name: RL-app 安全保存测试
+name: RL-app 测试
 on:
   push:
     paths:
       - "index.html"
-      - "tests/test_safe_save.cjs"
+      - "tests/**"
       - ".github/workflows/safe-save-check.yml"
   pull_request:
 permissions:
@@ -13,5 +13,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: 取出 rl-data 同名分支（认知树测试要拿真实数据跑）
+        id: data
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: Vicki257/rl-data
+          ref: ${{ github.ref_name }}
+          path: rl-data
+          token: ${{ secrets.RL_DATA_TOKEN || github.token }}
+      - name: 没有同名分支就退回 rl-data 的默认分支
+        id: data_main
+        if: steps.data.outcome != 'success'
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: Vicki257/rl-data
+          path: rl-data
+          token: ${{ secrets.RL_DATA_TOKEN || github.token }}
+      - name: 摆到认知树测试会去找的位置（仓库同级）
+        if: steps.data.outcome == 'success' || steps.data_main.outcome == 'success'
+        run: mv rl-data ../rl-data
       - name: 测试陈旧写入与 UID 保留
         run: node tests/test_safe_save.cjs
+      - name: 认知树与认知关系（拿到真实数据就严格跑）
+        run: |
+          if [ -d ../rl-data/data ]; then
+            node tests/test_tree.cjs --require-real-data
+          else
+            echo "::warning::没能取到 rl-data（多半是没配 RL_DATA_TOKEN），这一轮只跑了内置样本，不能当作真实数据的验证"
+            node tests/test_tree.cjs
+          fi
