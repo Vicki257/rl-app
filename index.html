@@ -2301,7 +2301,7 @@ function addMethod(){
   const m={id:"m-"+String(n).padStart(3,"0"),cat:(D.meth.cats||[])[0]||"每天怎么跑",
     proj:cur(),projName:D.p[cur()]?.project?.name||"",name:"新方法",when:"",what:"",
     src:(+t.slice(5,7))+"/"+(+t.slice(8,10)),refs:[t],_draft:true};
-  arr.push(m);S.newMethodId=m.id;S.methodCat=m.cat;S.edit=true;go("method",m.id);
+  arr.push(m);S.newMethodId=m.id;S.methodCat=m.cat;go("method",m.id);S.edit=true;render();
 }
 function cancelMethodEdit(){
   if(S.newMethodId){D.meth.methods=D.meth.methods.filter(m=>m.id!==S.newMethodId);S.newMethodId=null}
