@@ -208,6 +208,21 @@ ok(evoRels.length>0,"应该有可以成链的演化关系");
     }
   }
 }
+// 目标/奖励和 pains 只保留在详情，不得成为没有 UID 的独立叶节点。
+{
+  const t=buildTree();
+  for(const pid of ["rl","quant","wealth","people"]){
+    ok(!t.T[pid+":goal"]&&!t.T[pid+":reward"],pid+" 目标和奖励不能伪装为独立认知");
+    const project=D.p[pid]?.project;
+    for(const n of project?.sop?.nodes||[]){
+      if(!n.uid)continue;
+      const inTree=t.T[n.uid];
+      ok(!!inTree,"原 SOP 真实 UID 必须保留："+n.uid);
+      ok(!(inTree.children||[]).some(u=>String(u).includes(":pain")),
+         "pains[] 无 UID，不得当作认知叶节点："+n.uid);
+    }
+  }
+}
 // 同一对 UID 有多条关系时，不能只挑第一条
 {
   const r=relsOf()[0];
