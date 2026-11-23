@@ -343,8 +343,8 @@ async function scenario(browser,device){
   assert(store.get("projects/quant/current.json").focus.syncPending===true,
     device+": 目标项目留下待恢复标记");
   denyFile=null;await page.reload();
-  await page.waitForFunction(()=>D.global?.current==="quant"&&
-    D.p.quant?.current?.focus?.syncPending!==true&&D.widget?.project==="quant");
+  await page.waitForFunction(()=>D.global?.current==="quant"&&!!D.p.quant&&
+    D.p.quant.current?.focus?.syncPending===undefined&&D.widget?.project==="quant");
   assert(store.get("widget.json").project==="quant",device+": 刷新后补完小组件项目");
   assert(!store.get("projects/quant/current.json").focus.syncPending,
     device+": 三处同步完成后清除待恢复标记");
