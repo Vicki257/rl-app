@@ -50,6 +50,17 @@ function check(){api.validateRels(D.rels);ok(D.rels.rels.every(x=>api.realCogUid
  click("i",1);click("dir",0);await tick();
  ok(D.rels.rels.some(x=>x.from===a&&x.to===d&&x.rel==="修正"),"C 关系端点必须双选真实 UID");
  ok(D.rels.chains.length===2&&D.rels.chains.some(x=>x.id==="chain-a")&&D.rels.chains.some(x=>x.id==="chain-b"),"C 禁止自动合并分支");check();
+ // 候选列表确认 B→C：两条已有演化链保持独立，只确认这一条关系。
+ reset([{id:"chain-a",name:"链甲",parent:"proj:rl",members:[a,b]},
+        {id:"chain-b",name:"链乙",parent:"proj:rl",members:[c,d]}]);
+ D.rels.rels.push({from:b,to:c,rel:"修正",state:"候选",why:"原始候选"});
+ await api.confirmRel(b,c,"修正");
+ ok(D.rels.chains.length===2,"候选列表确认不得合并已有两条链");
+ ok(D.rels.rels.filter(x=>x.from===b&&x.to===c&&x.rel==="修正").length===1,
+    "候选列表确认不能复制原始关系");
+ ok(D.rels.rels.find(x=>x.from===b&&x.to===c).state==="已确认",
+    "应升级已有候选关系的状态");
+ check();
  // D：普通结构节点不能拖，不能打开任何关系窗口。
  reset();ok(!api.dragTarget("proj:rl"),"D 结构节点不可拖动");
  ok(api.treeNode("proj:rl","",[]).startsWith('<div draggable="false"'),"D DOM 必须禁止拖动");
