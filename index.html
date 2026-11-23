@@ -1286,8 +1286,20 @@ function validateRels(next){
       throw new Error("关系端点不是两个不同的真实认知 UID："+r.from+" → "+r.to);
     if(!RELD[r.rel])throw new Error("未知认知关系："+r.rel);
   }
+  // 已确认的有向演化关系不可形成环；候选关系不影响正式结构。
+  const edges=new Map();
+  for(const r of next.rels||[])if(r.state==="已确认"&&isEvo(r.rel))
+    edges.set(r.from,(edges.get(r.from)||[]).concat(r.to));
+  const color=new Map();
+  function visit(u){
+    if(color.get(u)===1)throw new Error("已确认演化关系出现环："+u);
+    if(color.get(u)===2)return;
+    color.set(u,1);for(const v of edges.get(u)||[])visit(v);color.set(u,2);
+  }
+  for(const u of edges.keys())visit(u);
   const used=new Set(),ids=new Set();
   for(const c of next.chains||[]){
+    if(realCogUid(c.id))throw new Error("链 ID 与永久认知 UID 冲突："+c.id);
     if(ids.has(c.id))throw new Error("演化链 ID 重复："+c.id);
     ids.add(c.id);
     for(const u of c.members||[]){
