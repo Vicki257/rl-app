@@ -1808,7 +1808,7 @@ function methodPage(){
       <label class="small" for="m_src">来源（几月几号）</label><textarea id="m_src" style="min-height:52px">${esc(m.src||"")}</textarea>
       <div class="small">放在哪一类</div><div class="row" style="gap:6px;flex-wrap:wrap">
         ${cats.map(c=>`<button class="chip${(S.methodCat||m.cat)===c?" on":""}" data-setcat="${esc(m.id)}|${esc(c)}">${esc(c)}</button>`).join("")}</div>
-      <button class="btn" data-savem="${esc(m.id)}">保存</button>
+      <button class="btn" data-savem="${esc(m.id)}">保存</button><span class="save-method-note" role="status"></span>
       <button class="btn ghost" data-canceledit>取消</button>
       <button class="btn ghost bd" data-delm="${esc(m.id)}">删除这条方法</button></div>
   </div>`;
@@ -2354,7 +2354,12 @@ async function saveMethod(id){
     D.meth=next;S.newMethodId=null;S.edit=false;S.methodCat=null;
     toast(m.uid?"方法已保存":"已保存到 RL-data，等待 ids.py 发放永久 UID");
     render();return true;
-  }catch(e){toast("方法保存失败（草稿仍在）："+e.message);return false}
+  }catch(e){
+    // 不重绘编辑页：输入框中的未提交内容必须留在原处，正式数据不变。
+    const note=document.querySelector(".save-method-note");
+    if(note)note.textContent="保存失败，输入仍保留："+e.message;
+    return false;
+  }
 }
 async function delMethod(id){
   if(!confirmDel){confirmDel=true;toast("再点一次「删除这条方法」才真的删除");setTimeout(()=>confirmDel=false,4000);return}
