@@ -287,6 +287,14 @@ async function scenario(browser,device){
   });
   assert(statusOK===false,device+": rows 保存被拒绝时改状态必须报告失败");
   assert(JSON.stringify(store.get(rlPath))===beforeRows,device+": 拒绝保存不能改写真实行");
+  // 删除记录也必须先写成功；失败时原行与焦点保持不变。
+  await page.evaluate(()=>{
+    confirmDel=true;
+    return delRow(D.p.rl.rows.findIndex(x=>x.uid==="A000000067"));
+  });
+  assert(JSON.stringify(store.get(rlPath))===beforeRows,device+": 删除失败不能丢掉原始认知");
+  assert(await page.evaluate(()=>D.p.rl.rows.some(x=>x.uid==="A000000067")),
+    device+": 删除失败应恢复本地认知");
   assert(await page.evaluate(()=>D.p.rl.rows.find(x=>x.uid==="A000000067")?.f)==="待改",
     device+": 改状态失败后本地恢复");
   const field=page.locator('[data-pri="'
