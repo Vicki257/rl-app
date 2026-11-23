@@ -46,3 +46,12 @@ jobs:
           node tests/test_tree.cjs --require-real-data
       - name: 拖动关系和端点反例
         run: node tests/test_rel_drag.cjs --require-real-data
+      - name: 校验整份 index.html 的 JavaScript 语法
+        run: |
+          node -e 'const fs=require("fs"),vm=require("vm");const s=fs.readFileSync("index.html","utf8");new vm.Script(s.split("<script>")[1].split("</script>")[0]);console.log("index.html 脚本语法通过")'
+      - name: 安装 Chromium 交互测试环境
+        run: |
+          npm install --no-save playwright@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Chromium 电脑与手机端：拖放、保存、刷新和定位
+        run: node tests/test_browser.cjs
