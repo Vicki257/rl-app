@@ -61,6 +61,17 @@ function check(){api.validateRels(D.rels);ok(D.rels.rels.every(x=>api.realCogUid
  ok(D.rels.rels.find(x=>x.from===b&&x.to===c).state==="已确认",
     "应升级已有候选关系的状态");
  check();
+ // 跨项目的演化关系只记录确认，不得改变原始项目归属。
+ reset();
+ const otherProject=Object.values(D.p.quant?.rows||[]).find(x=>x.uid)?.uid;
+ ok(!!otherProject,"必须读到真实量化项目 UID");
+ const origin=api.buildTree(),parentBefore=Object.values(origin.T).find(n=>(n.children||[]).includes(a))?.id;
+ await api.confirmRel(a,otherProject,"修正");
+ ok(D.rels.rels.some(x=>x.from===a&&x.to===otherProject&&x.state==="已确认"),
+    "跨项目演化关系必须保留真实 UID");
+ ok(D.rels.chains.length===0,"跨项目关系不能自动生成混合演化链");
+ const now=api.buildTree(),parentAfter=Object.values(now.T).find(n=>(n.children||[]).includes(a))?.id;
+ ok(parentBefore===parentAfter,"跨项目关系不能改变认知原来的树枝");
  // D：普通结构节点不能拖，不能打开任何关系窗口。
  reset();ok(!api.dragTarget("proj:rl"),"D 结构节点不可拖动");
  ok(api.treeNode("proj:rl","",[]).startsWith('<div draggable="false"'),"D DOM 必须禁止拖动");
