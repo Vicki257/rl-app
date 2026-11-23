@@ -23,7 +23,7 @@ async function scenario(browser,device){
     ?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}
     :{viewport:{width:1280,height:800}});
   const page=await context.newPage(),store=new Map(),revs=new Map();
-  let denyWrites=false,writeCount=0;
+  let denyWrites=false,writeCount=0,denyFile=null;
   const rels=read("rels.json");
   rels.chains=[{id:"chain-browser",name:"测试既有链",parent:"proj:rl",members:[focus,selected]}];
   store.set("rels.json",rels);
@@ -54,10 +54,11 @@ async function scenario(browser,device){
     }
     if(method==="PUT"){
       writeCount++;
-      if(denyWrites)return fulfill(401,{message:"simulated denial"});
+      if(denyWrites||file===denyFile)return fulfill(401,{message:"simulated denial"});
       const payload=JSON.parse(req.postData()||"{}");
       if(payload.branch!==branch)return fulfill(400,{message:"wrong write branch"});
-      if(payload.sha!=="rev"+(revs.get(file)||1))return fulfill(409,{message:"stale SHA"});
+      if(store.has(file)&&payload.sha!=="rev"+(revs.get(file)||1))return fulfill(409,{message:"stale SHA"});
+      if(!store.has(file)&&payload.sha)return fulfill(409,{message:"new file sha unexpected"});
       const next=JSON.parse(Buffer.from(payload.content,"base64").toString("utf8"));
       const n=(revs.get(file)||1)+1;revs.set(file,n);store.set(file,next);
       return fulfill(200,{content:{sha:"rev"+n}});
@@ -175,6 +176,82 @@ async function scenario(browser,device){
   assert(store.get("rels.json").rels.length===countBefore,device+": 失败保存不应修改正式数据");
   console.log("保存失败诊断："+JSON.stringify({putCount:writeCount,toast:await page.evaluate(()=>S.toast)}));
   assert(writeCount>=2,device+": 测试必须真正发生模拟 GitHub PUT");
+  // 真正的屏幕触摸：无需 HTML5 拖放，点选两条认知并确认关系。
+  denyWrites=false;
+  await page.locator('[data-rpick]').tap();
+  await page.locator('#tree .item[data-id="'+newId+'"] > .line > .name').tap();
+  await page.locator('#tree .item[data-id="'+outsider+'"] > .line > .name').tap();
+  await page.locator(".relsheet [data-member='0']").tap();
+  await page.locator(".relsheet [data-i='5']").tap(); // 关联，不改变归属
+  await page.locator(".relsheet [data-dir='0']").tap();
+  await page.waitForFunction(()=>S.toast?.includes("已写回仓库"));
+  assert(store.get("rels.json").rels.some(r=>r.from===focus&&r.to===outsider&&r.rel==="关联"),
+    device+": 触摸点选必须建立真实 UID 关系");
+  console.log("Chromium "+device+" 真实触摸 tap 点选建立关系通过");
+
+  // 方法库：新增 → 保存 → 刷新 → 编辑 → 归档，原有 UID 不丢。
+  await page.locator('[data-tab="tree"]').click();
+  await page.evaluate(()=>{
+    const t=buildTree();S.topen={};const walk=(id,pre,seen)=>{
+      if(seen.includes(id))return;const key=pre?pre+"/"+id:id;S.topen[key]=1;
+      (t.T[id]?.children||[]).forEach(c=>walk(c,key,seen.concat(id)))};
+    t.roots.forEach(x=>walk(x,"",[]));render();
+  });
+  const realMethods=read("methods.json").methods;
+  const originalUID=realMethods[0].uid;
+  await page.locator('#tree .item[data-id="'+originalUID+'"] > .line > .name').click();
+  await page.locator('[data-addm]').click();
+  await page.locator('#m_name').fill("浏览器新增方法测试");
+  await page.locator('#m_what').fill("测试可长期保存");
+  await page.locator('[data-savem]').click();
+  await page.waitForFunction(()=>store.getItem===undefined && !!D.meth?.methods.find(x=>x.name==="浏览器新增方法测试"));
+  const savedMethod=store.get("methods.json").methods.at(-1);
+  assert(savedMethod.name==="浏览器新增方法测试"&&!savedMethod.uid,
+    device+": 浏览器不得手动猜永久 UID，必须交由 ids.py");
+  assert(store.get("methods.json").methods.length===realMethods.length+1);
+  const mid=savedMethod.id;
+  await page.reload();await page.waitForFunction(()=>!!D.meth);
+  await page.evaluate(id=>go("method",id),mid);
+  assert((await page.locator(".body").innerText()).includes("浏览器新增方法测试"),
+    device+": 刷新后应能找到方法");
+  await page.locator('[data-edit]').click();
+  await page.locator('#m_name').fill("浏览器编辑方法测试");
+  await page.locator('[data-savem]').click();
+  await page.waitForFunction(()=>D.meth?.methods.some(x=>x.name==="浏览器编辑方法测试"));
+  assert(store.get("methods.json").methods.at(-1).name==="浏览器编辑方法测试");
+  await page.locator('[data-edit]').click();
+  await page.locator('[data-delm]').click();
+  await page.locator('[data-delm]').click();
+  await page.waitForFunction(()=>D.meth?.methods.some(x=>x.id==="m-001")&&S.screen==="tree");
+  assert(store.get("methods.json").methods.at(-1).archived===true,
+    device+": 删除方法只能归档，不删除原文或 UID");
+  assert(store.get("methods.json").methods[0].uid===originalUID,
+    device+": 原方法 UID 不能改变");
+  // 新增内容正式落仓库而非本地草稿，模拟换设备重新读取。
+  await page.evaluate(uid=>go("cog",uid),outsider);
+  await page.locator('.record-editor').fill("跨设备长期认知补充验证");
+  await page.locator('.save-record').click();
+  await page.waitForFunction(()=>D.notes&&Object.values(D.notes).includes("跨设备长期认知补充验证"));
+  assert(store.get("cognotes.json")[outsider]==="跨设备长期认知补充验证");
+  await page.reload();await page.waitForFunction(()=>!!D.p.rl);
+  await page.evaluate(uid=>go("cog",uid),outsider);
+  assert(await page.locator(".record-editor").inputValue()==="跨设备长期认知补充验证",
+    device+": 跨设备应从仓库读取正式补充内容");
+  // 三文件写入中间失败后保留 pending，并在重新打开时自动补完。
+  await page.waitForFunction(()=>!!D.p.quant);
+  denyFile="global.json";
+  const quantUID=read("projects/quant/current.json").focus.focusUid;
+  const quantIndex=read("projects/quant/rows.json").findIndex(r=>r.uid===quantUID);
+  assert(quantIndex>=0);
+  await page.evaluate(i=>setFocus("quant",i),quantIndex);
+  await page.waitForFunction(()=>D.p.quant?.current?.focus?.syncPending===true);
+  assert(store.get("projects/quant/current.json").focus.syncPending,
+    device+": 第二笔失败保留待恢复标识");
+  denyFile=null;await page.reload();
+  await page.waitForFunction(()=>D.global?.current==="quant"&&D.p.quant?.current?.focus?.syncPending!==true);
+  assert(store.get("widget.json").focusUid===quantUID,
+    device+": 刷新后同步 widget 的唯一焦点 UID");
+  console.log("Chromium "+device+"：方法增改归档、正式补充、触摸点选、部分失败恢复通过");
   await context.close();
   console.log("Chromium "+device+"：当前定位、链成员拖动、方向、保存、刷新与失败回滚通过");
 }
