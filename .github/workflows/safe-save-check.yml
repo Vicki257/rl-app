@@ -58,6 +58,6 @@ jobs:
       - name: 安装 Chromium 交互测试环境
         run: |
           npm install --no-save playwright@1.58.2
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - name: Chromium 电脑与手机端：拖放、保存、刷新和定位
         run: node tests/test_browser.cjs
