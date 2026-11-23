@@ -384,7 +384,7 @@ applyTheme(theme());
 function saveCfg(){try{localStorage.setItem(LS,JSON.stringify(cfg))}catch(e){}}
 const b64e=s=>{const b=new TextEncoder().encode(s);let x="";b.forEach(c=>x+=String.fromCharCode(c));return btoa(x)};
 const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
-const SHA={},BASE={};
+const SHA={},BASE={},READ={}; // 已确认的来源、文件 SHA 或精确 404，绝不把网络错误当空文件
 const copyJSON=v=>JSON.parse(JSON.stringify(v));
 function withoutUid(v){
   if(Array.isArray(v))return v.map(withoutUid);
@@ -471,19 +471,33 @@ async function gh(path,opt={}){
   const b=branch();
   const q=b&&(!opt.method||opt.method==="GET")?`?ref=${encodeURIComponent(b)}`:"";
   const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/data/${path}${q}`,{...opt,headers:{Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json",...(opt.headers||{})},cache:"no-store"});
-  if(!r.ok){const t=await r.text();throw new Error(`${r.status} ${path}：${t.slice(0,120)}`)}
+  if(!r.ok){const t=await r.text();const e=new Error(`${r.status} ${path}：${t.slice(0,120)}`);e.status=r.status;throw e}
   return r.json();
 }
 async function get(path){
   const source=sourceKey();
-  if(cacheSource!==null&&cacheSource!==source){Object.keys(SHA).forEach(k=>delete SHA[k]);Object.keys(BASE).forEach(k=>delete BASE[k]);}
+  if(cacheSource!==null&&cacheSource!==source){
+    for(const bag of [SHA,BASE,READ])Object.keys(bag).forEach(k=>delete bag[k]);
+  }
   cacheSource=source;
+  // 新一次读取失败即撤销该文件的写入资格；旧 SHA 不能继续使用。
+  delete READ[path];delete SHA[path];delete BASE[path];
   const j=await gh(path),v=JSON.parse(b64d(j.content));
   if(source!==sourceKey())throw new Error("仓库或分支已切换，请重新加载");
-  SHA[path]=j.sha;BASE[path]=copyJSON(v);
+  if(!j.sha||!j.content)throw new Error("缺少 GitHub 文件 SHA 或内容："+path);
+  SHA[path]=j.sha;BASE[path]=copyJSON(v);READ[path]={source,sha:j.sha,exists:true};
   return v;
 }
-async function put(path,obj,msg){
+async function getOptional(path,missingValue){
+  try{return await get(path)}
+  catch(e){
+    // 只有 GitHub contents API 明确 404 才确认为不存在，拒绝把 401/403/网络故障当空文件。
+    if(e.status!==404)throw e;
+    READ[path]={source:sourceKey(),sha:null,exists:false};
+    return copyJSON(missingValue);
+  }
+}
+async function put(path,obj,msg,options={}){
   const source=sourceKey();
   if(cacheSource!==null&&cacheSource!==source)throw new Error("数据源已切换，请先重新读取新分支");
   cacheSource=source;
@@ -495,29 +509,31 @@ async function put(path,obj,msg){
     body.branch=branch();                       // 绝不隐式写入默认分支
     return body;
   };
-  await ensureBranch();guard();              // 未配置或分支不存在，不写任何内容
-  if(!SHA[path]){
+  await ensureBranch();guard();
+  let read=READ[path];
+  // 首次创建必须有调用方明确授权，并再次确认文件确实不存在。
+  if(!read&&options.create){
+    try{await get(path);read=READ[path]}
+    catch(e){if(e.status!==404)throw e;read=READ[path]={source,sha:null,exists:false}}
+  }
+  if(!read||read.source!==source||read.exists&&(!read.sha||read.sha!==SHA[path]))
+    throw new Error("文件未成功读取或 SHA 与当前分支不一致，拒绝写入："+path);
+  if(!read.exists){
+    if(!options.create)throw new Error("未确认创建新文件，禁止写入："+path);
+    // 精确 404 已确认；不带 sha 的首次创建只允许在这里。
     try{
-      const j=await gh(path);guard();
-      SHA[path]=j.sha;BASE[path]=JSON.parse(b64d(j.content));
-    }catch(e){
-      if(!String(e.message).startsWith("404"))throw e;
-      // 缺少目标文件时保留原来的首次创建能力（不带 sha）。
-      try{
-        guard();const j=await gh(path,{method:"PUT",body:JSON.stringify(payload())});guard();
-        SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
-        return;
-      }catch(err){
-        const m=String(err.message);
-        if(m.startsWith("409")||m.startsWith("422"))
-          throw new Error("该文件已被其他会话创建，请刷新后再试，未覆盖远端数据");
-        throw err;
-      }
+      guard();const j=await gh(path,{method:"PUT",body:JSON.stringify(payload())});guard();
+      SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
+      READ[path]={source,sha:j.content.sha,exists:true};return;
+    }catch(err){
+      if(err.status===409||err.status===422)
+        throw new Error("该文件已被其他会话创建，请刷新后再试，未覆盖远端数据");
+      throw err;
     }
   }
   try{
     guard();const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(SHA[path]))});guard();
-    SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
+    SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);READ[path]={source,sha:j.content.sha,exists:true};
     return;
   }catch(e){
     const m=String(e.message);
@@ -530,7 +546,7 @@ async function put(path,obj,msg){
   applyRemoteUid(BASE[path],obj,server);
   try{
     guard();const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(latest.sha))});guard();
-    SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
+    SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);READ[path]={source,sha:j.content.sha,exists:true};
   }catch(e){
     const m=String(e.message);
     if(m.startsWith("422")||m.startsWith("409"))
@@ -558,14 +574,14 @@ async function loadProject(id,force,quiet){
 async function loadAll(){
   S.loading=true;S.err="";render();
   try{
-    [D.global,D.index,D.status,D.meth,D.cogtree,D.rels,D.hist]=await Promise.all([
-      get("global.json"),get("projects/index.json"),get("status.json").catch(()=>null),
-      get("methods.json").catch(()=>({name:"方法库",cats:[],methods:[]})),
-      get("cogtree.json").catch(()=>({up:{},struct:{roots:[],nodes:{}}})),
-      get("rels.json").catch(()=>({rels:[],chains:[]})),
-      get("history.json").catch(()=>[])]);
+    // 关系、方法与认知来源属于必读原件：读取失败就报错，不允许伪装成空数据。
+    const all=await Promise.all([
+      get("global.json"),get("projects/index.json"),getOptional("status.json",null),
+      get("methods.json"),get("cogtree.json"),get("rels.json"),get("history.json"),
+      getOptional("cognotes.json",{})]);
+    [D.global,D.index,D.status,D.meth,D.cogtree,D.rels,D.hist,D.notes]=all;
     await loadProject(cur(),true);
-  }catch(e){S.err=e.message}
+  }catch(e){S.err="数据加载失败（禁止写入未加载文件）："+e.message}
   S.loading=false;render();
   // 「所有未解决问题」要跨项目，所以首屏之后把其余项目也读进来；只读，不动它们的 current.json
   (D.index||[]).filter(x=>x.state!=="archived"&&x.id!==cur())
@@ -2387,8 +2403,8 @@ document.addEventListener("click",async e=>{
   if("saveboard" in d) return saveProject(S.arg||cur(),"调整 SOP 图的节点位置");
   if(d.decide){const [id,i,o]=d.decide.split("|");return decide(id,+i,o)}
   if("savecfg" in d){cfg.owner=$("#owner").value.trim();cfg.repo=$("#repo").value.trim();cfg.branch=$("#dbranch").value.trim();cfg.token=$("#token").value.trim();branchOK=null;checkedSource=null;
-    Object.keys(SHA).forEach(k=>delete SHA[k]);Object.keys(BASE).forEach(k=>delete BASE[k]);
-    cacheSource=null;D.p={};D.global=null;D.index=[];D.rels=null;D.cogtree=null;D.hist=[];S.topen=null;treeDirty();
+    for(const bag of [SHA,BASE,READ])Object.keys(bag).forEach(k=>delete bag[k]);
+    cacheSource=null;D.p={};D.global=null;D.index=[];D.meth=null;D.rels=null;D.cogtree=null;D.hist=[];D.notes=null;S.topen=null;treeDirty();
     saveCfg();S.screen="today";return loadAll()}
   if("reload" in d){D.p={};return loadAll()}
 });
