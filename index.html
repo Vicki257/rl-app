@@ -1257,7 +1257,7 @@ function flowHTML(sop){
       ${(n.q||n.sub)?`<div class="q">${esc(n.q||n.sub)}</div>`:""}</div>`).join("")}</div>`).join("");
 }
 /* ---- 方法：列表页已被认知树取代。方法本身与它的详情页保留，树上点开还是原来那一页 ---- */
-function ML(){return D.meth?.methods||[]}
+function ML(){return (D.meth?.methods||[]).filter(m=>!m.archived)}
 function findM(id){return ML().find(m=>m.id===id)}
 
 /* ============ 认知树 ============ */
@@ -1405,7 +1405,7 @@ function buildTree(){
     add("proj:"+pid,{name:pj.name,children:kids});
   });
   const cats={};
-  (D.meth?.methods||[]).forEach(m=>{
+  (D.meth?.methods||[]).filter(m=>!m.archived&&!m._draft).forEach(m=>{
     // 方法库里没有逐条验收记录，不默认标成已完成
     add(m.uid||("m:"+m.id),{name:m.name,d:(m.refs||[])[0]||"",go:"method",arg:m.id,
       detail:[["这是什么",m.what||""],["什么时候用得上",m.when||""],["出处",m.src||""]].filter(x=>x[1])});
@@ -1726,7 +1726,7 @@ function methodPage(){
       <label class="small" for="m_what">它说的是什么</label><textarea id="m_what" style="min-height:160px">${esc(m.what||"")}</textarea>
       <label class="small" for="m_src">来源（几月几号）</label><textarea id="m_src" style="min-height:52px">${esc(m.src||"")}</textarea>
       <div class="small">放在哪一类</div><div class="row" style="gap:6px;flex-wrap:wrap">
-        ${cats.map(c=>`<button class="chip${m.cat===c?" on":""}" data-setcat="${esc(m.id)}|${esc(c)}">${esc(c)}</button>`).join("")}</div>
+        ${cats.map(c=>`<button class="chip${(S.methodCat||m.cat)===c?" on":""}" data-setcat="${esc(m.id)}|${esc(c)}">${esc(c)}</button>`).join("")}</div>
       <button class="btn" data-savem="${esc(m.id)}">保存</button>
       <button class="btn ghost" data-canceledit>取消</button>
       <button class="btn ghost bd" data-delm="${esc(m.id)}">删除这条方法</button></div>
@@ -2245,32 +2245,47 @@ function saveNode(pid,nid){
   return saveProject(pid,`修改 SOP 节点：${n.name}`);
 }
 function addMethod(){
-  const arr=D.meth.methods=D.meth.methods||[];
-  let n=1;while(arr.some(m=>m.id==="m-"+String(n).padStart(3,"0"))) n++;
+  if(!READ["methods.json"]?.exists)return toast("方法库尚未成功加载，不能新增");
+  const arr=D.meth.methods||[];
+  let n=1;while(arr.some(m=>m.id==="m-"+String(n).padStart(3,"0")))n++;
   const t=new Date(Date.now()+9*36e5).toISOString().slice(0,10);
   const m={id:"m-"+String(n).padStart(3,"0"),cat:(D.meth.cats||[])[0]||"每天怎么跑",
-           proj:cur(),projName:D.p[cur()]?.project?.name||"",
-           name:"新方法",when:"",what:"",src:(+t.slice(5,7))+"/"+(+t.slice(8,10)),refs:[t]};
-  arr.push(m);S.edit=true;go("method",m.id);
+    proj:cur(),projName:D.p[cur()]?.project?.name||"",name:"新方法",when:"",what:"",
+    src:(+t.slice(5,7))+"/"+(+t.slice(8,10)),refs:[t],_draft:true};
+  arr.push(m);S.newMethodId=m.id;S.methodCat=m.cat;S.edit=true;go("method",m.id);
 }
-function saveMethod(id){
-  const m=findM(id);if(!m) return;
+function cancelMethodEdit(){
+  if(S.newMethodId){D.meth.methods=D.meth.methods.filter(m=>m.id!==S.newMethodId);S.newMethodId=null}
+  S.edit=false;S.methodCat=null;return back();
+}
+async function saveMethod(id){
+  const original=findM(id);if(!original)return false;
+  const next=copyJSON(D.meth),m=next.methods.find(x=>x.id===id);
+  if(!m)return false;
   m.name=$("#m_name").value.trim()||"未命名";
-  m.what=$("#m_what").value.trim();
-  m.when=$("#m_when").value.trim();
-  m.src=$("#m_src").value.trim();
+  m.what=$("#m_what").value.trim();m.when=$("#m_when").value.trim();
+  m.src=$("#m_src").value.trim();m.cat=S.methodCat||m.cat;
   m.refs=[...new Set((m.src.match(/(\d{1,2})\/(\d{1,2})/g)||[]).map(t=>{
     const [a,b]=t.split("/");return `2026-${String(+a).padStart(2,"0")}-${String(+b).padStart(2,"0")}`}))];
-  S.edit=false;
-  return saveMethods(`方法：${m.name}`);
+  delete m._draft; // 永久 UID 不由浏览器猜号：rl-data Actions 调用 tools/ids.py migrate
+  try{
+    await put("methods.json",next,"方法："+m.name);
+    D.meth=next;S.newMethodId=null;S.edit=false;S.methodCat=null;
+    toast(m.uid?"方法已保存":"已保存到 RL-data，等待 ids.py 发放永久 UID");
+    render();return true;
+  }catch(e){toast("方法保存失败（草稿仍在）："+e.message);return false}
 }
 async function delMethod(id){
-  if(!confirmDel){confirmDel=true;toast("再点一次「删除这条方法」才真的删");setTimeout(()=>confirmDel=false,4000);return}
+  if(!confirmDel){confirmDel=true;toast("再点一次「删除这条方法」才真的删除");setTimeout(()=>confirmDel=false,4000);return}
   confirmDel=false;
-  const arr=D.meth.methods,i=arr.findIndex(m=>m.id===id);if(i<0) return;
-  const [m]=arr.splice(i,1);
-  try{await put("methods.json",D.meth,`删除方法：${m.name}`);S.edit=false;toast("已删除");tab("meth")}
-  catch(e){arr.splice(i,0,m);toast("删除失败："+e.message)}
+  if(S.newMethodId===id){D.meth.methods=D.meth.methods.filter(x=>x.id!==id);
+    S.newMethodId=null;S.edit=false;return tab("tree")}
+  const next=copyJSON(D.meth),m=next.methods.find(x=>x.id===id);if(!m)return;
+  // 归档而不是物理删除：原文和 UID 永久留在 RL-data，避免关联悬空或编号复用。
+  m.archived=true;
+  try{await put("methods.json",next,"归档方法："+m.name);
+    D.meth=next;S.edit=false;S.methodCat=null;toast("已归档，原记录与 UID 保留");tab("tree")}
+  catch(e){toast("删除失败（未改变原记录）："+e.message)}
 }
 async function decide(id,i,opt){
   const P=D.p[id];const g=P.iteration.gates[i];
@@ -2326,7 +2341,7 @@ document.addEventListener("click",async e=>{
   if("addm" in d) return addMethod();
   if(d.savem) return saveMethod(d.savem);
   if(d.delm) return delMethod(d.delm);
-  if(d.setcat){const [id,c]=d.setcat.split("|");const m=findM(id);if(m){m.cat=c;render()}return}
+  if(d.setcat){const [id,c]=d.setcat.split("|");if(findM(id)){S.methodCat=c;render()}return}
   if(d.zoom){ZOOM=d.zoom==="fit"?1:(d.zoom==="+"?Math.min(3,ZOOM*1.3):Math.max(.6,ZOOM/1.3));return fitBoard()}
   if(d.node) return go("node",(S.arg||cur())+"|"+d.node);
   if(d.filter!=null){S.filter=S.filter===d.filter?null:d.filter;return render()}
@@ -2391,8 +2406,9 @@ document.addEventListener("click",async e=>{
   if(d.pick) return pick(d.pick);
   if(d.open){try{await loadProject(d.open)}catch(err){return toast(err.message)}return go(d.target,d.open)}
   if(d.toggle){S.open[d.toggle]=!S.open[d.toggle];return render()}
-  if("edit" in d){S.edit=true;return render()}
+  if("edit" in d){S.edit=true;if(S.screen==="method")S.methodCat=findM(S.arg)?.cat;return render()}
   if("canceledit" in d){
+    if(S.screen==="method")return cancelMethodEdit();
     if(S.screen==="res"){const [cp,cn,ci]=String(S.arg).split("|"),cnd=findNode(D.p[cp]?.project,cn);
       const cr=((cnd&&cnd.res)||[])[+ci];
       if(cr&&cr._new){cnd.res.splice(+ci,1);S.edit=false;return back()}}
