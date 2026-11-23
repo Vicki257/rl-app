@@ -100,8 +100,9 @@ async function scenario(browser,device){
       device+": 公司详情必须显示 "+company.id+" 的真实公司名称");
     await page.locator("[data-back]").click();
   }
-  const from=page.locator('#tree .item[data-id="'+target+'"]');
-  const to=page.locator('#tree .item[data-id="chain-browser"]');
+  // 拖动的是认知标题到链标题，不能把带子节点的整块容器中心当作落点。
+  const from=page.locator('#tree .item[data-id="'+target+'"] > .line > .name');
+  const to=page.locator('#tree .item[data-id="chain-browser"] > .line > .name');
   await from.waitFor({state:"visible"});await to.waitFor({state:"visible"});
   await from.dragTo(to);
   await page.locator(".relsheet [data-member='1']").click();
@@ -136,7 +137,8 @@ async function scenario(browser,device){
   const outsider=rows.map(x=>x.uid).find(x=>![focus,selected,target].includes(x));
   assert(outsider,"缺少额外认知用于失败反例");
   const countBefore=store.get("rels.json").rels.length;
-  await page.locator('#tree .item[data-id="'+outsider+'"]').dragTo(page.locator('#tree .item[data-id="'+newId+'"]'));
+  await page.locator('#tree .item[data-id="'+outsider+'"] > .line > .name')
+    .dragTo(page.locator('#tree .item[data-id="'+newId+'"] > .line > .name'));
   await page.locator(".relsheet [data-member='0']").click();
   await page.locator(".relsheet [data-i='4']").click(); // 支持：横向
   await page.locator(".relsheet [data-dir='0']").click();
