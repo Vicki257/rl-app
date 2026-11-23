@@ -350,6 +350,7 @@ async function scenario(browser,device){
     device+": 三处同步完成后清除待恢复标记");
   console.log("Chromium "+device+"：global 成功 / widget 失败，刷新恢复成功");
   // 反例 1b：焦点 UID 已失效时不执行重新分析，也绝不发出写入请求。
+  await page.waitForFunction(()=>!!D.p.rl); // 切到 quant 后其余项目后台异步载入
   const beforeBad=writeCount;
   const badResult=await page.evaluate(()=>{
     D.p.rl.current.focus={focusUid:"A999999999",idx:0,manual:true};
