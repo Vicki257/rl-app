@@ -1997,20 +1997,25 @@ function nodePage(){
   </div>`;
 }
 async function reanalyze(id){
-  const P=D.p[id];
-  // 锁定今天页这一刻显示的就是哪一行。同一天可能有好几行，所以必须带下标。
-  const row=focusRow(P),idx=P.rows.indexOf(row);
-  P.current.focus={focusUid:row?.uid||null,date:row?.date||null,idx,q:row?.q||""};
-  P.current.rowDate=row?.date||P.current.rowDate;
-  P.current.q=row?.q||P.current.q;
-  P.current.night={status:"wait",deadline:next8(),retries:0,error:null,
-                   requestedAt:new Date().toISOString(),requestedBy:"在网页上点了重新分析"};
+  const P=D.p[id],row=P&&focusRowOf(P);
+  if(!row?.uid){toast("当前研究焦点 UID 无效，请重新选择；没有重新排队");return false}
+  // 只更新已经确认的研究对象的分析状态，不按优先级重新挑选认知。
+  const next=copyJSON(P.current);
+  if(!next.focus?.focusUid)next.focus={...(next.focus||{}),focusUid:row.uid};
+  next.night={status:"wait",deadline:next8(),retries:0,error:null,
+              requestedAt:new Date().toISOString(),requestedBy:"在网页上点了重新分析"};
+  if(id===cur())next.focus.syncPending=true;
   try{
-    await put(`projects/${id}/current.json`,P.current,"标为待分析（用户点了重新分析）");
-    if(id===cur()) await put("widget.json",widgetFrom(id,P),"小组件：等待分析");
-    toast("已排队。下一个整点前会跑");
-  }catch(e){toast("排队失败："+e.message)}
+    await put(`projects/${id}/current.json`,next,"标为待分析（用户点了重新分析）");
+    P.current=next;
+    if(id===cur())await finishFocusSync(id);
+    toast("已排队。下一个整点前会跑");return true;
+  }catch(e){
+    S.focusWarning=P.current.focus?.syncPending?"分析状态已保存，焦点小组件同步未完成，刷新可恢复":"分析状态未保存";
+    toast(S.focusWarning+"："+e.message);return false;
+  }
 }
+
 function iter(){
   const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
   const it=P.iteration,cmp=it.compare;
@@ -2189,24 +2194,36 @@ document.addEventListener("pointerup",()=>{
 
 /* ============ 操作 ============ */
 async function pick(id){
-  S.sheet=false;render();
+  S.sheet=false;
   try{
-    const P=await loadProject(id,true);
-    D.global.current=id;
-    await put("global.json",D.global,`切换当前项目：${P.project.name}`);
-    await put("widget.json",widgetFrom(id,P),`小组件：${P.project.name}`);
-    toast("已切换，小组件下次刷新时显示「"+P.project.name+"」");
-  }catch(e){toast("切换失败："+e.message)}
+    const P=await loadProject(id,true,true);
+    const row=focusRowOf(P);
+    if(!row?.uid)throw new Error("目标项目焦点 UID 无效，请先重新选择");
+    // 先将切换意图写入目标 current.json；多文件后续失败由 syncPending 恢复。
+    const next=copyJSON(P.current);
+    next.focus={...(next.focus||{}),focusUid:row.uid,syncPending:true};
+    await put(`projects/${id}/current.json`,next,`准备切换当前项目：${P.project.name}`);
+    P.current=next;
+    await finishFocusSync(id);
+    S.screen="today";S.arg=null;
+    toast("已切换，小组件同步为「"+P.project.name+"」");return true;
+  }catch(e){
+    S.focusWarning=D.p[id]?.current?.focus?.syncPending
+      ?"项目切换部分成功，刷新后自动完成同步":"项目切换未提交";
+    toast(S.focusWarning+"："+e.message);return false;
+  }
 }
+
 async function setStatus(i,st){
-  const id=projId(),P=D.p[id],r=P.rows[i];
+  const id=projId(),P=D.p[id],r=P?.rows[i];if(!r)return false;
   r.f=st;
-  if(st==="够用了"&&!r.closedAt) r.closedAt=new Date().toISOString();  // 记闭环时刻，用来算耗时
-  if(st!=="够用了") delete r.closedAt;
+  if(st==="够用了"&&!r.closedAt)r.closedAt=new Date().toISOString();
+  if(st!=="够用了")delete r.closedAt;
   render();
-  await saveRows(id,`改状态：${st}`);
-  await syncFocus(id);          // 标成够用了/不做之后，今天页要换下一条
+  if(!(await saveRows(id,`改状态：${st}`)))return false;
+  await syncFocus(id);return true;
 }
+
 async function delRow(i){
   const id=projId(),P=D.p[id];const r=P.rows[i];
   if(!confirmDel){confirmDel=true;toast("再点一次「删除这一条」才真的删");setTimeout(()=>confirmDel=false,4000);return}
@@ -2247,11 +2264,21 @@ document.addEventListener("blur",e=>{
   saveRows(id,`修改 ${key}`);
 },true);
 async function saveRows(id,msg,loud){
-  const P=D.p[id];
-  try{await put(`projects/${id}/rows.json`,P.rows,msg);
-      if(loud){toast("已保存");render()}else{S.toast="已保存";render();setTimeout(()=>{S.toast="";render()},1500)}}
-  catch(e){toast("保存失败："+e.message)}
+  const P=D.p[id],path=`projects/${id}/rows.json`;
+  try{
+    await put(path,P.rows,msg);
+    if(loud){toast("已保存");render()}
+    else{S.toast="已保存";render();setTimeout(()=>{S.toast="";render()},1500)}
+    return true;
+  }catch(e){
+    // 未提交状态必须回滚，避免其他调用路径将临时优先级用于焦点同步。
+    if(BASE[path]&&READ[path]?.source===sourceKey())P.rows=copyJSON(BASE[path]);
+    S.priDirty=false;render();
+    toast("保存失败，行数据已恢复为上次读取版本："+e.message);
+    return false;
+  }
 }
+
 document.addEventListener("input",e=>{
   if(!e.target?.dataset||!("cosrch" in e.target.dataset)) return;
   const q=e.target.value.trim().toLowerCase();
@@ -2280,8 +2307,7 @@ document.addEventListener("change",async e=>{
   const id=projId(),P=D.p[id];if(!P) return;
   S.priDirty=false;
   const b=document.querySelector("[data-savepri]");if(b)b.style.display="none";
-  await saveRows(id,"更新优先程度");
-  await syncFocus(id);
+  if(await saveRows(id,"更新优先程度"))await syncFocus(id);
   render();
 });
 document.addEventListener("keydown",e=>{
@@ -2439,7 +2465,8 @@ document.addEventListener("click",async e=>{
   if(d.rfilter!=null){S.rfilter=S.rfilter===d.rfilter?"":d.rfilter;return render()}
   if(d.tofilter){const [pid,k]=d.tofilter.split("|");S.filter=k;return go("list",pid)}
   if(d.newver){location.replace(location.pathname+"?v="+encodeURIComponent(S.newver||Date.now()));return}
-  if(d.savepri){S.priDirty=false;return saveRows(d.savepri,"更新优先程度",true).then(()=>syncFocus(d.savepri)).then(render)}
+  if(d.savepri){S.priDirty=false;const saved=await saveRows(d.savepri,"更新优先程度",true);
+    if(saved)await syncFocus(d.savepri);return render()}
   if(d.setst){const [i,st]=d.setst.split("|");return setStatus(+i,st)}
   if(d.setreal){const [i,v]=d.setreal.split("|");const P=D.p[cur()],r=P.rows[+i];
     r.cols=r.cols||{};r.cols[REALC]=r.cols[REALC]===v?"":v;render();
