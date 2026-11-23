@@ -446,6 +446,7 @@ function applyRemoteUid(before,local,remote){
 // 开发版未指定数据分支只读；部署在 main 的正式版保持原实现不受影响。
 function branch(){return (cfg.branch||"").trim()}
 const sourceKey=()=>[cfg.owner||"",cfg.repo||"",branch()].join("|");
+let cacheSource=null;
 let branchOK=null;                       // null 没查过 / true 存在 / 字符串 失败原因
 async function ensureBranch(){
   const b=branch();
@@ -465,13 +466,19 @@ async function gh(path,opt={}){
   return r.json();
 }
 async function get(path){
-  const source=sourceKey(),j=await gh(path),v=JSON.parse(b64d(j.content));
+  const source=sourceKey();
+  if(cacheSource!==null&&cacheSource!==source){Object.keys(SHA).forEach(k=>delete SHA[k]);Object.keys(BASE).forEach(k=>delete BASE[k]);}
+  cacheSource=source;
+  const j=await gh(path),v=JSON.parse(b64d(j.content));
   if(source!==sourceKey())throw new Error("仓库或分支已切换，请重新加载");
   SHA[path]=j.sha;BASE[path]=copyJSON(v);
   return v;
 }
 async function put(path,obj,msg){
-  const source=sourceKey(),guard=()=>{if(source!==sourceKey())throw new Error("数据源已切换，禁止使用旧文件 SHA")};
+  const source=sourceKey();
+  if(cacheSource!==null&&cacheSource!==source)throw new Error("数据源已切换，请先重新读取新分支");
+  cacheSource=source;
+  const guard=()=>{if(source!==sourceKey())throw new Error("数据源已切换，禁止使用旧文件 SHA")};
   const message=msg||`更新 ${path}`;
   const payload=sha=>{
     const body={message,content:b64e(JSON.stringify(obj,null,2)+"\n")};
@@ -2359,7 +2366,7 @@ document.addEventListener("click",async e=>{
   if(d.decide){const [id,i,o]=d.decide.split("|");return decide(id,+i,o)}
   if("savecfg" in d){cfg.owner=$("#owner").value.trim();cfg.repo=$("#repo").value.trim();cfg.branch=$("#dbranch").value.trim();cfg.token=$("#token").value.trim();branchOK=null;
     Object.keys(SHA).forEach(k=>delete SHA[k]);Object.keys(BASE).forEach(k=>delete BASE[k]);
-    D.p={};D.global=null;D.index=[];D.rels=null;D.cogtree=null;D.hist=[];S.topen=null;treeDirty();
+    cacheSource=null;D.p={};D.global=null;D.index=[];D.rels=null;D.cogtree=null;D.hist=[];S.topen=null;treeDirty();
     saveCfg();S.screen="today";return loadAll()}
   if("reload" in d){D.p={};return loadAll()}
 });
