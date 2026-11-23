@@ -1307,7 +1307,7 @@ function flowHTML(sop){
 }
 /* ---- 方法：列表页已被认知树取代。方法本身与它的详情页保留，树上点开还是原来那一页 ---- */
 function ML(){return (D.meth?.methods||[]).filter(m=>!m.archived)}
-function findM(id){return ML().find(m=>m.id===id)}
+function findM(id){return (D.meth?.methods||[]).find(m=>m.id===id)}
 
 /* ============ 认知树 ============ */
 /* 树不另存一份。每次从已经载入的项目、方法、历史现算，所以不会和仓库里的数据脱节。
@@ -2346,8 +2346,12 @@ async function saveMethod(id){
   m.name=$("#m_name").value.trim()||"未命名";
   m.what=$("#m_what").value.trim();m.when=$("#m_when").value.trim();
   m.src=$("#m_src").value.trim();m.cat=S.methodCat||m.cat;
-  m.refs=[...new Set((m.src.match(/(\d{1,2})\/(\d{1,2})/g)||[]).map(t=>{
-    const [a,b]=t.split("/");return `2026-${String(+a).padStart(2,"0")}-${String(+b).padStart(2,"0")}`}))];
+  // 未更改来源时不重算 refs，避免把历史跨年引用误改成 2026 或清空。
+  if(m.src!==original.src){
+    const found=(m.src.match(/(\d{1,2})\/(\d{1,2})/g)||[]).map(t=>{
+      const [a,b]=t.split("/");return `2026-${String(+a).padStart(2,"0")}-${String(+b).padStart(2,"0")}`});
+    if(found.length)m.refs=[...new Set(found)];
+  }
   delete m._draft; // 永久 UID 不由浏览器猜号：rl-data Actions 调用 tools/ids.py migrate
   try{
     await put("methods.json",next,"方法："+m.name);
