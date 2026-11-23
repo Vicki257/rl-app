@@ -58,6 +58,12 @@ function check(){api.validateRels(D.rels);ok(D.rels.rels.every(x=>api.realCogUid
  let bad=JSON.parse(JSON.stringify(D.rels));bad.rels.push({from:"chain-x",to:c,rel:"修正"});
  const prev=JSON.stringify(D.rels);ok(!(await api.saveRels(bad,"非法")),"链 ID 关系应被拒绝");
  ok(prev===JSON.stringify(D.rels)&&writes.length===0,"非法关系不得改变正式状态");
+ // 构造演化环：A→B、B→A 都已确认时不能写入。
+ bad=JSON.parse(JSON.stringify(D.rels));
+ bad.rels.push({from:c,to:d,rel:"修正",state:"已确认"},
+               {from:d,to:c,rel:"继承",state:"已确认"});
+ ok(!(await api.saveRels(bad,"环")),"演化环必须被拦截");
+ ok(JSON.stringify(D.rels)===prev,"拒绝演化环后状态不变");
  // 远端写失败不可乐观确认。
  fail=true;const orig=JSON.stringify(D.rels);ok(!(await api.confirmRel(c,e,"支持")),"写入失败未阻止");
  ok(orig===JSON.stringify(D.rels),"失败不能改变已确认关系");fail=false;
