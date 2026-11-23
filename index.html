@@ -557,7 +557,7 @@ async function put(path,obj,msg,options={}){
 
 /* ============ 状态 ============ */
 const D={global:null,index:[],status:null,p:{},meth:null};
-const S={screen:"today",arg:null,stack:[],open:{},sheet:false,edit:false,loading:true,err:"",toast:"",ost:"待改",og:{}};
+const S={screen:"today",arg:null,stack:[],open:{},sheet:false,edit:false,loading:true,err:"",toast:"",ost:"待改",og:{},relPick:null};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const cur=()=>D.global?.current;
@@ -1527,7 +1527,7 @@ function treePage(){
     +'<span class="empty"><i></i>没有依据判断状态的不上色</span>';
   return `<div class="cog"><div id="tree-page">
     <header><div><h1>认知树</h1><div class="sub">${n} 个节点 · 来自 ${esc(cfg.owner||"")}/${esc(cfg.repo||"")} 分支 ${esc(branch()||"默认分支")} · 拖两条认知相叠 → 生成一条演化链</div></div>
-    <div class="tools"><button class="tool" data-tcollapse="1">折叠全部</button><button class="tool" data-tfocus="1">定位当前</button><button class="tool" data-go="rels">认知关系 ${cand}</button></div></header>
+    <div class="tools"><button class="tool" data-rpick="1">${S.relPick!==null?(S.relPick?"选择第二条":"选择第一条"):"点选建立关系"}</button><button class="tool" data-tcollapse="1">折叠全部</button><button class="tool" data-tfocus="1">定位当前</button><button class="tool" data-go="rels">认知关系 ${cand}</button></div></header>
     <section class="canvas"><h2 class="root">我要杰出，我要做出伟大的公司</h2>
       <div id="tree">${t.roots.map(r=>treeNode(r,"",[])).join("")}</div></section>
     <div class="legend">${legend}</div>
@@ -1602,9 +1602,10 @@ function cogPage(){
     ${side.length?`<div class="offchain"><h4>和别的认知的横向关系</h4><ul>${side.map(r=>{
       const o=r.from===S.arg?r.to:r.from,on=TREE.T[o];
       return `<li><b>${esc(r.rel)}</b>　<button class="crumblink" data-cogjump="${esc(o)}">${esc(on?on.name:o)}</button>　${esc(r.dir||RELD[r.rel])}</li>`}).join("")}</ul></div>`:""}
-    <div class="detail-card"><textarea class="record-editor" aria-label="补充记录" placeholder="要补充什么，写在这里…"></textarea>
+    <div class="detail-card"><div class="small">补充认知 · 正式内容保存到 RL-data，未提交草稿只留本机</div>
+      <textarea class="record-editor" aria-label="补充记录" placeholder="要补充什么，写在这里…"></textarea>
       <div class="record-actions"><span class="save-note" role="status"></span><button class="save-record" disabled>保存</button></div></div>
-    <div class="page-note">上面的字段来自仓库现有数据，只读。下面那一栏是你自己补的自由文本，存在本浏览器。</div>
+    <div class="page-note">原始认知只读；补充内容以永久 UID 单独存于 RL-data/cognotes.json，不复制原文。旧本机草稿不会自动上传。</div>
   </section></div>${nav("tree")}`;
 }
 async function saveRels(next,msg){
@@ -1661,12 +1662,30 @@ function bindCog(){
   const ed=host.querySelector(".record-editor");
   if(ed){
     const id=S.arg,btn=host.querySelector(".save-record"),msg=host.querySelector(".save-note");
-    let saved="";try{saved=localStorage.getItem("rl.cognote:"+id)||""}catch(e){}
-    ed.value=saved;
-    ed.addEventListener("input",()=>{btn.disabled=ed.value===saved;msg.textContent=btn.disabled?"":"尚未保存"});
-    btn.addEventListener("click",()=>{
-      try{localStorage.setItem("rl.cognote:"+id,ed.value);saved=ed.value;btn.disabled=true;msg.textContent="已保存在本浏览器"}
-      catch(e){msg.textContent="浏览器不允许本地保存，请复制内容留存"}});
+    const original=String(D.notes?.[id]||"");let draft=null;
+    try{draft=localStorage.getItem("rl.cognote:"+id)}catch(e){}
+    ed.value=draft!==null?draft:original;
+    btn.disabled=ed.value===original;
+    msg.textContent=draft!==null?"本机未提交草稿（不会自动上传）":"正式记录来自 RL-data";
+    ed.addEventListener("input",()=>{
+      btn.disabled=ed.value===String(D.notes?.[id]||"");
+      try{localStorage.setItem("rl.cognote:"+id,ed.value)}catch(e){}
+      msg.textContent=btn.disabled?"与仓库一致":"未提交草稿";
+    });
+    btn.addEventListener("click",async()=>{
+      if(!realCogUid(id))return msg.textContent="不是永久认知 UID，禁止保存";
+      btn.disabled=true;msg.textContent="正在写入 RL-data";
+      const next=copyJSON(D.notes||{});
+      if(ed.value.trim())next[id]=ed.value;else delete next[id];
+      try{
+        await put("cognotes.json",next,"补充认知："+id,{create:true});
+        D.notes=next;try{localStorage.removeItem("rl.cognote:"+id)}catch(e){}
+        msg.textContent="已写入 RL-data，其他设备和 AI 可从仓库读取";
+      }catch(e){
+        try{localStorage.setItem("rl.cognote:"+id,ed.value)}catch(e2){}
+        btn.disabled=false;msg.textContent="保存失败，草稿仍在："+e.message;
+      }
+    });
   }
 }
 function cogSheet(html,onclick){
@@ -2325,7 +2344,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-relok],[data-chaingo],[data-cogjump],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-rpick],[data-relok],[data-chaingo],[data-cogjump],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
   if(d.copysop){
     const id=S.arg||cur(),so=curSop(D.p[id]?.project);
@@ -2393,6 +2412,7 @@ document.addEventListener("click",async e=>{
     catch(err){P.rows.pop();return toast("新增失败："+err.message)}
     return go("row",date+"|"+i+"|"+id);
   }
+  if(d.rpick){S.relPick=S.relPick===null?"":null;return render()}
   if(d.ttoggle){S.topen=S.topen||{};S.topen[d.ttoggle]?delete S.topen[d.ttoggle]:S.topen[d.ttoggle]=1;return render()}
   if(d.tcollapse){S.topen={};return render()}
   if(d.tfocus){S.topen={};openPath().forEach(k=>S.topen[k]=1);render();
@@ -2406,6 +2426,14 @@ document.addEventListener("click",async e=>{
   }
   if(d.topen){
     const id=d.topen.split("/").pop(),n=(TREE||buildTree()).T[id];if(!n)return;
+    // 触摸屏无 HTML5 拖放也可点选两端。结构节点不参与。
+    if(S.relPick!==null){
+      if(!dragTarget(id))return toast("请点选有 UID 的认知或演化链");
+      if(!S.relPick){S.relPick=id;toast("请选择第二条认知");return}
+      const first=S.relPick;S.relPick=null;render();
+      if(first!==id)return askDragRel(first,id);
+      return;
+    }
     if(n.chain)return go("chain",id);
     if(n.go)return go(n.go,n.arg);
     return go("cog",id);
