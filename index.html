@@ -2274,9 +2274,10 @@ async function saveRows(id,msg,loud){
     return true;
   }catch(e){
     // 未提交状态必须回滚，避免其他调用路径将临时优先级用于焦点同步。
-    if(BASE[path]&&READ[path]?.source===sourceKey())P.rows=copyJSON(BASE[path]);
+    const restored=!!BASE[path]&&READ[path]?.source===sourceKey();
+    if(restored)P.rows=copyJSON(BASE[path]);
     S.priDirty=false;render();
-    toast("保存失败，行数据已恢复为上次读取版本："+e.message);
+    toast((restored?"保存失败，已恢复上次读取版本：":"保存失败，数据不可确认，请重新读取：")+e.message);
     return false;
   }
 }
