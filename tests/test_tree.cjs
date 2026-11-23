@@ -59,7 +59,7 @@ const ctx={D,S:{},console,Date,Object,Array,JSON,Math,String,Number,Boolean,RegE
   topBar:()=>"",nav:()=>"",put:async()=>{},toast:()=>{},go:()=>{},render:()=>{},
 };
 vm.createContext(ctx);
-vm.runInContext(CODE+"\nthis.api={buildTree,mergeChain,relsOf,chainsOf,okRels,relBetween,relsBetween,relsTouching,chainOfUid,openPath,curUid,isEvo,TREEOF:()=>TREE};",ctx);
+vm.runInContext(CODE+"\nthis.api={buildTree,mergeChain,relsOf,chainsOf,okRels,relBetween,relsBetween,relsTouching,chainOfUid,openPath,curUid,isEvo,realCogUid,validateRels,TREEOF:()=>TREE};",ctx);
 const {buildTree,mergeChain,relsOf,chainsOf,okRels,relBetween,relsBetween,relsTouching,chainOfUid,openPath,curUid,isEvo}=ctx.api;
 
 let n=0;const ok=(c,m)=>{assert(c,m);n++};
@@ -212,8 +212,18 @@ if(has){
 if(has){
   const t6=buildTree();
   const cos=(D.p.quant?.project?.sop?.cos)||[];
-  cos.forEach(c=>{ok(c.uid&&t6.T[c.uid],"公司 "+c.id+" 要用它自己的永久 UID 当节点")});
-  ok(cos.length>0,"应该读到公司档案");
+  cos.forEach(c=>{
+    ok(c.uid&&t6.T[c.uid],"公司 "+c.id+" 要用它自己的永久 UID 当节点");
+    ok(t6.T[c.uid].go==="co"&&t6.T[c.uid].arg==="quant|"+c.id,
+       "公司 "+c.id+" 点击后必须进入 quant|"+c.id+"，不是裸代码");
+  });
+  ok(cos.length===16,"这批应该恰好验证 16 家公司，实际 "+cos.length);
+  // 真正的 rels.json 所有端点必须来自数据记录的 uid，而不是链或层级 ID。
+  relsOf().forEach(r=>{
+    ok(ctx.api.realCogUid(r.from)&&ctx.api.realCogUid(r.to),
+       "rels.json 存在非法或悬空认知端点："+r.from+" → "+r.to);
+  });
+  ctx.api.validateRels(D.rels);ok(true,"真实关系和链 UID 安全校验通过");
 }
 if(!has){
   const strict=process.env.TREE_TEST_REQUIRE_REAL_DATA==="1"||process.argv.includes("--require-real-data");
