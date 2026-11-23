@@ -70,6 +70,7 @@ async function scenario(browser,device){
   await page.waitForFunction(()=>document.querySelector('[data-tab="tree"]')!==null);
   await page.locator('[data-tab="tree"]').click();
   await page.locator("#tree .item[data-id='chain-browser']").waitFor();
+  await page.waitForFunction(()=>D.index.filter(x=>x.state!=="archived").every(x=>!!D.p[x.id]));
   await page.locator("[data-tfocus]").click();
   const highlighted=page.locator('#tree .item.current[data-id="chain-browser"]');
   await highlighted.waitFor({state:"visible"});
@@ -111,6 +112,7 @@ async function scenario(browser,device){
   assert(saved.rels.every(x=>!String(x.from).startsWith("chain-")&&!String(x.to).startsWith("chain-")),
     device+": rels.json 不得有链 ID 端点");
   await page.reload();await page.locator('[data-tab="tree"]').click();
+  await page.waitForFunction(()=>D.index.filter(x=>x.state!=="archived").every(x=>!!D.p[x.id]));
   const newId=saved.chains[0].id;
   await page.locator('#tree .item[data-id="'+newId+'"]').waitFor({state:"visible"});
   await page.locator('[data-tfocus]').click();
