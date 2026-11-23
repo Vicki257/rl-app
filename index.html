@@ -600,7 +600,8 @@ async function loadAll(){
   }catch(e){
     // 等全部读取完成后统一撤销写入资格，旧内存无法再保存。
     for(const bag of [SHA,BASE,READ])Object.keys(bag).forEach(k=>delete bag[k]);
-    D.p={};D.meth=null;D.rels=null;D.notes=null;
+    D.p={};D.global=null;D.index=[];D.status=null;D.meth=null;D.cogtree=null;
+    D.rels=null;D.hist=null;D.notes=null;D.widget=null;treeDirty();
     S.err="数据加载失败（禁止写入未加载文件）："+e.message;
   }
   S.loading=false;render();
