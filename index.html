@@ -444,7 +444,14 @@ function applyRemoteUid(before,local,remote){
   for(const [obj,uid] of pending)obj.uid=uid;
 }
 // 开发版未指定数据分支只读；部署在 main 的正式版保持原实现不受影响。
-function branch(){return (cfg.branch||"").trim()}
+// 旧正式版在官方 GitHub Pages 留空分支时仍读取 main；其他预览/开发页面禁止默认写入。
+function branch(){
+  const explicit=(cfg.branch||"").trim();
+  if(explicit)return explicit;
+  const official=typeof location!=="undefined"&&location.hostname.toLowerCase()==="vicki257.github.io"&&
+    /^\/rl-app\/?(?:index\.html)?$/.test(location.pathname);
+  return official?"main":"";
+}
 const sourceKey=()=>[cfg.owner||"",cfg.repo||"",branch()].join("|");
 let cacheSource=null;
 let branchOK=null,checkedSource=null;    // 每个数据源分别验证，旧请求不能授权新分支
