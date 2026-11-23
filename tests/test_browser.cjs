@@ -277,6 +277,23 @@ async function scenario(browser,device){
   await page.waitForFunction(()=>D.global?.current==="quant"&&D.p.quant?.current?.focus?.syncPending!==true);
   assert(store.get("widget.json").focusUid===quantUID,
     device+": 刷新后同步 widget 的唯一焦点 UID");
+  // 旧焦点只按唯一日期+正文补号，绝不能按过期 idx 猜身份。
+  const oldFocus=read("projects/rl/current.json");
+  delete oldFocus.focus.focusUid;oldFocus.focus.idx=9999;
+  store.get("global.json").current="rl";
+  store.set("projects/rl/current.json",oldFocus);
+  revs.set("projects/rl/current.json",(revs.get("projects/rl/current.json")||1)+1);
+  await page.reload();
+  await page.waitForFunction(uid=>D.p.rl?.current?.focus?.focusUid===uid,focus);
+  assert(store.get("projects/rl/current.json").focus.focusUid===focus,
+    device+": 唯一日期和正文必须能迁移回永久 UID");
+  const invalid=JSON.parse(JSON.stringify(store.get("projects/rl/current.json")));
+  invalid.focus.focusUid="A999999999";invalid.focus.idx=0;
+  store.set("projects/rl/current.json",invalid);
+  revs.set("projects/rl/current.json",(revs.get("projects/rl/current.json")||1)+1);
+  await page.reload();await page.waitForFunction(()=>!!D.p.rl);
+  assert(await page.evaluate(()=>curUid())==="",
+    device+": 已失效的焦点 UID 不能退回过期 idx");
   console.log("Chromium "+device+"：方法增改归档、正式补充、触摸点选、部分失败恢复通过");
   await context.close();
   console.log("Chromium "+device+"：当前定位、链成员拖动、方向、保存、刷新与失败回滚通过");
