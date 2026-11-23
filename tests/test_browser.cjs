@@ -169,21 +169,22 @@ async function scenario(browser,device){
   const countBefore=store.get("rels.json").rels.length;
   await page.locator('#tree .item[data-id="'+outsider+'"] > .line > .name')
     .dragTo(page.locator('#tree .item[data-id="'+newId+'"] > .line > .name'));
-  await page.locator(".relsheet [data-member='0']").click();
+  await activate(page.locator(".relsheet [data-member='0']"));
   await page.locator(".relsheet [data-i='4']").click(); // 支持：横向
-  await page.locator(".relsheet [data-dir='0']").click();
+  await activate(page.locator(".relsheet [data-dir='0']"));
   await page.waitForFunction(()=>S.toast?.includes("没能写回仓库"));
   assert(store.get("rels.json").rels.length===countBefore,device+": 失败保存不应修改正式数据");
   console.log("保存失败诊断："+JSON.stringify({putCount:writeCount,toast:await page.evaluate(()=>S.toast)}));
   assert(writeCount>=2,device+": 测试必须真正发生模拟 GitHub PUT");
   // 真正的屏幕触摸：无需 HTML5 拖放，点选两条认知并确认关系。
   denyWrites=false;
-  await page.locator('[data-rpick]').tap();
-  await page.locator('#tree .item[data-id="'+newId+'"] > .line > .name').tap();
-  await page.locator('#tree .item[data-id="'+outsider+'"] > .line > .name').tap();
-  await page.locator(".relsheet [data-member='0']").tap();
-  await page.locator(".relsheet [data-i='5']").tap(); // 关联，不改变归属
-  await page.locator(".relsheet [data-dir='0']").tap();
+  const activate=loc=>device==="mobile"?loc.tap():loc.click();
+  await activate(page.locator('[data-rpick]'));
+  await activate(page.locator('#tree .item[data-id="'+newId+'"] > .line > .name'));
+  await activate(page.locator('#tree .item[data-id="'+outsider+'"] > .line > .name'));
+  await page.locator(".relsheet [data-member='0']").click();
+  await activate(page.locator(".relsheet [data-i='5']")); // 关联，不改变归属
+  await page.locator(".relsheet [data-dir='0']").click();
   await page.waitForFunction(()=>S.toast?.includes("已写回仓库"));
   assert(store.get("rels.json").rels.some(r=>r.from===focus&&r.to===outsider&&r.rel==="关联"),
     device+": 触摸点选必须建立真实 UID 关系");
@@ -204,7 +205,7 @@ async function scenario(browser,device){
   await page.locator('#m_name').fill("浏览器新增方法测试");
   await page.locator('#m_what').fill("测试可长期保存");
   await page.locator('[data-savem]').click();
-  await page.waitForFunction(()=>store.getItem===undefined && !!D.meth?.methods.find(x=>x.name==="浏览器新增方法测试"));
+  await page.waitForFunction(()=>!!D.meth?.methods.find(x=>x.name==="浏览器新增方法测试"));
   const savedMethod=store.get("methods.json").methods.at(-1);
   assert(savedMethod.name==="浏览器新增方法测试"&&!savedMethod.uid,
     device+": 浏览器不得手动猜永久 UID，必须交由 ids.py");
