@@ -447,14 +447,16 @@ function applyRemoteUid(before,local,remote){
 function branch(){return (cfg.branch||"").trim()}
 const sourceKey=()=>[cfg.owner||"",cfg.repo||"",branch()].join("|");
 let cacheSource=null;
-let branchOK=null;                       // null 没查过 / true 存在 / 字符串 失败原因
+let branchOK=null,checkedSource=null;    // 每个数据源分别验证，旧请求不能授权新分支
 async function ensureBranch(){
-  const b=branch();
+  const b=branch(),origin=sourceKey();
   if(!b) throw new Error("开发版未指定数据分支，禁止写入默认分支");
-  if(branchOK===true) return true;
-  if(typeof branchOK==="string") throw new Error(branchOK);
+  if(checkedSource===origin&&branchOK===true)return true;
+  if(checkedSource===origin&&typeof branchOK==="string")throw new Error(branchOK);
   const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/branches/${encodeURIComponent(b)}`,
     {headers:{Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json"},cache:"no-store"});
+  if(origin!==sourceKey())throw new Error("验证分支期间数据源已切换，请重新读取");
+  checkedSource=origin;
   if(!r.ok){branchOK=`分支 ${b} 在 ${cfg.owner}/${cfg.repo} 上不存在（${r.status}），没有写任何东西`;throw new Error(branchOK)}
   branchOK=true;return true;
 }
@@ -2364,7 +2366,7 @@ document.addEventListener("click",async e=>{
   if(d.savenode){const [pid,nid]=d.savenode.split("|");return saveNode(pid,nid)}
   if("saveboard" in d) return saveProject(S.arg||cur(),"调整 SOP 图的节点位置");
   if(d.decide){const [id,i,o]=d.decide.split("|");return decide(id,+i,o)}
-  if("savecfg" in d){cfg.owner=$("#owner").value.trim();cfg.repo=$("#repo").value.trim();cfg.branch=$("#dbranch").value.trim();cfg.token=$("#token").value.trim();branchOK=null;
+  if("savecfg" in d){cfg.owner=$("#owner").value.trim();cfg.repo=$("#repo").value.trim();cfg.branch=$("#dbranch").value.trim();cfg.token=$("#token").value.trim();branchOK=null;checkedSource=null;
     Object.keys(SHA).forEach(k=>delete SHA[k]);Object.keys(BASE).forEach(k=>delete BASE[k]);
     cacheSource=null;D.p={};D.global=null;D.index=[];D.rels=null;D.cogtree=null;D.hist=[];S.topen=null;treeDirty();
     saveCfg();S.screen="today";return loadAll()}
