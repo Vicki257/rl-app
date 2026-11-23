@@ -104,7 +104,17 @@ async function scenario(browser,device){
   const from=page.locator('#tree .item[data-id="'+target+'"] > .line > .name');
   const to=page.locator('#tree .item[data-id="chain-browser"] > .line > .name');
   await from.waitFor({state:"visible"});await to.waitFor({state:"visible"});
+  await page.evaluate(()=>{
+    window.__dragTrace=[];
+    for(const ev of ["dragstart","dragover","drop","dragend"])
+      document.querySelector("#tree").addEventListener(ev,e=>
+        window.__dragTrace.push([ev,e.target.closest(".item")?.dataset.id,dragId]),true);
+  });
   await from.dragTo(to);
+  const trace=await page.evaluate(()=>({events:window.__dragTrace,
+    dialog:!!document.querySelector(".relsheet"),source:document.querySelector(".dragging")?.dataset.id}));
+  console.log("拖动追踪："+JSON.stringify(trace));
+  assert(trace.dialog,device+": 真实拖放未弹出选择框："+JSON.stringify(trace.events));
   await page.locator(".relsheet [data-member='1']").click();
   await page.locator(".relsheet [data-i='1']").click(); // 修正
   await page.locator(".relsheet [data-dir='1']").click(); // B → C
