@@ -13,19 +13,19 @@ const source = [
   "const b64e=s=>Buffer.from(s,'utf8').toString('base64');",
   "const b64d=s=>Buffer.from(s,'base64').toString('utf8');",
   html.slice(start, end),
-  "this.io={get,put,cfg,SHA,BASE};",
+  "this.io={get,getOptional,put,cfg,SHA,BASE,READ};",
 ].join("\n");
 
 const path="projects/rl/rows.json";
 let assertions=0;
-function make(initial,production=false) {
+function make(initial,production=false,file=path) {
   const server={data:initial===undefined?undefined:JSON.parse(JSON.stringify(initial)),
-                rev:1,exists:initial!==undefined,putErrors:[],branchExists:true,requests:[],expectedBranch:production?"main":"dev"};
+                rev:1,exists:initial!==undefined,putErrors:[],readStatus:0,branchExists:true,requests:[],expectedBranch:production?"main":"dev"};
   const fetch=async(url,options={})=>{
     server.requests.push({url,method:options.method||"GET"});
     if(url.endsWith("/branches/"+server.expectedBranch))
       return server.branchExists?{ok:true,json:async()=>({name:"dev"})}:{ok:false,status:404};
-    if(!url.startsWith("https://api.github.com/repos/test/test/contents/data/"+path))
+    if(!url.startsWith("https://api.github.com/repos/test/test/contents/data/"+file))
       throw Error("unexpected path "+url);
     if(options.method!=="PUT"&&!url.endsWith("?ref="+server.expectedBranch))
       throw Error("读取未显式指定开发分支："+url);
@@ -43,6 +43,7 @@ function make(initial,production=false) {
       server.rev++;
       return {ok:true,json:async()=>({content:{sha:"rev"+server.rev}})};
     }
+    if(server.readStatus)return {ok:false,text:async()=>"simulated read error",status:server.readStatus};
     if(!server.exists)return {ok:false,text:async()=>"not found",status:404};
     return {ok:true,json:async()=>({
       sha:"rev"+server.rev,
@@ -163,7 +164,7 @@ async function expectReject(action,label){
   // 原本允许不存在的 JSON 文件首次创建（不带 sha）。
   {
     const {server,io}=make(undefined);
-    await io.put(path,[{date:"2026-11-21",q:"首条记录"}],"首次创建");
+    await io.put(path,[{date:"2026-11-21",q:"首条记录"}],"首次创建",{create:true});
     assert.equal(server.data[0].q,"首条记录");
     assert.equal(server.exists,true);
     assertions+=2;
@@ -221,6 +222,33 @@ async function expectReject(action,label){
     assert(server.requests.some(x=>x.url.endsWith("?ref=main")));
     assert(server.requests.some(x=>x.url.endsWith("/branches/main")));
     assertions+=3;
+  }
+  // 不可把 401/403/网络错误当成空文件覆盖真实 29 条关系或 183 条方法。
+  for(const [file,expected] of [["rels.json",29],["methods.json",183]]){
+    const source=JSON.parse(fs.readFileSync(require("node:path").join(__dirname,"..","..","rl-data","data",file),"utf8"));
+    const list=file==="rels.json"?"rels":"methods";
+    assert.equal(source[list].length,expected);
+    for(const code of [401,403,500]){
+      const {server,io}=make(source,false,file);
+      server.readStatus=code;
+      await expectReject(()=>io.get(file),"读取失败必须抛错："+file);
+      server.readStatus=0;
+      const empty={...source,[list]:[]};
+      await expectReject(()=>io.put(file,empty,"危险覆盖"),"读失败后不得写空："+file);
+      assert.equal(server.data[list].length,expected);
+      assert.equal(server.requests.some(x=>x.method==="PUT"),false);
+      assertions+=2;
+    }
+  }
+  // 已经成功加载后再次读失败，旧 SHA 也必须失去写入资格。
+  {
+    const {server,io}=make([{id:"r1",q:"原始"}]);
+    const original=await io.get(path);
+    server.readStatus=403;
+    await expectReject(()=>io.get(path),"再次读取失败应失效");
+    server.readStatus=0;
+    await expectReject(()=>io.put(path,[{id:"r1",q:"危险覆盖"}]),"旧 SHA 不能写");
+    assert.equal(server.data[0].q,original[0].q);assertions++;
   }
   console.log("RL-app 安全保存模拟测试通过：",assertions,"项断言");
 })().catch(e=>{console.error(e);process.exitCode=1});
