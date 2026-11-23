@@ -38,6 +38,12 @@ jobs:
           echo "RL-data branch: $DATA_BRANCH"
           echo "RL-data commit: $(git -C rl-data rev-parse HEAD)"
           mv rl-data ../rl-data
+      - name: 用真实 RL-data 核验永久 UID，离线模拟新方法发号
+        run: |
+          python3 ../rl-data/tools/ids.py verify
+          python3 tests/test_uid_allocator.py
+      - name: 版本更新提示测试
+        run: node tests/test_version.cjs
       - name: 安全保存与开发分支测试
         run: node tests/test_safe_save.cjs
       - name: 认知树、关系、UID、引用、环与演化链（强制真实数据）
