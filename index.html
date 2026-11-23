@@ -575,11 +575,13 @@ async function loadProject(id,force,quiet){
       catch(e){S.focusWarning="旧焦点迁移失败，请手动选择："+e.message}
     }else S.focusWarning="旧焦点没有唯一 UID 匹配，请重新选择";
   }
-  if(PendingFocus(id))finishFocusSync(id).catch(e=>{S.focusWarning="焦点同步未完成："+e.message;render()});
-  if(quiet) return D.p[id];                 // 后台只读，绝不回写别的项目
-  // 夜间分析只认 current.json 的 focus。行数据可能在 app 外面被改过（导入、脚本），
-  // 所以每次载入都对一次；没变的话 syncFocus 自己会跳过，不会白写。
-  syncFocus(id).catch(()=>{});
+  // 同一条 syncPending 必须等待一次恢复完成，不能同时启动两个写入流程。
+  if(PendingFocus(id)){
+    try{await finishFocusSync(id)}
+    catch(e){S.focusWarning="焦点同步未完成："+e.message}
+  }
+  if(quiet)return D.p[id];                  // 后台仅恢复明确遗留的 pending
+  if(!PendingFocus(id))syncFocus(id).catch(()=>{});
   return D.p[id];
 }
 async function loadAll(){
