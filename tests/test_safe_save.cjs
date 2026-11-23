@@ -5,7 +5,7 @@ const vm = require("node:vm");
 const assert = require("node:assert/strict");
 
 const html = fs.readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
-const start = html.indexOf("const SHA={},BASE={};");
+const start = html.indexOf("const SHA={},BASE={},READ={};");
 const end = html.indexOf("/* ============ 状态 ============ */", start);
 assert(start >= 0 && end > start, "未找到 RL-app GitHub 存取代码");
 const source = [
