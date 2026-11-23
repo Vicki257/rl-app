@@ -1782,7 +1782,7 @@ function methodPage(){
   </div>`;
   return `<div class="body">${topBar(m.name,m.cat)}
     <div class="row"><span class="meta">${esc(m.projName||"")}</span>
-      <button class="back" style="margin-left:auto" data-edit>编辑</button></div>
+      <button class="back" data-addm="1">新增方法</button><button class="back" style="margin-left:auto" data-edit>编辑</button></div>
     <div class="card"><b>什么时候用得上</b><div class="kv"><span class="v">${esc(m.when)}</span></div></div>
     ${m.id==="m-184"?'<button class="btn" data-copyfive="1" style="background:linear-gradient(100deg,#a88729,#80620f);color:white">复制当前项目的五步聊天提示词</button>':""}
     <div class="card"><b>它说的是什么</b><div class="kv"><span class="v">${esc(m.what)}</span></div></div>
