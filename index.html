@@ -565,6 +565,16 @@ async function loadProject(id,force,quiet){
   if(D.p[id]&&!force) return D.p[id];
   const [project,rows,current,iteration]=await Promise.all(["project","rows","current","iteration"].map(n=>get(`projects/${id}/${n}.json`)));
   D.p[id]={project,rows,current,iteration};
+  // 老版本只存了日期和正文：仅在唯一匹配且有真实 UID 时补写，不依据 idx 猜。
+  if(!quiet&&!current.focus?.focusUid&&current.focus?.date&&current.focus?.q){
+    const matches=rows.filter(r=>r.date===current.focus.date&&r.q===current.focus.q&&r.uid);
+    if(matches.length===1){
+      const upgraded=copyJSON(current);upgraded.focus.focusUid=matches[0].uid;
+      try{await put(`projects/${id}/current.json`,upgraded,"迁移旧当前焦点到永久 UID");
+        D.p[id].current=upgraded}
+      catch(e){S.focusWarning="旧焦点迁移失败，请手动选择："+e.message}
+    }else S.focusWarning="旧焦点没有唯一 UID 匹配，请重新选择";
+  }
   if(PendingFocus(id))finishFocusSync(id).catch(e=>{S.focusWarning="焦点同步未完成："+e.message;render()});
   if(quiet) return D.p[id];                 // 后台只读，绝不回写别的项目
   // 夜间分析只认 current.json 的 focus。行数据可能在 app 外面被改过（导入、脚本），
@@ -678,7 +688,7 @@ async function finishFocusSync(pid){
 }
 async function setFocus(pid,i){
   const P=D.p[pid],r=P?.rows[i];if(!r?.uid)return toast("这条记录缺少永久 UID，无法设为当前认知");
-  const next=copyJSON(P.current),previous=copyJSON(P.current);
+  const next=copyJSON(P.current);
   next.focus={focusUid:r.uid,date:r.date||null,q:r.q||"",manual:true,
     at:new Date().toISOString(),syncPending:true};
   next.rowDate=r.date||next.rowDate;next.q=r.q||"";
@@ -689,7 +699,7 @@ async function setFocus(pid,i){
     await finishFocusSync(pid);
     S.screen="today";S.arg=null;toast("今日焦点与小组件已同步");render();return true;
   }catch(e){
-    if(P.current===previous)P.current=previous;
+    // 之前写成功的 current.json 不回滚伪装失败，而是明确标为待恢复。
     S.focusWarning=P.current.focus?.syncPending?"焦点已写入，但同步未完成，刷新后可重试":"焦点未保存";
     toast(S.focusWarning+"："+e.message);return false;
   }
