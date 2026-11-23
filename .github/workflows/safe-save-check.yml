@@ -42,6 +42,8 @@ jobs:
         run: |
           python3 ../rl-data/tools/ids.py verify
           python3 tests/test_uid_allocator.py
+      - name: UID 双工作流并发与远端重算反例
+        run: python3 tests/test_uid_race.py
       - name: 版本更新提示测试
         run: node tests/test_version.cjs
       - name: 安全保存与开发分支测试
