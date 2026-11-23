@@ -23,7 +23,7 @@ async function scenario(browser,device){
     ?{viewport:{width:390,height:844},isMobile:true,hasTouch:true}
     :{viewport:{width:1280,height:800}});
   const page=await context.newPage(),store=new Map(),revs=new Map();
-  let denyWrites=false,writeCount=0,denyFile=null;
+  let denyWrites=false,writeCount=0,denyFile=null;const putFiles=[];
   const rels=read("rels.json");
   rels.chains=[{id:"chain-browser",name:"测试既有链",parent:"proj:rl",members:[focus,selected]}];
   store.set("rels.json",rels);
@@ -53,7 +53,7 @@ async function scenario(browser,device){
         content:Buffer.from(JSON.stringify(store.get(file)),"utf8").toString("base64")});
     }
     if(method==="PUT"){
-      writeCount++;
+      writeCount++;putFiles.push(file);
       if(denyWrites||file===denyFile)return fulfill(401,{message:"simulated denial"});
       const payload=JSON.parse(req.postData()||"{}");
       if(payload.branch!==branch)return fulfill(400,{message:"wrong write branch"});
@@ -72,6 +72,17 @@ async function scenario(browser,device){
   await page.locator('[data-tab="tree"]').click();
   await page.locator("#tree .item[data-id='chain-browser']").waitFor();
   await page.waitForFunction(()=>D.index.filter(x=>x.state!=="archived").every(x=>!!D.p[x.id]));
+  // 反例 1：手动焦点 A75 与自动最高优先 A67 不同。重新分析只更新 A75 的分析状态。
+  const baselineFocus=await page.evaluate(()=>({
+    chosen:focusRowOf(D.p.rl)?.uid,automatic:focusRow(D.p.rl)?.uid}));
+  assert.equal(baselineFocus.chosen,"A000000075",device+": 真实手动焦点");
+  assert.equal(baselineFocus.automatic,"A000000067",device+": 最高优先级反例");
+  assert(await page.evaluate(()=>reanalyze("rl")),device+": 重新分析必须成功");
+  assert.equal(store.get("projects/rl/current.json").focus.focusUid,"A000000075",
+    device+": 重新分析不得暗改用户手动焦点");
+  assert.equal(store.get("widget.json").focusUid,"A000000075",
+    device+": 小组件同步原手动焦点");
+  console.log("Chromium "+device+"：手动 A75 / 自动 A67，重新分析仍保留 A75");
   await page.locator("[data-tfocus]").click();
   const highlighted=page.locator('#tree .item.current[data-id="chain-browser"]');
   await highlighted.waitFor({state:"visible"});
@@ -263,6 +274,36 @@ async function scenario(browser,device){
   assert(await page.locator(".record-editor").inputValue()==="保存失败但必须保留的草稿",
     device+": 草稿应保留并不自动覆盖远端");
   denyWrites=false;
+  // 反例 3/4：行状态或优先级 PUT 被拒绝，必须回滚，不能更新当前焦点。
+  await page.waitForFunction(()=>!!D.p.rl);
+  const rlPath="projects/rl/rows.json";
+  const beforeRows=JSON.stringify(store.get(rlPath));
+  const previousFocus=store.get("projects/rl/current.json").focus.focusUid;
+  const beforeCurrentPuts=putFiles.filter(x=>x.endsWith("/current.json")||x==="widget.json").length;
+  denyFile=rlPath;
+  const statusOK=await page.evaluate(()=>{
+    S.screen="list";S.arg="rl";render();
+    return setStatus(D.p.rl.rows.findIndex(x=>x.uid==="A000000067"),"够用了");
+  });
+  assert(statusOK===false,device+": rows 保存被拒绝时改状态必须报告失败");
+  assert(JSON.stringify(store.get(rlPath))===beforeRows,device+": 拒绝保存不能改写真实行");
+  assert(await page.evaluate(()=>D.p.rl.rows.find(x=>x.uid==="A000000067")?.f)==="待改",
+    device+": 改状态失败后本地恢复");
+  const field=page.locator('[data-pri="'
+    +read("projects/rl/rows.json").findIndex(x=>x.uid==="A000000067")+'"]').first();
+  await field.fill("9999");
+  await field.dispatchEvent("change");
+  await page.waitForFunction(()=>S.toast?.includes("保存失败"));
+  assert(JSON.stringify(store.get(rlPath))===beforeRows,device+": 优先级失败不能写入仓库");
+  assert(await page.evaluate(()=>D.p.rl.rows.find(x=>x.uid==="A000000067")?.cols?.[PRI])==="10",
+    device+": 优先级失败要还原内存");
+  assert(store.get("projects/rl/current.json").focus.focusUid===previousFocus,
+    device+": 优先级失败后不能改变当前研究 UID");
+  assert(putFiles.filter(x=>x.endsWith("/current.json")||x==="widget.json").length===beforeCurrentPuts,
+    device+": rows 保存失败后绝不能同步焦点");
+  denyFile=null;
+  console.log("Chromium "+device+"：状态/优先级保存失败均回滚，未写 current/widget");
+
   // 三文件写入中间失败后保留 pending，并在重新打开时自动补完。
   await page.waitForFunction(()=>!!D.p.quant);
   denyFile="global.json";
@@ -294,6 +335,29 @@ async function scenario(browser,device){
   await page.reload();await page.waitForFunction(()=>!!D.p.rl);
   assert(await page.evaluate(()=>curUid())==="",
     device+": 已失效的焦点 UID 不能退回过期 idx");
+  // 反例 2：切换项目时 global 写成功、widget 写失败，刷新后从 syncPending 恢复。
+  denyFile="widget.json";
+  const pickOK=await page.evaluate(()=>pick("quant"));
+  assert(pickOK===false,device+": 第二笔写失败应报告项目切换部分成功");
+  assert(store.get("global.json").current==="quant",device+": 已成功写入的 global 不能假装回滚");
+  assert(store.get("projects/quant/current.json").focus.syncPending===true,
+    device+": 目标项目留下待恢复标记");
+  denyFile=null;await page.reload();
+  await page.waitForFunction(()=>D.global?.current==="quant"&&
+    D.p.quant?.current?.focus?.syncPending!==true&&D.widget?.project==="quant");
+  assert(store.get("widget.json").project==="quant",device+": 刷新后补完小组件项目");
+  assert(!store.get("projects/quant/current.json").focus.syncPending,
+    device+": 三处同步完成后清除待恢复标记");
+  console.log("Chromium "+device+"：global 成功 / widget 失败，刷新恢复成功");
+  // 反例 1b：焦点 UID 已失效时不执行重新分析，也绝不发出写入请求。
+  const beforeBad=writeCount;
+  const badResult=await page.evaluate(()=>{
+    D.p.rl.current.focus={focusUid:"A999999999",idx:0,manual:true};
+    return reanalyze("rl");
+  });
+  assert(badResult===false&&writeCount===beforeBad,
+    device+": 失效 UID 拒绝重新分析，不能退回数组 idx");
+  console.log("Chromium "+device+"：失效 UID 阻止重新分析与写入");
   console.log("Chromium "+device+"：方法增改归档、正式补充、触摸点选、部分失败恢复通过");
   await context.close();
   console.log("Chromium "+device+"：当前定位、链成员拖动、方向、保存、刷新与失败回滚通过");
