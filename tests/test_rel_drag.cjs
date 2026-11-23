@@ -1,7 +1,9 @@
 // 四种拖动方式和非法端点的反例。使用真实 rl-data，绝不写远端。
 const fs=require("node:fs"),path=require("node:path"),vm=require("node:vm"),assert=require("node:assert/strict");
 const html=fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8");
-const start=html.indexOf("/* ============ 认知树 ============ */"),end=html.indexOf("\nfunction parentIn(",start);
+const start=html.indexOf("/* ============ 认知树 ============ */");
+const parent=html.indexOf("function parentIn(",start);
+const end=html.indexOf("\n",html.indexOf("return null}",parent));
 assert(start>=0&&end>start,"无法提取真实认知树函数");
 const DD=path.join(__dirname,"..","..","rl-data","data");
 assert(fs.existsSync(path.join(DD,"rels.json")),"真实 RL-data 不存在，禁止以样本冒充通过");
