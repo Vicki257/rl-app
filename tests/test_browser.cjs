@@ -171,7 +171,7 @@ async function scenario(browser,device){
   await page.locator(".relsheet [data-member='0']").click();
   await page.locator(".relsheet [data-i='4']").click(); // 支持：横向
   await page.locator(".relsheet [data-dir='0']").click();
-  await page.waitForFunction(()=>document.body.textContent.includes("没能写回仓库"));
+  await page.waitForFunction(()=>S.toast?.includes("没能写回仓库"));
   assert(store.get("rels.json").rels.length===countBefore,device+": 失败保存不应修改正式数据");
   console.log("保存失败诊断："+JSON.stringify({putCount:writeCount,toast:await page.evaluate(()=>S.toast)}));
   assert(writeCount>=2,device+": 测试必须真正发生模拟 GitHub PUT");
