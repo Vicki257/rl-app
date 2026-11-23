@@ -1323,6 +1323,10 @@ function validateRels(next){
   const used=new Set(),ids=new Set();
   for(const c of next.chains||[]){
     if(realCogUid(c.id))throw new Error("链 ID 与永久认知 UID 冲突："+c.id);
+    if(!/^chain-/.test(c.id))throw new Error("非法演化链 ID："+c.id);
+    if(!Array.isArray(c.members)||c.members.length<2)
+      throw new Error("演化链至少需要两条认知："+c.id);
+    if(!c.parent)throw new Error("演化链缺少原始归属："+c.id);
     if(ids.has(c.id))throw new Error("演化链 ID 重复："+c.id);
     ids.add(c.id);
     for(const u of c.members||[]){
@@ -1342,23 +1346,16 @@ function buildTree(){
   PRJ.forEach(pid=>{
     const P=D.p[pid];if(!P)return;
     const pj=P.project,kids=[],used={};
-    if(pj.goal)  kids.push(add(pid+":goal",{name:"目标",detail:[["这个项目要什么",trF(pj,"goal")]]}));
-    if(pj.reward)kids.push(add(pid+":reward",{name:"奖励",detail:[["什么算有进展",trF(pj,"reward")]]}));
+    // 项目目标和奖励保留在项目详情，不伪装为无 UID 的独立认知。
     const ringOf=(n,idFallback)=>{
       const rk=[];
       P.rows.forEach((r,i)=>{if(r.uid&&CT.up[r.uid]===n.id){used[r.uid]=1;rk.push(rowNode(T,add,r,i,pid))}});
-      (n.pains||[]).forEach((pn,i)=>{
-        if(!pn.text)return;
-        const det=[];if(pn.part)det.push(["属于哪一步",pn.part]);
-        det.push(["哪里不够用",pn.text]);
-        if(pn.fix)det.push(["解法",pn.fix]);if(pn.gap)det.push(["缺口",pn.gap]);
-        rk.push(add((n.id||idFallback)+":pain"+i,{name:pn.text.slice(0,40),
-          status:pn.solved?"done":"pending",d:pn.ref||"",detail:det}));
-      });
+      // pains[] 仍保留在原 SOP 详情里，但没有永久 UID，不生成独立树叶。
       // SOP 环本身没有验收记录，不编造状态
       return add(n.uid||("sop:"+pid+":"+(n.id||idFallback)),{name:n.name,children:rk,
         detail:[["这一步要回答什么",n.q||""],["整体是怎么跑的",n.whole||n.how||""],
-                ["目前的结论",n.concl||""]].filter(x=>x[1])});
+                ["目前的结论",n.concl||""],
+                ["原有痛点",(n.pains||[]).map(p=>p.text||"").filter(Boolean).join("；")]].filter(x=>x[1])});
     };
     // 认知树只展示拥有永久 UID 的认知；没有 UID 的「你／前台／AI 聊天／原始历史数据」等流程示意节点仅保留在原 SOP 画布。
     // kind=plain 但有 UID 的真实认知仍需展示（例如财富、人与关系项目的公理节点）。
@@ -1402,7 +1399,8 @@ function buildTree(){
         status:c.state==="已完成"?"done":c.state==="待研究"?"pending":"active",
         go:"co",arg:pid+"|"+c.id}));
     });
-    add("proj:"+pid,{name:pj.name,children:kids});
+    add("proj:"+pid,{name:pj.name,children:kids,
+      detail:[["目标",trF(pj,"goal")],["奖励",trF(pj,"reward")]].filter(x=>x[1])});
   });
   const cats={};
   (D.meth?.methods||[]).filter(m=>!m.archived&&!m._draft).forEach(m=>{
@@ -2381,22 +2379,9 @@ document.addEventListener("click",async e=>{
     return go("cog",id);
   }
   if(d.relok!==undefined){
-    const i=+d.relok,r=relsOf()[i];if(!r||r.state==="已确认")return;
-    buildTree();
-    const an=(TREE.T[r.from]||{}).name||r.from,bn=(TREE.T[r.to]||{}).name||r.to;
-    let next=JSON.parse(JSON.stringify(D.rels));next.chains=next.chains||[];
-    if(isEvo(r.rel)){
-      const nm=(prompt("这条演化链叫什么？\n\n"+an+"\n  └ "+r.rel+"\n"+bn,"")||"").trim();
-      if(!nm)return;
-      const keep=D.rels;D.rels=next;             // 在副本上算，算完换回去
-      try{mergeChain(r.from,r.to,nm)}finally{next=D.rels;D.rels=keep}
-    }else if(!confirm(an+"\n  └ "+r.rel+"\n"+bn+"\n\n这是横向关系：两条都留在树上原来的位置，只是互相连上。确认吗？")){
-      return;
-    }
-    next.rels[i].state="已确认";
-    next.rels[i].at=new Date().toISOString().slice(0,10);
-    if(await saveRels(next,"确认关系："+r.from+" "+r.rel+" "+r.to))toast("已写回仓库");
-    render();return;
+    const r=relsOf()[+d.relok];if(!r||r.state==="已确认")return;
+    // 候选列表与拖动走完全相同的端点、方向、演化环和链合并安全校验。
+    return confirmRel(r.from,r.to,r.rel);
   }
   if(d.go){if((d.go==="project"||d.go==="iter")&&!d.arg){go(d.go,cur())}else go(d.go,d.arg);return}
   if("back" in d) return back();
