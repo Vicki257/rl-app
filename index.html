@@ -565,6 +565,7 @@ async function loadProject(id,force,quiet){
   if(D.p[id]&&!force) return D.p[id];
   const [project,rows,current,iteration]=await Promise.all(["project","rows","current","iteration"].map(n=>get(`projects/${id}/${n}.json`)));
   D.p[id]={project,rows,current,iteration};
+  if(PendingFocus(id))finishFocusSync(id).catch(e=>{S.focusWarning="焦点同步未完成："+e.message;render()});
   if(quiet) return D.p[id];                 // 后台只读，绝不回写别的项目
   // 夜间分析只认 current.json 的 focus。行数据可能在 app 外面被改过（导入、脚本），
   // 所以每次载入都对一次；没变的话 syncFocus 自己会跳过，不会白写。
@@ -572,15 +573,18 @@ async function loadProject(id,force,quiet){
   return D.p[id];
 }
 async function loadAll(){
-  S.loading=true;S.err="";render();
+  S.loading=true;S.err="";S.focusWarning="";render();
   try{
     // 关系、方法与认知来源属于必读原件：读取失败就报错，不允许伪装成空数据。
     const all=await Promise.all([
       get("global.json"),get("projects/index.json"),getOptional("status.json",null),
       get("methods.json"),get("cogtree.json"),get("rels.json"),get("history.json"),
-      getOptional("cognotes.json",{})]);
-    [D.global,D.index,D.status,D.meth,D.cogtree,D.rels,D.hist,D.notes]=all;
+      getOptional("cognotes.json",{}),get("widget.json")]);
+    [D.global,D.index,D.status,D.meth,D.cogtree,D.rels,D.hist,D.notes,D.widget]=all;
     await loadProject(cur(),true);
+    const active=D.p[cur()];
+    if(active&&!PendingFocus(cur())&&D.widget?.focusUid&&D.widget.focusUid!==active.current?.focus?.focusUid)
+      S.focusWarning="Today 和小组件当前认知不一致，请重新选择今日焦点";
   }catch(e){S.err="数据加载失败（禁止写入未加载文件）："+e.message}
   S.loading=false;render();
   // 「所有未解决问题」要跨项目，所以首屏之后把其余项目也读进来；只读，不动它们的 current.json
@@ -605,8 +609,9 @@ function curRow(P){return P.rows.find(r=>r.date===P.current.rowDate)||P.rows[P.r
 function widgetFrom(id,P){
   const row=focusRowOf(P),n=row?.night||{};
   const isList=!!P.project.labels;
-  return {project:id,name:P.project.name,
-    q:isList?(row?.q||P.current.q):P.current.q,
+  if(!row?.uid)throw new Error("当前认知 UID 无效，拒绝更新小组件");
+  return {project:id,name:P.project.name,focusUid:row.uid,
+    q:row.q,
     writtenAt:P.current.writtenAt,
     night:{status:P.current.night?.status||"wait",deadline:P.current.night?.deadline||null,error:P.current.night?.error||null,
       c:n.cs||"",r:n.r||"",x:n.recall?.[0]?.t||""}};
@@ -640,38 +645,65 @@ function focusRow(P){
 // 夜间分析照 current.focus 定位，所以这里必须跟着改，否则两边又会指到不同的行。
 // 用户手动定过焦点就以用户的为准；没定过才回落到优先分最高的那一条
 function focusRowOf(P){
-  const f=P.current?.focus;
-  if(f&&f.focusUid){const r=P.rows.find(x=>x.uid===f.focusUid);if(r) return r}  // 下标会随插入漂移，UID 不会
-  if(f&&(f.date||f.q)){const r=P.rows.find(x=>(!f.date||x.date===f.date)&&(!f.q||x.q===f.q));if(r) return r}
-  if(f&&f.manual&&P.rows[f.idx]) return P.rows[f.idx];
-  return focusRow(P);
+  const f=P.current?.focus||{};
+  if(f.focusUid)return P.rows.find(r=>r.uid===f.focusUid)||null;
+  // 旧数据只允许唯一「日期+正文」回填，绝不使用会随增删漂移的 idx。
+  if(f.date&&f.q){
+    const matches=P.rows.filter(r=>r.date===f.date&&r.q===f.q&&r.uid);
+    if(matches.length===1)return matches[0];
+  }
+  return null;
+}
+const PendingFocus=id=>!!D.p[id]?.current?.focus?.syncPending;
+async function finishFocusSync(pid){
+  const P=D.p[pid];if(!P||!PendingFocus(pid))return true;
+  const uid=P.current.focus.focusUid;
+  if(!P.rows.some(r=>r.uid===uid))throw new Error("当前认知 UID 已失效，请重新选择");
+  if(cur()!==pid){
+    const next=copyJSON(D.global);next.current=pid;
+    await put("global.json",next,"恢复未完成的当前项目同步");D.global=next;
+  }
+  const widget=widgetFrom(pid,P);
+  await put("widget.json",widget,"恢复未完成的小组件同步");D.widget=widget;
+  const next=copyJSON(P.current);delete next.focus.syncPending;
+  await put(`projects/${pid}/current.json`,next,"完成当前焦点同步");
+  P.current=next;S.focusWarning="";return true;
 }
 async function setFocus(pid,i){
-  const P=D.p[pid];if(!P) return;const r=P.rows[i];if(!r) return;
-  P.current.focus={focusUid:r.uid||null,date:r.date||null,idx:i,q:r.q||"",manual:true,at:new Date().toISOString()};
-  P.current.rowDate=r.date||P.current.rowDate;
-  P.current.q=r.q||"";                       // 只动 current.json，不碰 rows 的状态和优先分
+  const P=D.p[pid],r=P?.rows[i];if(!r?.uid)return toast("这条记录缺少永久 UID，无法设为当前认知");
+  const next=copyJSON(P.current),previous=copyJSON(P.current);
+  next.focus={focusUid:r.uid,date:r.date||null,q:r.q||"",manual:true,
+    at:new Date().toISOString(),syncPending:true};
+  next.rowDate=r.date||next.rowDate;next.q=r.q||"";
+  // 第一笔提交成功才更新正式内存；后续失败保留可由刷新继续的 syncPending。
   try{
-    await put(`projects/${pid}/current.json`,P.current,"今日焦点：用户手动选定");
-    if(pid!==cur()){D.global.current=pid;await put("global.json",D.global,"当前项目跟随今日焦点")}
-    await put("widget.json",widgetFrom(pid,P),"小组件：跟随今日焦点");
-    S.screen="today";S.arg=null;toast("今日焦点已更新");render();
-  }catch(e){toast("保存失败："+e.message)}
+    await put(`projects/${pid}/current.json`,next,"今日焦点：用户手动选定");
+    P.current=next;S.focusWarning="焦点已保存，正在同步项目与小组件";
+    await finishFocusSync(pid);
+    S.screen="today";S.arg=null;toast("今日焦点与小组件已同步");render();return true;
+  }catch(e){
+    if(P.current===previous)P.current=previous;
+    S.focusWarning=P.current.focus?.syncPending?"焦点已写入，但同步未完成，刷新后可重试":"焦点未保存";
+    toast(S.focusWarning+"："+e.message);return false;
+  }
 }
 async function syncFocus(id){
-  const P=D.p[id];if(!P?.project.labels) return;
-  if(P.current.focus&&P.current.focus.manual) return;   // 用户定过了，AI 不许覆盖
-  const row=focusRow(P),idx=P.rows.indexOf(row);
-  const f=P.current.focus;
-  if(f&&f.focusUid&&row?.uid&&f.focusUid===row.uid) return;   // 认永久 UID：下标变了也不算换人
-  if(f&&!f.focusUid&&f.idx===idx&&f.date===(row?.date||null)) return;
-  P.current.focus={focusUid:row?.uid||null,date:row?.date||null,idx,q:row?.q||""};
-  P.current.rowDate=row?.date||P.current.rowDate;
-  P.current.q=row?.q||"";
+  const P=D.p[id];if(!P?.project.labels)return;
+  if(PendingFocus(id))return finishFocusSync(id);
+  if(P.current.focus?.focusUid&&!P.rows.some(r=>r.uid===P.current.focus.focusUid)){
+    S.focusWarning="当前认知 UID 已失效，请重新选择";return;
+  }
+  if(P.current.focus?.manual)return;
+  const row=focusRow(P);if(!row?.uid)return;
+  if(P.current.focus?.focusUid===row.uid)return;
+  const next=copyJSON(P.current);
+  next.focus={focusUid:row.uid,date:row.date||null,q:row.q||"",syncPending:id===cur()};
+  next.rowDate=row.date||next.rowDate;next.q=row.q||"";
   try{
-    await put(`projects/${id}/current.json`,P.current,"今天页换成优先分最高的那一条");
-    if(id===cur()) await put("widget.json",widgetFrom(id,P),"小组件：换问题");
-  }catch(e){toast("今天页没换过去："+e.message)}
+    await put(`projects/${id}/current.json`,next,"更新当前认知 UID");
+    P.current=next;
+    if(id===cur())await finishFocusSync(id);
+  }catch(e){S.focusWarning="焦点更新或同步失败："+e.message;toast(S.focusWarning)}
 }
 // 两个切换：「待改」= 还没动的（量化/财富/人与关系那三个项目把这一档叫「待验」）；「改了未验」只有强化学习项目有
 const OST={"待改":["待改","待验"],"改了未验":["改了未验"]};
@@ -710,10 +742,10 @@ function today(){
     ["真正稀缺的是认知复利：把零散的思考连点成线，让用户在各种干扰中，仍能沿着自己真正想推进的方向不断行动、反思和迭代，每一次投入都接着上一次往前走。"]
   ].reverse();
   const changeHTML=(r,i)=>`<div style="padding:${i?13:2}px 0;border-top:${i?"1px solid var(--line)":"0"}"><div style="font-weight:600;line-height:1.6;font-size:${i?"15px":"18px"}">${esc(r[0])}</div>${r[1]?`<div class="meta" style="margin-top:6px">${esc(r[1])}</div>`:""}</div>`;
-  const manualFocus=P.current?.focus?.manual&&P.rows[P.current.focus.idx];
-  const focus=manualFocus||(id==="rl"?P.rows.find(r=>r.q.includes("长期项目为什么缺少即时吸引力")):null)||focusRowOf(P);
+  const focus=focusRowOf(P);
   const idx=P.rows.indexOf(focus),startArg=idx>=0?`${esc(focus.date)}|${idx}|${esc(id)}`:"";
   return `<div class="body today-new">
+    ${S.focusWarning?`<div class="banner bd">${esc(S.focusWarning)}</div>`:""}
     <section class="card" style="padding:24px 22px 20px;background:linear-gradient(130deg,#fbefd0 0%,#fffdf8 70%,#fff 100%);border:1px solid #e7d9b6;border-top:4px solid #d5ac54">
       <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
         <div class="h2" style="margin:0;color:var(--accent)">✧ 我的世界已经发生的变化</div>
@@ -731,7 +763,7 @@ function today(){
     </div>
     <section class="card" style="padding:22px 20px;background:linear-gradient(125deg,#fffefa 15%,#fbf3df 100%);border:1px solid #e7d9b6;border-top:3px solid #d5ac54">
       ${focus?.todayTitle?"":`<div class="h2" style="margin:0 0 12px;color:#8b6b15">⚒ 接下来我想创造什么？</div>`}
-      <p class="q" style="font-size:18px;line-height:1.65;margin:0 0 12px;overflow-wrap:anywhere;word-break:normal;white-space:pre-line">${manualFocus?esc(focus.q):id==="rl"?"让推进长期项目本身成为一件快乐、有收获、愿意继续的事。":esc(P.current?.q||"和 AI 讨论下一步想创造的东西")}</p>
+      <p class="q" style="font-size:18px;line-height:1.65;margin:0 0 12px;overflow-wrap:anywhere;word-break:normal;white-space:pre-line">${focus?esc(focus.q):"当前认知无法唯一定位，请重新选择今日焦点"}</p>
       ${focus?.todayTitle?"":`<div class="small" style="margin-bottom:16px">由你与 AI 讨论后确认</div>`}
       <button class="btn" style="display:block;width:100%;max-width:100%;padding:12px 16px;text-align:center;background:linear-gradient(100deg,#a88729,#80620f);color:#fff;border:0;border-radius:12px" data-go="${startArg?"row":"project"}" ${startArg?`data-arg="${startArg}"`:`data-arg="${esc(id)}"`}>开始 ›</button>
     </section>
