@@ -1466,7 +1466,7 @@ function buildTree(){
       detail:[["目标",trF(pj,"goal")],["奖励",trF(pj,"reward")]].filter(x=>x[1])});
   });
   const cats={};
-  (D.meth?.methods||[]).filter(m=>!m.archived&&!m._draft).forEach(m=>{
+  (D.meth?.methods||[]).filter(m=>!!m.uid&&!m.archived&&!m._draft).forEach(m=>{
     // 方法库里没有逐条验收记录，不默认标成已完成
     add(m.uid||("m:"+m.id),{name:m.name,d:(m.refs||[])[0]||"",go:"method",arg:m.id,
       detail:[["这是什么",m.what||""],["什么时候用得上",m.when||""],["出处",m.src||""]].filter(x=>x[1])});
