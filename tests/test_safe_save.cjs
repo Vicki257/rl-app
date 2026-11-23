@@ -186,5 +186,29 @@ async function expectReject(action,label){
     await expectReject(()=>io.put(path,rows,"身份错误"),"身份不符应安全拒绝");
     assert.equal(rows[0].uid,undefined);assertions++;
   }
+  // 反例：省略分支、目标分支不存在，以及换分支后继续使用旧 SHA。
+  {
+    const {server,io}=make([{id:"r1",q:"原始"}]);
+    io.cfg.branch="";
+    await expectReject(()=>io.put(path,[{id:"r1",q:"改变"}]),"未配置分支必须禁止写入");
+    assert.equal(server.rev,1);
+    assert.equal(server.requests.some(r=>r.method==="PUT"),false);
+    assertions+=2;
+  }
+  {
+    const {server,io}=make([{id:"r1",q:"原始"}]);
+    server.branchExists=false;
+    await expectReject(()=>io.put(path,[{id:"r1",q:"改变"}]),"不存在分支必须禁止写入");
+    assert.equal(server.requests.some(r=>r.method==="PUT"),false);
+    assertions++;
+  }
+  {
+    const {server,io}=make([{id:"r1",q:"旧分支"}]);
+    const rows=await io.get(path);
+    io.cfg.branch="other";rows[0].q="新分支";
+    await expectReject(()=>io.put(path,rows),"换分支后不能沿用旧缓存");
+    assert.equal(server.requests.some(r=>r.method==="PUT"),false);
+    assertions++;
+  }
   console.log("RL-app 安全保存模拟测试通过：",assertions,"项断言");
 })().catch(e=>{console.error(e);process.exitCode=1});
