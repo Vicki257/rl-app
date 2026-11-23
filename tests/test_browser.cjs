@@ -173,6 +173,7 @@ async function scenario(browser,device){
   await page.locator(".relsheet [data-dir='0']").click();
   await page.waitForFunction(()=>document.body.textContent.includes("没能写回仓库"));
   assert(store.get("rels.json").rels.length===countBefore,device+": 失败保存不应修改正式数据");
+  console.log("保存失败诊断："+JSON.stringify({putCount:writeCount,toast:await page.evaluate(()=>S.toast)}));
   assert(writeCount>=2,device+": 测试必须真正发生模拟 GitHub PUT");
   await context.close();
   console.log("Chromium "+device+"：当前定位、链成员拖动、方向、保存、刷新与失败回滚通过");
