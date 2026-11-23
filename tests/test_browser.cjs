@@ -85,6 +85,16 @@ async function scenario(browser,device){
     };
     t.roots.forEach(x=>walk(x,"",[]));render();
   });
+  // 16 家真实公司逐一点击，检查进入的项目和公司代码，而非只核对静态参数。
+  const cos=read("projects/quant/project.json").sop.cos;
+  assert(cos.length===16,"真实项目公司数量必须为 16");
+  for(const company of cos){
+    await page.locator('#tree .item[data-id="'+company.uid+'"] > .line > .name').click();
+    await page.waitForFunction(expected=>S.screen==="co"&&S.arg===expected,"quant|"+company.id);
+    assert((await page.locator(".body").innerText()).includes(company.name),
+      device+": 公司详情必须显示 "+company.id+" 的真实公司名称");
+    await page.locator("[data-back]").click();
+  }
   const from=page.locator('#tree .item[data-id="'+target+'"]');
   const to=page.locator('#tree .item[data-id="chain-browser"]');
   await from.waitFor({state:"visible"});await to.waitFor({state:"visible"});
