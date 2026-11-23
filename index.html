@@ -1257,6 +1257,36 @@ function okRels(){return relsOf().filter(r=>r.state==="已确认")}
 function relsBetween(a,b){return okRels().filter(r=>(r.from===a&&r.to===b)||(r.from===b&&r.to===a))}
 function relBetween(a,b){const r=relsBetween(a,b);return r.length===1?r[0]:null}
 function relsTouching(u){return okRels().filter(r=>r.from===u||r.to===u)}
+// 链 ID、层级 ID 与永久认知 UID 必须在数据层区分，不能仅凭树中存在来判断。
+function realCogUid(u){
+  if(typeof u!=="string"||!u)return false;
+  for(const P of Object.values(D.p||{})){
+    if((P.rows||[]).some(x=>x.uid===u))return true;
+    const pj=P.project||{};
+    if((pj.sop?.cos||[]).some(x=>x.uid===u))return true;
+    if((pj.sop?.nodes||[]).some(x=>x.uid===u))return true;
+    for(const tk of pj.tracks||[])for(const so of tk.sops||[])
+      if((so.nodes||[]).some(x=>x.uid===u))return true;
+  }
+  return (D.meth?.methods||[]).some(x=>x.uid===u)||(D.hist||[]).some(x=>x.uid===u);
+}
+function dragTarget(id){return realCogUid(id)||chainsOf().some(c=>c.id===id)}
+function validateRels(next){
+  for(const r of next.rels||[]){
+    if(!realCogUid(r.from)||!realCogUid(r.to)||r.from===r.to)
+      throw new Error("关系端点不是两个不同的真实认知 UID："+r.from+" → "+r.to);
+    if(!RELD[r.rel])throw new Error("未知认知关系："+r.rel);
+  }
+  const used=new Set(),ids=new Set();
+  for(const c of next.chains||[]){
+    if(ids.has(c.id))throw new Error("演化链 ID 重复："+c.id);
+    ids.add(c.id);
+    for(const u of c.members||[]){
+      if(!realCogUid(u)||used.has(u))throw new Error("演化链成员不是唯一真实 UID："+u);
+      used.add(u);
+    }
+  }
+}
 
 function buildTree(){
   const CT=D.cogtree||{up:{},struct:{roots:[],nodes:{}}},T={};
@@ -1411,7 +1441,7 @@ function treeNode(id,path,anc){
   const t=TREE,d=t.T[id];if(!d||anc.includes(id))return"";
   const key=path?path+"/"+id:id,has=!!d.children?.length,shown=!!S.topen?.[key],
         isCur=(id===curUid()||id===t.inChain[curUid()]);
-  return `<div draggable="true" class="item ${d.status||'struct'} ${isCur?'current':''} ${!path?'topbranch':''}" data-id="${esc(id)}" data-path="${esc(key)}"><div class="line"><button class="toggle" data-ttoggle="${esc(key)}" aria-label="${shown?'折叠':'展开'}${esc(d.name)}" aria-expanded="${shown}" ${has?'':'disabled'}>${CHEV}</button><button class="name" data-topen="${esc(key)}" aria-label="查看${esc(d.name)}详情">${isCur?`<span class="current-heading">当前研究位置</span><span class="current-title">${treeMark(d.status)}<span class="node-label">${esc(d.name)}</span></span>${d.question?`<span class="current-question">${esc(d.question)}</span>`:""}`:`${treeMark(d.status)}<span class="node-label">${esc(d.name)}</span>`}</button>${d.chain?'<span class="alias" title="认知演化链">'+treeMark("")+'</span>':''}</div>${has?`<div class="branch children" ${shown?'':'hidden'}>${d.children.map(c=>treeNode(c,key,anc.concat([id]))).join('')}</div>`:''}</div>`;
+  return `<div draggable="${dragTarget(id)}" class="item ${d.status||'struct'} ${isCur?'current':''} ${!path?'topbranch':''}" data-id="${esc(id)}" data-path="${esc(key)}"><div class="line"><button class="toggle" data-ttoggle="${esc(key)}" aria-label="${shown?'折叠':'展开'}${esc(d.name)}" aria-expanded="${shown}" ${has?'':'disabled'}>${CHEV}</button><button class="name" data-topen="${esc(key)}" aria-label="查看${esc(d.name)}详情">${isCur?`<span class="current-heading">当前研究位置</span><span class="current-title">${treeMark(d.status)}<span class="node-label">${esc(d.name)}</span></span>${d.question?`<span class="current-question">${esc(d.question)}</span>`:""}`:`${treeMark(d.status)}<span class="node-label">${esc(d.name)}</span>`}</button>${d.chain?'<span class="alias" title="认知演化链">'+treeMark("")+'</span>':''}</div>${has?`<div class="branch children" ${shown?'':'hidden'}>${d.children.map(c=>treeNode(c,key,anc.concat([id]))).join('')}</div>`:''}</div>`;
 }
 function treePage(){
   const t=buildTree();
@@ -1503,11 +1533,10 @@ function cogPage(){
   </section></div>${nav("tree")}`;
 }
 async function saveRels(next,msg){
-  // 先写仓库，写成功才换内存：保存失败时界面不会显示「已确认」
-  const before=D.rels;
-  D.rels=next;
-  try{await put("rels.json",next,msg||"认知关系");treeDirty();return true}
-  catch(e){D.rels=before;treeDirty();toast("没能写回仓库，这次确认没算数："+e.message);return false}
+  // 保存前完整检查，写成功后才替换正式内存；失败保留所有已确认状态。
+  try{validateRels(next);await put("rels.json",next,msg||"认知关系");
+    D.rels=next;treeDirty();return true}
+  catch(e){toast("没能写回仓库，这次确认没算数："+e.message);return false}
 }
 /* 合并成链：只用用户实际确认的那两个 UID，关系本身不存在链里。
    链里只有成员和名字；相邻两条之间显示什么，回 rels.json 查。 */
@@ -1515,6 +1544,7 @@ function mergeChain(from,to,name){
   const t=TREE||buildTree();
   const asChain=u=>chainsOf().find(c=>c.id===u)||chainOfUid(u);
   const cf=asChain(from),ct=asChain(to);
+  if(cf&&ct&&cf.id===ct.id)return cf.id; // 同一条链内部增加关系，不要重复建链
   const mem=(u,c)=>c?c.members.slice():[u];
   const all=[...new Set(mem(from,cf).concat(mem(to,ct)))];
   const par=(ct||{}).parent||parentIn(t,to)||(cf||{}).parent||parentIn(t,from)||"history";
@@ -1534,16 +1564,16 @@ function bindCog(){
   const host=document.querySelector(".cog");if(!host)return;
   const tree=host.querySelector("#tree");
   if(tree){
-    tree.addEventListener("dragstart",e=>{const it=e.target.closest(".item");if(!it)return;
+    tree.addEventListener("dragstart",e=>{const it=e.target.closest(".item");if(!it||!dragTarget(it.dataset.id)){e.preventDefault();return}
       dragId=it.dataset.id;e.dataTransfer.effectAllowed="link";it.classList.add("dragging")});
     tree.addEventListener("dragend",()=>{dragId=null;
       tree.querySelectorAll(".dragging,.dropok").forEach(n=>n.classList.remove("dragging","dropok"))});
     tree.addEventListener("dragover",e=>{const it=e.target.closest(".item");
-      if(!it||!dragId||it.dataset.id===dragId)return;e.preventDefault();e.dataTransfer.dropEffect="link";
+      if(!it||!dragId||!dragTarget(it.dataset.id)||it.dataset.id===dragId)return;e.preventDefault();e.dataTransfer.dropEffect="link";
       tree.querySelectorAll(".dropok").forEach(n=>n.classList.remove("dropok"));it.classList.add("dropok")});
     tree.addEventListener("drop",e=>{const it=e.target.closest(".item");
-      if(!it||!dragId||it.dataset.id===dragId)return;e.preventDefault();
-      const from=dragId;dragId=null;askRel(from,it.dataset.id)});
+      if(!it||!dragId||!dragTarget(it.dataset.id)||it.dataset.id===dragId)return;e.preventDefault();
+      const from=dragId;dragId=null;askDragRel(from,it.dataset.id)});
   }
   const ct=host.querySelector("#ctitle");
   if(ct)ct.addEventListener("blur",async()=>{
@@ -1571,7 +1601,36 @@ function cogSheet(html,onclick){
   m.addEventListener("click",ev=>{if(ev.target===m.firstChild){m.remove();return}onclick(ev,m)});
   return m;
 }
+// 先消解演化链容器：必须由用户选出真正发生关系的成员。
+function pickCog(id,done){
+  const chain=chainsOf().find(c=>c.id===id);
+  if(!chain){if(realCogUid(id))done(id);return}
+  const t=TREE||buildTree(),members=(chain.members||[]).filter(realCogUid);
+  cogSheet('<div class="relq">请选择「'+esc(chain.name)+'」中具体发生关系的认知</div>'+
+    members.map((u,i)=>'<button class="relbtn" data-member="'+i+'">'+esc(t.T[u]?.name||u)+'</button>').join("")+
+    '<button class="relbtn cancel">取消</button>',(ev,m)=>{
+      const btn=ev.target.closest(".relbtn");if(!btn)return;
+      m.remove();if(!btn.classList.contains("cancel"))done(members[+btn.dataset.member]);
+    });
+}
+function askDragRel(from,to){
+  if(!dragTarget(from)||!dragTarget(to))return;
+  pickCog(from,a=>pickCog(to,b=>{if(a!==b)askRel(a,b)}));
+}
+function askDirection(from,to,rel){
+  if(!realCogUid(from)||!realCogUid(to)||from===to)return;
+  const t=TREE||buildTree(),name=u=>esc(t.T[u]?.name||u);
+  cogSheet('<div class="relq">确认关系方向：'+esc(rel)+'</div>'+
+    '<button class="relbtn" data-dir="0">'+name(from)+' → '+name(to)+'</button>'+
+    '<button class="relbtn" data-dir="1">'+name(to)+' → '+name(from)+'</button>'+
+    '<button class="relbtn cancel">取消</button>',(ev,m)=>{
+      const btn=ev.target.closest(".relbtn");if(!btn)return;m.remove();
+      if(btn.classList.contains("cancel"))return;
+      const reverse=btn.dataset.dir==="1";confirmRel(reverse?to:from,reverse?from:to,rel);
+    });
+}
 function askRel(from,to){
+  if(!realCogUid(from)||!realCogUid(to)||from===to)return;
   const t=TREE||buildTree(),an=esc((t.T[from]||{}).name||from),bn=esc((t.T[to]||{}).name||to);
   cogSheet('<div class="relpair"><b>'+an+'</b><span>→</span><b>'+bn+'</b></div>'+
     '<div class="relq">新认知改变了旧认知吗？</div>'+
@@ -1580,24 +1639,32 @@ function askRel(from,to){
     REL6.slice(3).map((r,i)=>'<button class="relbtn" data-i="'+(i+3)+'">'+r[0]+'<em>'+r[1]+'</em></button>').join("")+
     '<button class="relbtn cancel">取消</button>',
    (ev,m)=>{const b=ev.target.closest(".relbtn");if(!b)return;m.remove();
-     if(!b.classList.contains("cancel"))confirmRel(from,to,REL6[+b.dataset.i][0])});
+     if(!b.classList.contains("cancel"))askDirection(from,to,REL6[+b.dataset.i][0])});
 }
 async function confirmRel(from,to,rel){
-  const t=TREE||buildTree(),an=(t.T[from]||{}).name||from,bn=(t.T[to]||{}).name||to;
-  let next=JSON.parse(JSON.stringify(D.rels));next.chains=next.chains||[];
-  next.rels=next.rels||[];
-  if(isEvo(rel)){
-    const nm=(prompt("这条演化链叫什么？\n\n"+an+"\n  └ "+rel+"\n"+bn,"")||"").trim();
-    if(!nm)return;
-    const keep=D.rels;D.rels=next;try{mergeChain(from,to,nm)}finally{next=D.rels;D.rels=keep}
+  if(!realCogUid(from)||!realCogUid(to)||from===to||!RELD[rel]){
+    toast("非法关系端点或关系类型，未保存");return false;
   }
+  const t=TREE||buildTree(),an=t.T[from]?.name||from,bn=t.T[to]?.name||to;
+  const cf=chainOfUid(from),ct=chainOfUid(to),cross=cf&&ct&&cf.id!==ct.id;
+  if(!confirm(an+"\n  └ "+rel+" → "+bn+
+    (cross&&isEvo(rel)?"\n两条现有演化链保持独立，不会自动合并。":"")+
+    "\n\n确认保存这个方向的关系吗？"))return false;
+  let next=copyJSON(D.rels);next.chains=next.chains||[];next.rels=next.rels||[];
   const hit=next.rels.find(r=>r.from===from&&r.to===to&&r.rel===rel);
+  if(isEvo(rel)&&!cross&&!(cf&&ct&&cf.id===ct.id)){
+    const nm=(prompt("这条演化链叫什么？\n\n"+an+"\n  └ "+rel+"\n"+bn,cf?.name||ct?.name||"")||"").trim();
+    if(!nm)return false;
+    const keep=D.rels;D.rels=next;
+    try{mergeChain(from,to,nm)}finally{next=D.rels;D.rels=keep}
+  }
   if(hit){hit.state="已确认";hit.at=new Date().toISOString().slice(0,10)}
-  else next.rels.push({from,to,rel,dir:RELD[rel],why:"在认知树上拖动相叠后确认",
+  else next.rels.push({from,to,rel,dir:RELD[rel],why:"在认知树上选择端点和方向后确认",
     src:"手动确认（"+new Date().toISOString().slice(0,10)+"）",state:"已确认",
     at:new Date().toISOString().slice(0,10)});
-  if(await saveRels(next,"确认关系："+from+" "+rel+" "+to))toast("已写回仓库");
-  render();
+  const saved=await saveRels(next,"确认关系："+from+" "+rel+" "+to);
+  if(saved)toast("已写回仓库");
+  render();return saved;
 }
 function parentIn(t,id){for(const k in t.T)if((t.T[k].children||[]).includes(id))return k;return null}
 
