@@ -576,16 +576,23 @@ async function loadAll(){
   S.loading=true;S.err="";S.focusWarning="";render();
   try{
     // 关系、方法与认知来源属于必读原件：读取失败就报错，不允许伪装成空数据。
-    const all=await Promise.all([
+    const settled=await Promise.allSettled([
       get("global.json"),get("projects/index.json"),getOptional("status.json",null),
       get("methods.json"),get("cogtree.json"),get("rels.json"),get("history.json"),
       getOptional("cognotes.json",{}),get("widget.json")]);
-    [D.global,D.index,D.status,D.meth,D.cogtree,D.rels,D.hist,D.notes,D.widget]=all;
+    const error=settled.find(x=>x.status==="rejected");
+    if(error)throw error.reason;
+    [D.global,D.index,D.status,D.meth,D.cogtree,D.rels,D.hist,D.notes,D.widget]=settled.map(x=>x.value);
     await loadProject(cur(),true);
     const active=D.p[cur()];
     if(active&&!PendingFocus(cur())&&D.widget?.focusUid&&D.widget.focusUid!==active.current?.focus?.focusUid)
       S.focusWarning="Today 和小组件当前认知不一致，请重新选择今日焦点";
-  }catch(e){S.err="数据加载失败（禁止写入未加载文件）："+e.message}
+  }catch(e){
+    // 等全部读取完成后统一撤销写入资格，旧内存无法再保存。
+    for(const bag of [SHA,BASE,READ])Object.keys(bag).forEach(k=>delete bag[k]);
+    D.p={};D.meth=null;D.rels=null;D.notes=null;
+    S.err="数据加载失败（禁止写入未加载文件）："+e.message;
+  }
   S.loading=false;render();
   // 「所有未解决问题」要跨项目，所以首屏之后把其余项目也读进来；只读，不动它们的 current.json
   (D.index||[]).filter(x=>x.state!=="archived"&&x.id!==cur())
@@ -1322,6 +1329,17 @@ function relsBetween(a,b){return okRels().filter(r=>(r.from===a&&r.to===b)||(r.f
 function relBetween(a,b){const r=relsBetween(a,b);return r.length===1?r[0]:null}
 function relsTouching(u){return okRels().filter(r=>r.from===u||r.to===u)}
 // 链 ID、层级 ID 与永久认知 UID 必须在数据层区分，不能仅凭树中存在来判断。
+function cogProject(u){
+  for(const [pid,P] of Object.entries(D.p||{})){
+    const pj=P.project||{},nodes=[...(pj.sop?.nodes||[])];
+    for(const tk of pj.tracks||[])for(const so of tk.sops||[])nodes.push(...(so.nodes||[]));
+    if((P.rows||[]).some(x=>x.uid===u)||nodes.some(x=>x.uid===u)||
+       (pj.sop?.cos||[]).some(x=>x.uid===u))return pid;
+  }
+  const m=(D.meth?.methods||[]).find(x=>x.uid===u);
+  if(m)return m.proj||"通用";
+  const h=(D.hist||[]).find(x=>x.uid===u);return h?.proj||null;
+}
 function realCogUid(u){
   if(typeof u!=="string"||!u)return false;
   for(const P of Object.values(D.p||{})){
@@ -1353,7 +1371,10 @@ function validateRels(next){
   }
   for(const u of edges.keys())visit(u);
   const used=new Set(),ids=new Set();
+  const tree=TREE||buildTree();
   for(const c of next.chains||[]){
+    if(!tree.T[c.parent]||(next.chains||[]).some(x=>x.id===c.parent))
+      throw new Error("演化链归属节点不存在或指向其他链："+c.parent);
     if(realCogUid(c.id))throw new Error("链 ID 与永久认知 UID 冲突："+c.id);
     if(!/^chain-/.test(c.id))throw new Error("非法演化链 ID："+c.id);
     if(!Array.isArray(c.members)||c.members.length<2)
@@ -1740,13 +1761,14 @@ async function confirmRel(from,to,rel){
     toast("非法关系端点或关系类型，未保存");return false;
   }
   const t=TREE||buildTree(),an=t.T[from]?.name||from,bn=t.T[to]?.name||to;
-  const cf=chainOfUid(from),ct=chainOfUid(to),cross=cf&&ct&&cf.id!==ct.id;
+  const cf=chainOfUid(from),ct=chainOfUid(to),cross=cf&&ct&&cf.id!==ct.id,
+    crossProject=cogProject(from)!==cogProject(to);
   if(!confirm(an+"\n  └ "+rel+" → "+bn+
-    (cross&&isEvo(rel)?"\n两条现有演化链保持独立，不会自动合并。":"")+
+    ((cross||crossProject)&&isEvo(rel)?"\n不同演化链或项目仍保持原有归属，不会自动合并。":"")+
     "\n\n确认保存这个方向的关系吗？"))return false;
   let next=copyJSON(D.rels);next.chains=next.chains||[];next.rels=next.rels||[];
   const hit=next.rels.find(r=>r.from===from&&r.to===to&&r.rel===rel);
-  if(isEvo(rel)&&!cross&&!(cf&&ct&&cf.id===ct.id)){
+  if(isEvo(rel)&&!cross&&!crossProject&&!(cf&&ct&&cf.id===ct.id)){
     const nm=(prompt("这条演化链叫什么？\n\n"+an+"\n  └ "+rel+"\n"+bn,cf?.name||ct?.name||"")||"").trim();
     if(!nm)return false;
     const keep=D.rels;D.rels=next;
