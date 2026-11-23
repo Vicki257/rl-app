@@ -1439,12 +1439,13 @@ function treeMark(s){const M={done:'<circle cx="8" cy="8" r="6.3"/><path d="m5 8
 function curUid(){
   const P=D.p[cur()];if(!P)return"";
   const f=P.current?.focus||{};
-  if(f.focusUid&&P.rows.some(r=>r.uid===f.focusUid))return f.focusUid;
+  // 有永久 UID 时只认它；失效也绝不回退到可能漂移的数组位置。
+  if(f.focusUid)return P.rows.some(r=>r.uid===f.focusUid)?f.focusUid:"";
   if(f.date||f.q){
-    const r=P.rows.find(r=>(!f.date||r.date===f.date)&&(!f.q||r.q===f.q));
-    if(r?.uid)return r.uid;
+    const matches=P.rows.filter(r=>(!f.date||r.date===f.date)&&(!f.q||r.q===f.q));
+    if(matches.length===1)return matches[0].uid||"";
   }
-  const r2=focusRowOf(P)||curRow(P);return r2?.uid||"";
+  return ""; // 无唯一可验证身份，不猜测当前认知
 }
 function openPath(){
   const t=TREE||buildTree(),u=t.inChain[curUid()]||curUid();if(!u)return[];
