@@ -18,20 +18,20 @@ const source = [
 
 const path="projects/rl/rows.json";
 let assertions=0;
-function make(initial) {
+function make(initial,production=false) {
   const server={data:initial===undefined?undefined:JSON.parse(JSON.stringify(initial)),
-                rev:1,exists:initial!==undefined,putErrors:[],branchExists:true,requests:[]};
+                rev:1,exists:initial!==undefined,putErrors:[],branchExists:true,requests:[],expectedBranch:production?"main":"dev"};
   const fetch=async(url,options={})=>{
     server.requests.push({url,method:options.method||"GET"});
-    if(url.endsWith("/branches/dev"))
+    if(url.endsWith("/branches/"+server.expectedBranch))
       return server.branchExists?{ok:true,json:async()=>({name:"dev"})}:{ok:false,status:404};
     if(!url.startsWith("https://api.github.com/repos/test/test/contents/data/"+path))
       throw Error("unexpected path "+url);
-    if(options.method!=="PUT"&&!url.endsWith("?ref=dev"))
+    if(options.method!=="PUT"&&!url.endsWith("?ref="+server.expectedBranch))
       throw Error("读取未显式指定开发分支："+url);
     if(options.method==="PUT"){
       const input=JSON.parse(options.body);
-      assert.equal(input.branch,"dev","写入必须显式绑定开发分支");
+      assert.equal(input.branch,server.expectedBranch,"写入必须显式绑定对应真实分支");
       if(server.putErrors.length){const code=server.putErrors.shift();
         return {ok:false,text:async()=>"simulated failure",status:code};}
       if(server.exists&&input.sha!=="rev"+server.rev)
@@ -49,7 +49,8 @@ function make(initial) {
       content:Buffer.from(JSON.stringify(server.data),"utf8").toString("base64")
     })};
   };
-  const ctx=vm.createContext({fetch,Buffer,JSON,Error,Array,Object});
+  const ctx=vm.createContext({fetch,Buffer,JSON,Error,Array,Object,
+    location:{hostname:production?"vicki257.github.io":"dev-preview.example",pathname:production?"/rl-app/":"/dev"}});
   vm.runInContext(source,ctx);
   return {server,io:ctx.io};
 }
@@ -209,6 +210,17 @@ async function expectReject(action,label){
     await expectReject(()=>io.put(path,rows),"换分支后不能沿用旧缓存");
     assert.equal(server.requests.some(r=>r.method==="PUT"),false);
     assertions++;
+  }
+  // 正式站点历史用户未填写分支，仍明确读写 main；开发预览不允许这种回退。
+  {
+    const {server,io}=make([{id:"r1",q:"正式版旧记录"}],true);
+    io.cfg.branch="";
+    const rows=await io.get(path);rows[0].q="正式版更新";
+    await io.put(path,rows);
+    assert.equal(server.data[0].q,"正式版更新");
+    assert(server.requests.some(x=>x.url.endsWith("?ref=main")));
+    assert(server.requests.some(x=>x.url.endsWith("/branches/main")));
+    assertions+=3;
   }
   console.log("RL-app 安全保存模拟测试通过：",assertions,"项断言");
 })().catch(e=>{console.error(e);process.exitCode=1});
