@@ -75,6 +75,10 @@ async function scenario(browser,device){
   const highlighted=page.locator('#tree .item.current[data-id="chain-browser"]');
   await highlighted.waitFor({state:"visible"});
   assert(await highlighted.count()===1,device+": 当前 UID 在链内必须高亮整条链");
+  await page.waitForTimeout(650); // 等待 smooth scroll 完成
+  const box=await highlighted.boundingBox();
+  assert(box&&box.y>=-10&&box.y<page.viewportSize().height,
+    device+": 定位当前应真正滚动到可视区域");
   // 展开所有祖先；随后拖放仍由 Chromium 真实鼠标/触摸模拟执行。
   await page.evaluate(()=>{
     const t=buildTree();S.topen={};
