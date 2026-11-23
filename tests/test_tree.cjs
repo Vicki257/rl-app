@@ -170,6 +170,27 @@ ok(evoRels.length>0,"应该有可以成链的演化关系");
   ok(!t7.T["proj:journal"],"每日思考日志不该在树上单独占一枝");
   if(has)ok((D.index||[]).some(x=>x.id==="journal"),"但它仍然在项目清单里（数据照常加载）");
 }
+// 认知树只显示有永久 UID 的认知，流程示意节点只在原 SOP 画布显示，不能混进认知树
+{
+  const project=D.p.rl.project;
+  const fake={id:"__ui_only__",name:"你／前台（仅流程示意）",kind:"plain",q:"模拟有说明文字但没有 UID 的装饰节点"};
+  project.sop.nodes.push(fake);
+  const preview=buildTree();
+  ok(!preview.T["sop:rl:__ui_only__"],"没有永久 UID 的装饰节点不能出现在认知树，即使它有其他文字字段");
+  project.sop.nodes.pop();
+  const clean=buildTree();
+  for(const pid of ["rl","quant","wealth","people"]){
+    const p=D.p[pid]?.project;if(!p)continue;
+    const nodes=[...(p.sop?.nodes||[])];
+    for(const tk of p.tracks||[])for(const so of tk.sops||[])nodes.push(...(so.nodes||[]));
+    for(const item of nodes){
+      if(item.uid)ok(!!clean.T[item.uid],pid+" 的认知 "+item.uid+" 必须保留在树中");
+      else if(pid==="rl"&&item.id&&["you","ui","chat","raw"].includes(item.id))
+        ok(!Object.values(clean.T).some(n=>n.name===item.name&&n.id.startsWith("sop:rl:")),
+           "不展示流程示意节点："+item.name);
+    }
+  }
+}
 // 同一对 UID 有多条关系时，不能只挑第一条
 {
   const r=relsOf()[0];

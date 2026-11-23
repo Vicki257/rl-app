@@ -1283,9 +1283,9 @@ function buildTree(){
         detail:[["这一步要回答什么",n.q||""],["整体是怎么跑的",n.whole||n.how||""],
                 ["目前的结论",n.concl||""]].filter(x=>x[1])});
     };
-    // 和 ids.py 的 is_cognitive 保持一致：装饰节点（kind=plain 且没有任何内容）不进树
-    const CONT=["q","whole","how","judge","concl","so","pains","res","rules","note"];
-    const isCog=n=>("cog" in n)?!!n.cog:(n.kind!=="plain"||CONT.some(k=>n[k]));
+    // 认知树只展示拥有永久 UID 的认知；没有 UID 的「你／前台／AI 聊天／原始历史数据」等流程示意节点仅保留在原 SOP 画布。
+    // kind=plain 但有 UID 的真实认知仍需展示（例如财富、人与关系项目的公理节点）。
+    const isCog=n=>!!n.uid;
     const sopNodes=(pj.sop?.nodes||[]).filter(isCog);
     if(sopNodes.length)
       kids.push(add(pid+":sop",{name:"SOP",children:sopNodes.map((n,i)=>ringOf(n,"n"+i))}));
