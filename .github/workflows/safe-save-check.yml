@@ -63,3 +63,5 @@ jobs:
           npx playwright install chromium
       - name: Chromium 电脑与手机端：拖放、保存、刷新和定位
         run: node tests/test_browser.cjs
+      - name: 缺新数据表时必须降级而不是整个打不开
+        run: node tests/test_degrade.cjs --require-real-data

@@ -587,10 +587,18 @@ async function loadProject(id,force,quiet){
 async function loadAll(){
   S.loading=true;S.err="";S.focusWarning="";render();
   try{
-    // 关系、方法与认知来源属于必读原件：读取失败就报错，不允许伪装成空数据。
+    // 方法、历史与项目数据属于必读原件：读取失败就报错，不允许伪装成空数据。
+    // 本轮新增的 cogtree / rels 用 getOptional：只有确认的 404 才降级，
+    // 这样合并顺序不会让正式版整个打不开。
     const settled=await Promise.allSettled([
       get("global.json"),get("projects/index.json"),getOptional("status.json",null),
-      get("methods.json"),get("cogtree.json"),get("rels.json"),get("history.json"),
+      get("methods.json"),
+      // cogtree / rels 是本轮新增的两张表，仓库里可能还没有（例如 app 先合进 main、
+      // 数据还没合，或者有人把分支指到旧提交）。缺它们只该让认知树降级，
+      // 不该让整个 app 打不开。getOptional 只认「确认的 404」，
+      // 401/403/网络故障照旧抛错，「读取失败不得当成空数据」这条没有放松。
+      getOptional("cogtree.json",{up:{},struct:{roots:[],nodes:{}},hideProjects:["journal"]}),
+      getOptional("rels.json",{rels:[],chains:[]}),get("history.json"),
       getOptional("cognotes.json",{}),get("widget.json")]);
     const error=settled.find(x=>x.status==="rejected");
     if(error)throw error.reason;
@@ -858,7 +866,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-11-23d";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-24b";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
