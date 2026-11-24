@@ -65,6 +65,11 @@ const b=await chromium.launch();
   ok(!t.err,"缺表时 buildTree 不能抛错："+t.err);
   ok(t.rels===0&&t.chains===0,"缺 rels.json 时关系与链都应为空");
   ok(t.missing===0,"降级时不该出现悬空引用");
+  // 453 条认知都在，但没有结构表就长不出树枝：必须说清楚，不能只剩一张空白画布
+  const canvas=await p.locator(".cog .canvas").innerText();
+  ok(/cogtree\.json/.test(canvas),"树空着时要说明原因，实际：\n"+canvas.slice(0,160));
+  ok(!/个节点/.test(await p.locator(".cog .sub").innerText()),
+     "结构表缺失时不该还在标题里报节点数（会让人以为页面坏了）");
   ok(errs.length===0,"不该有未捕获异常："+errs.slice(0,2).join("；"));
   await p.close();
 }
@@ -93,6 +98,7 @@ const b=await chromium.launch();
   const t=await p.evaluate(()=>{const x=buildTree();
     return {nodes:Object.keys(x.T).length,rels:relsOf().length,cur:curUid()}});
   ok(t.nodes>400,"文件齐全时树应正常，实际 "+t.nodes+" 个节点");
+  ok(await p.locator(".cog #tree > .item").count()>0,"文件齐全时必须真的渲染出树枝");
   ok(t.rels===29,"应读到 29 条候选关系，实际 "+t.rels);
   ok(t.cur&&/^[A-D]\d{9}$/.test(t.cur),"当前位置应是一个永久 UID，实际 "+t.cur);
   ok(errs.length===0,"不该有未捕获异常："+errs.slice(0,2).join("；"));

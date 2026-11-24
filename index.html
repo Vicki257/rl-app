@@ -1568,10 +1568,12 @@ function treePage(){
     .map(([k,l])=>`<span>${treeMark(k)}${l}</span>`).join("")
     +'<span class="empty"><i></i>没有依据判断状态的不上色</span>';
   return `<div class="cog"><div id="tree-page">
-    <header><div><h1>认知树</h1><div class="sub">${n} 个节点 · 来自 ${esc(cfg.owner||"")}/${esc(cfg.repo||"")} 分支 ${esc(branch()||"默认分支")} · 拖两条认知相叠 → 生成一条演化链</div></div>
+    <header><div><h1>认知树</h1><div class="sub">${t.roots.length?n+" 个节点":"结构表缺失，暂时显示不出树"} · 来自 ${esc(cfg.owner||"")}/${esc(cfg.repo||"")} 分支 ${esc(branch()||"默认分支")} · 拖两条认知相叠 → 生成一条演化链</div></div>
     <div class="tools"><button class="tool" data-rpick="1">${S.relPick!==null?(S.relPick?"选择第二条":"选择第一条"):"点选建立关系"}</button><button class="tool" data-tcollapse="1">折叠全部</button><button class="tool" data-tfocus="1">定位当前</button><button class="tool" data-go="rels">认知关系 ${cand}</button></div></header>
     <section class="canvas"><h2 class="root">我要杰出，我要做出伟大的公司</h2>
-      <div id="tree">${t.roots.map(r=>treeNode(r,"",[])).join("")}</div></section>
+      ${t.roots.length?`<div id="tree">${t.roots.map(r=>treeNode(r,"",[])).join("")}</div>`
+        :`<div class="note" style="margin:0">这个分支上还没有 data/cogtree.json，所以树的结构长不出来。
+          ${n} 条认知本身都在，等这份结构表合进来就会显示。其它页面不受影响。</div>`}</section>
     <div class="legend">${legend}</div>
     ${t.missing.length?`<div class="note">有 ${t.missing.length} 处指向了不存在的节点：${esc(t.missing.slice(0,5).join("、"))}</div>`:""}
     <div class="note">节点来自仓库现有数据，每次打开现算，不另存一份。关系只认 rels.json 里确认过的那几条。</div>
