@@ -225,11 +225,13 @@ async function expectReject(action,label){
     assert(server.requests.some(x=>x.url.endsWith("/branches/main")));
     assertions+=3;
   }
-  // 不可把 401/403/网络错误当成空文件覆盖真实 29 条关系或 183 条方法。
-  for(const [file,expected] of [["rels.json",29],["methods.json",183]]){
+  // 不可把 401/403/网络错误当成空文件覆盖真实的关系或方法。
+  // 条数按真实文件现读——关系会随着你确认而增加，写死数字只会让测试在正常使用后变红。
+  for(const file of ["rels.json","methods.json"]){
     const source=JSON.parse(fs.readFileSync(require("node:path").join(__dirname,"..","..","rl-data","data",file),"utf8"));
     const list=file==="rels.json"?"rels":"methods";
-    assert.equal(source[list].length,expected);
+    const expected=source[list].length;
+    assert(expected>0,file+" 里应该有真实内容");
     for(const code of [401,403,500]){
       const {server,io}=make(source,false,file);
       server.readStatus=code;

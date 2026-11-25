@@ -160,7 +160,17 @@ async function scenario(browser,device){
   await page.locator(".relsheet [data-member='1']").click();
   await page.locator(".relsheet [data-i='1']").click(); // 修正
   await page.locator(".relsheet [data-dir='1']").click(); // B → C
+  // 合并动画：两条认知要先塌下去，人才看得见「它们被合进链里了」。
+  // CSS 一直都在，但有一阵子没有任何代码去加这两个 class，动画就静默消失了。
+  const sank=await page.waitForFunction(
+    ()=>document.querySelectorAll("#tree .item.merging").length,{timeout:3000})
+    .then(h=>h.jsonValue()).catch(()=>0);
+  assert(sank>0,device+": 合并时两条认知必须有塌陷动画，不能瞬间消失");
   await page.waitForFunction(()=>document.querySelector(".toast")?.textContent?.includes("已写回仓库"));
+  const popped=await page.waitForFunction(
+    ()=>document.querySelectorAll("#tree .item.merged").length,{timeout:3000})
+    .then(h=>h.jsonValue()).catch(()=>0);
+  assert(popped>0,device+": 新生成的演化链必须有出现动画");
   const saved=store.get("rels.json");
   assert(saved.rels.some(x=>x.from===selected&&x.to===target&&x.rel==="修正"&&x.state==="已确认"),
     device+": 保存必须使用所选成员 UID");

@@ -915,7 +915,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-11-25b";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-25c";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1833,7 +1833,7 @@ async function confirmRel(from,to,rel){
   if(!confirm(an+"\n  └ "+rel+(rel==="关联"?" ↔ ":" → ")+bn+
     ((cross||crossProject)&&isEvo(rel)?"\n不同演化链或项目仍保持原有归属，不会自动合并。":"")+
     "\n\n"+(rel==="关联"?"确认保存这条无向关联吗？":"确认保存这个方向的关系吗？")))return false;
-  let next=copyJSON(D.rels);next.chains=next.chains||[];next.rels=next.rels||[];
+  let next=copyJSON(D.rels),newChain=null;next.chains=next.chains||[];next.rels=next.rels||[];
   const hit=next.rels.find(r=>r.rel===rel&&((r.from===from&&r.to===to)||
     (rel==="关联"&&r.from===to&&r.to===from)));
   if(hit?.state==="已确认")return true;
@@ -1841,15 +1841,38 @@ async function confirmRel(from,to,rel){
     const nm=(prompt("这条演化链叫什么？\n\n"+an+"\n  └ "+rel+"\n"+bn,cf?.name||ct?.name||"")||"").trim();
     if(!nm)return false;
     const keep=D.rels;D.rels=next;
-    try{mergeChain(from,to,nm)}finally{next=D.rels;D.rels=keep}
+    try{newChain=mergeChain(from,to,nm)}finally{next=D.rels;D.rels=keep}
   }
   if(hit){hit.state="已确认";hit.at=new Date().toISOString().slice(0,10)}
   else next.rels.push({from,to,rel,dir:rel==="关联"?"无方向":RELD[rel],why:"在认知树上选择端点后确认",
     src:"手动确认（"+new Date().toISOString().slice(0,10)+"）",state:"已确认",
     at:new Date().toISOString().slice(0,10)});
+  // 合成链的时候两条认知会从树上消失。先让它们塌下去，人才看得见「合并」这件事；
+  // 保存失败就把动画撤掉，节点原样弹回来。
+  const el=u=>{try{return document.querySelector('.cog .item[data-id="'+CSS.escape(u)+'"]')}catch(e){return null}};
+  const sinking=(newChain&&typeof document!=="undefined")?[from,to].map(el).filter(Boolean):[];
+  sinking.forEach(el=>el.classList.add("merging"));
+  if(sinking.length)await new Promise(r=>setTimeout(r,430));
   const saved=await saveRels(next,"确认关系："+from+" "+rel+" "+to);
-  if(saved)toast("已写回仓库");
-  render();return saved;
+  if(!saved){sinking.forEach(el=>el.classList.remove("merging"));render();return false}
+  toast("已写回仓库");
+  render();
+  if(newChain){
+    const seg=(findChainPath(newChain)||"").split("/");
+    for(let i=1;i<seg.length;i++)(S.topen=S.topen||{})[seg.slice(0,i).join("/")]=1;
+    render();
+    const n=el(newChain);
+    if(n){n.classList.add("merged");n.scrollIntoView({block:"center",behavior:"smooth"});
+      setTimeout(()=>n.classList.remove("merged"),600)}
+  }
+  return true;
+}
+function findChainPath(id){
+  const t=buildTree();let hit=null;
+  (function w(ids,pre,anc){for(const x of ids){if(hit||anc.includes(x))continue;
+    const key=pre?pre+"/"+x:x;if(x===id){hit=key;return}
+    w((t.T[x]||{}).children||[],key,anc.concat([x]))}})(t.roots,"",[]);
+  return hit;
 }
 function parentIn(t,id){for(const k in t.T)if((t.T[k].children||[]).includes(id))return k;return null}
 
