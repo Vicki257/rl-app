@@ -23,7 +23,7 @@ const ctx={D,S:{},console,Date,JSON,Object,Array,Math,Set,String,Number,Boolean,
  put:async(p,x)=>{if(fail)throw Error("模拟远端保存失败");writes.push(JSON.parse(JSON.stringify(x)))}
 };
 vm.createContext(ctx);
-vm.runInContext(html.slice(start,end)+"\nthis.api={buildTree,realCogUid,dragTarget,treeNode,askDragRel,confirmRel,saveRels,validateRels}",ctx);
+vm.runInContext(html.slice(start,end)+"\nthis.api={buildTree,realCogUid,dragTarget,treeNode,askDragRel,confirmRel,saveRels,validateRels,ringOf,mergeable,dropTarget,askMove,doMove}",ctx);
 // 拖完只弹一个面板：选成员（拖到链上时）、选关系、看方向（可反转）、给新链取名、确认。
 // 这里用一个最小的假 DOM 驱动它；handler 用 closest(选择器) 判断点的是什么。
 vm.runInContext(`cogSheet=(html,handler)=>{
@@ -125,5 +125,37 @@ function check(){api.validateRels(D.rels);ok(D.rels.rels.every(x=>api.realCogUid
  await api.confirmRel(c,e,"迁移");
  const after=api.buildTree(),parent2=Object.values(after.T).find(x=>(x.children||[]).includes(c))?.id;
  ok(D.rels.chains.length===0&&parent===parent2,"横向关系不改变树归属");check();
- console.log("四类拖动与关系安全反例通过：",count,"项（真实 RL-data，模拟写入）");
+ 
+ // SOP 节点（Continuity、Reflection、Compare……）有永久 UID，但它是结构不是认知：
+ // 不能被拖、不能合进链，只能当「移到这里」的目的地。
+ const rings=(D.p.rl.project.sop.nodes||[]).filter(n=>n.uid&&n.id);
+ ok(rings.length>=3,"应读到真实的 SOP 环节点");
+ const R=rings.find(n=>n.id==="reflection")||rings[1],C=rings.find(n=>n.id==="compare")||rings[2];
+ ok(!!api.ringOf(R.uid)&&!api.mergeable(R.uid),"SOP 节点不是可合并的认知");
+ ok(!api.dragTarget(R.uid)&&api.dropTarget(R.uid),"SOP 节点不能拖、只能当移动目的地");
+ reset();ok(!(await api.confirmRel(c,C.uid,"继承")),"不能把认知和 SOP 节点合成关系");
+ ok(!D.rels.rels.some(x=>x.from===C.uid||x.to===C.uid),"被拒之后不能留下指向 SOP 节点的关系");
+ ctx.modal=null;api.askDragRel(c,C.uid);ok(!ctx.modal,"拖到 SOP 节点上不该弹合并面板");
+ // 单条认知移到 Reflection：只改 cogtree.up，正文和编号不动
+ reset();const rowBefore=JSON.stringify(D.p.rl.rows.find(x=>x.uid===e));
+ ok(await api.doMove(e,R.uid),"移到 SOP 节点应成功");
+ ok(D.cogtree.up[e]===R.id,"cogtree.up 必须写成环的 id，实际 "+D.cogtree.up[e]);
+ ok(writes.length===1&&writes[0].up[e]===R.id,"写回的必须是 cogtree.json 的新归属");
+ ok(JSON.stringify(D.p.rl.rows.find(x=>x.uid===e))===rowBefore,"移动不能改认知正文和编号");
+ const parentNow=(()=>{const t=api.buildTree();for(const k in t.T)if((t.T[k].children||[]).includes(e))return k})();
+ ok(parentNow===R.uid,"移动后树上必须真的挂在 "+R.name+" 下，实际 "+parentNow);
+ // 整条演化链移到 Reflection：只改 parent
+ reset([{id:"chain-mv",name:"要搬的链",parent:"proj:rl",members:[a,b]}]);
+ ok(await api.doMove("chain-mv",R.uid),"链应能移到 SOP 节点下");
+ ok(D.rels.chains[0].parent===R.uid&&D.rels.chains[0].members.join()===[a,b].join(),"链只改 parent，成员不变");
+ // 保存失败：移动不算数
+ reset([{id:"chain-mv",name:"要搬的链",parent:"proj:rl",members:[a,b]}]);fail=true;
+ ok(!(await api.doMove("chain-mv",C.uid)),"保存失败时移动必须返回失败");
+ ok(D.rels.chains[0].parent==="proj:rl","保存失败时链必须留在原位");
+ fail=false;
+ const upBefore=JSON.stringify(D.cogtree.up);fail=true;
+ ok(!(await api.doMove(d,R.uid)),"认知移动保存失败必须返回失败");
+ ok(JSON.stringify(D.cogtree.up)===upBefore,"认知移动保存失败时归属必须回滚");
+ fail=false;
+console.log("四类拖动与关系安全反例通过：",count,"项（真实 RL-data，模拟写入）");
 })().catch(e=>{console.error(e);process.exitCode=1});

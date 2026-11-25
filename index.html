@@ -679,7 +679,7 @@ function widgetFrom(id,P){
 }
 
 /* ============ 导航 ============ */
-function go(screen,arg){S.stack.push({screen:S.screen,arg:S.arg});S.screen=screen;S.arg=arg;S.open={};S.edit=false;render();window.scrollTo(0,0)}
+function go(screen,arg){S.stack.push({screen:S.screen,arg:S.arg});S.screen=screen;S.arg=arg;S.open={};S.edit=false;S.colEdit=null;render();window.scrollTo(0,0)}
 function back(){const b=S.stack.pop()||{screen:"today"};S.screen=b.screen;S.arg=b.arg;S.open={};S.edit=false;render()}
 function tab(s){S.stack=[];S.screen=s;S.arg=null;S.open={};S.edit=false;if(s!=="tree"){S.q=""}render();window.scrollTo(0,0)}
 const nav=a=>`<nav class="nav">${[["today","今天"],["plist","项目"],["tree","认知树"],["ilist","迭代"],["system","系统"]].map(([k,l])=>`<button data-tab="${k}" aria-current="${a===k}">${l}</button>`).join("")}</nav>`;
@@ -904,21 +904,38 @@ function rowIdx(P){
 function edr(i,k,v,ph,big){
   return `<div class="kv"><span class="k">${esc(k)}</span><div class="v ed${big?" big":""}" contenteditable data-ph="${esc(ph||"")}" data-rk="${i}|${esc(k)}">${esc(v||"")}</div></div>`;
 }
+function colEditor(i,pj,row){
+  const cols=rowColumns(pj,row);
+  return `<div class="kv" id="coledit" style="border-top:1px solid var(--line);padding-top:12px;margin-top:8px">
+    <span class="k">这一条的栏目</span>
+    <div class="small" style="margin:2px 0 8px">改名会把内容一起带过去；有内容的栏目要先清空才能删。只改这一条，不影响别的记录。</div>
+    ${cols.map(c=>`<div class="row" style="gap:6px;margin-bottom:6px">
+      <input class="srch" style="margin:0;flex:1" data-colname data-old="${esc(c)}" value="${esc(c)}">
+      <button class="back" data-coldel="${esc(c)}" title="删掉这一栏">✕</button></div>`).join("")}
+    <div class="row" style="gap:6px;margin-bottom:10px">
+      <input class="srch" style="margin:0;flex:1" data-colname data-old="" placeholder="加一栏，比如「结论」「下一步」">
+    </div>
+    <div class="row" style="gap:8px"><button class="btn" data-colsave="${i}">保存栏目</button>
+      <button class="btn ghost" data-colcancel="1">取消</button></div>
+  </div>`;
+}
 function rowPage(){
   const a3=String(S.arg||"").split("|")[2];
   const id=(a3&&D.p[a3])?a3:cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
   const i=rowIdx(P),row=P.rows[i];if(!row) return `<div class="center">这一条不在了</div>`;
-  const pj=P.project,cols=(pj.columns||[]).filter(c=>c!==PRI);
+  const pj=P.project,cols=rowColumns(pj,row);
   const LF=pj.labels?.f||"今日发现",LQ=pj.labels?.q||"留给明天的问题";
   const isSt=(pj.labels?.f||"")==="状态";
+  // 状态值不在本项目的四档里（比如从每日思考迁来的「已记录」），也要显示出来，不能一个都不亮
+  const stOpts=stsOf(pj).concat(row.f&&!stsOf(pj).includes(row.f)?[row.f]:[]);
   return `<div class="body">${topBar("",pj.name)}
     <div class="row" style="flex-wrap:wrap;gap:8px">
-      <span class="meta">${row.date}${isFocusRow(P,row)?" · 当前问题来自这一条":""}</span>
+      <span class="meta">${row.date}${row.from?" · 来自"+esc(row.from):""}${isFocusRow(P,row)?" · 当前问题来自这一条":""}</span>
       <span class="pw" style="margin-left:auto">优先 <input class="pin" value="${esc(row.cols?.[PRI]||"")}" placeholder="–" data-pri="${i}" inputmode="decimal"> / 10</span>
     </div>
     <div class="card">
       ${isSt?`<div class="kv"><span class="k">${esc(LF)}</span><div class="row" style="flex-wrap:wrap;gap:7px;margin-top:3px">
-        ${stsOf(pj).map(k=>`<button class="fp${row.f===k?" on":""}" data-setst="${i}|${k}">${k}</button>`).join("")}</div></div>`
+        ${stOpts.map(k=>`<button class="fp${row.f===k?" on":""}" data-setst="${i}|${esc(k)}">${esc(k)}</button>`).join("")}</div></div>`
         :edr(i,LF,row.f,"",true)}
       ${edr(i,LQ,row.q,"",true)}
       ${cols.map(c=> c===REALC
@@ -926,6 +943,7 @@ function rowPage(){
             ${["有","无"].map(v=>`<button class="fp${(row.cols?.[c]||"")===v?" on":""}" data-setreal="${i}|${v}">${v}</button>`).join("")}
             <span class="meta" style="margin-left:4px">有＝这次改动是现实逼出来的</span></div></div>`
         : edr(i,c,row.cols?.[c],"")).join("")}
+      ${S.colEdit===i?colEditor(i,pj,row):`<button class="back" data-coledit="${i}" style="margin-top:6px">改这一条的栏目</button>`}
     </div>
     <div class="h2">夜间分析</div>
     <div class="card" style="padding:4px 14px">${nightBlock(P,row,i)}</div>
@@ -940,7 +958,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-11-25f";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-25h";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -959,7 +977,8 @@ function rowsTable(id,P,selIdx){
       <td data-go="row" data-arg="${r.date}|${ix(r)}|${id}"><span class="pill ${stCls(r.f)}">${esc(r.f)}</span></td>
       <td class="meta" data-go="row" data-arg="${r.date}|${ix(r)}|${id}">${r.date.slice(5).replace("-","/")}</td>
       <td data-go="row" data-arg="${r.date}|${ix(r)}|${id}"><span class="cell">${esc(r.q)}</span></td>
-      ${cols.slice(0,2).map(c=>`<td data-go="row" data-arg="${r.date}|${ix(r)}|${id}"><span class="cell">${esc(r.cols?.[c]||"—")}</span></td>`).join("")}</tr>`).join("")
+      ${cols.slice(0,2).map((c,j)=>{const rc=rowColumns(pj,r)[j]||c,tag=rc!==c?rc+"：":"";
+        return `<td data-go="row" data-arg="${r.date}|${ix(r)}|${id}"><span class="cell">${esc(r.cols?.[rc]?tag+r.cols[rc]:"—")}</span></td>`}).join("")}</tr>`).join("")
       ||'<tr><td colspan="6" class="meta" style="padding:14px 10px">这一类现在没有</td></tr>'}
   </tbody></table></div>
   <button class="btn ghost" data-savepri="${esc(id)}" style="display:${S.priDirty?"":"none"}">保存优先分</button>`;
@@ -967,7 +986,8 @@ function rowsTable(id,P,selIdx){
 function filterBar(id,P){
   const cnt={};P.rows.forEach(r=>cnt[r.f]=(cnt[r.f]||0)+1);
   return `<div class="row" style="flex-wrap:wrap;gap:8px">
-    ${stsOf(P.project).filter(k=>cnt[k]).map(k=>`<button class="fp${S.filter===k?" on":""}" data-filter="${k}"><b>${cnt[k]}</b>${k}</button>`).join("")}
+    ${stsOf(P.project).concat(Object.keys(cnt).filter(k=>k&&!stsOf(P.project).includes(k)))
+      .filter(k=>cnt[k]).map(k=>`<button class="fp${S.filter===k?" on":""}" data-filter="${esc(k)}"><b>${cnt[k]}</b>${esc(k)}</button>`).join("")}
     <button class="fp" style="margin-left:auto" data-addrow>＋ 新增</button></div>`;
 }
 function listPage(){
@@ -1395,6 +1415,15 @@ function ML(){return (D.meth?.methods||[]).filter(m=>!m.archived)}
 function findM(id){return (D.meth?.methods||[]).find(m=>m.id===id)}
 
 /* ============ 认知树 ============ */
+// 一条记录显示哪些栏目：它自己有 columns 就用自己的（每条可以不一样），否则用项目的。
+// 不管哪种，cols 里只要有内容、却不在栏目表里的字段，都追加在后面显示——
+// 内容存在但页面不显示，看起来就像丢了（每日思考迁过来那 7 条就是这样）。
+function rowColumns(pj,row){
+  const own=Array.isArray(row.columns)&&row.columns.length;
+  const base=(own?row.columns:(pj.columns||[])).filter(c=>c!=="优先程度");
+  const extra=Object.keys(row.cols||{}).filter(k=>k!=="优先程度"&&!base.includes(k)&&String(row.cols[k]??"").trim());
+  return base.concat(extra);
+}
 /* 树不另存一份。每次从已经载入的项目、方法、历史现算，所以不会和仓库里的数据脱节。
    只有两样东西算不出来，放在 data/cogtree.json：
    rl 的复盘挂在哪个 SOP 环下（内容判断），以及顶两层结构。
@@ -1447,7 +1476,20 @@ function realCogUid(u){
   }
   return (D.meth?.methods||[]).some(x=>x.uid===u)||(D.hist||[]).some(x=>x.uid===u);
 }
-function dragTarget(id){return realCogUid(id)||chainsOf().some(c=>c.id===id)}
+// SOP 和路线里的环节点（Continuity、Reflection、Compare……）有永久 UID，
+// 但它们是树的结构，不是认知：不能被合进演化链，只能当「移到这里」的目的地。
+function ringOf(id){
+  for(const [pid,P] of Object.entries(D.p||{})){
+    const pj=P.project||{};
+    const all=(pj.sop?.nodes||[]).concat(...(pj.tracks||[]).map(tk=>(tk.sops||[]).flatMap(so=>so.nodes||[])));
+    const n=all.find(x=>x&&x.uid===id&&x.id);
+    if(n)return {pid,ringId:n.id,name:n.name};
+  }
+  return null;
+}
+function mergeable(id){return realCogUid(id)&&!ringOf(id)}
+function dragTarget(id){return mergeable(id)||chainsOf().some(c=>c.id===id)}
+function dropTarget(id){return dragTarget(id)||!!ringOf(id)}
 function validateRels(next){
   for(const r of next.rels||[]){
     if(!realCogUid(r.from)||!realCogUid(r.to)||r.from===r.to)
@@ -1591,11 +1633,10 @@ function buildTree(){
   return TREE;
 }
 function rowNode(T,add,r,i,pid){
-  const cols=r.cols||{},det=[];
-  if(!cols["哪里不够用"]&&r.q)det.push(["哪里不够用",r.q]);
-  ["哪里不够用","碰现实了吗","为什么要改动","改了什么（第几版）","改后验证","假设","实验",
-   "做了什么","下一步","详细","对方","原预测","实际反应","假设更新"]
-    .forEach(k=>{if(cols[k])det.push([k,String(cols[k])])});
+  const cols=r.cols||{},det=[],pj=D.p[pid]?.project||{};
+  const LQ=pj.labels?.q||"哪里不够用";
+  if(!cols[LQ]&&r.q)det.push([LQ,r.q]);
+  rowColumns(pj,r).forEach(k=>{if(String(cols[k]??"").trim())det.push([k,String(cols[k])])});
   return add(r.uid,{name:(r.q||"").slice(0,40),status:ST_ROW(r.f),fs:r.f||"",d:r.date||"",
     detail:det,go:"row",arg:[r.date||"",i,pid].join("|")});
 }
@@ -1722,7 +1763,7 @@ async function saveRels(next,msg){
   // 保存前完整检查，写成功后才替换正式内存；失败保留所有已确认状态。
   try{validateRels(next);await put("rels.json",next,msg||"认知关系");
     D.rels=next;treeDirty();return true}
-  catch(e){toast("没能写回仓库，这次确认没算数："+e.message);return false}
+  catch(e){toast("没能写回仓库，这次修改没算数："+e.message);return false}
 }
 /* 合并成链：只用用户实际确认的那两个 UID，关系本身不存在链里。
    链里只有成员和名字；相邻两条之间显示什么，回 rels.json 查。 */
@@ -1780,7 +1821,7 @@ function bindCog(){
     const under=(x,y)=>{
       const el=document.elementFromPoint(x,y);
       const it=el&&el.closest?el.closest(".item"):null;
-      return it&&dragTarget(it.dataset.id)&&it.dataset.id!==drag.id?it:null;
+      return it&&dropTarget(it.dataset.id)&&it.dataset.id!==drag.id?it:null;
     };
     let ghost=null;
     const showGhost=(x,y)=>{
@@ -1833,6 +1874,7 @@ function bindCog(){
       const it=el&&el.closest?el.closest(".item"):null;
       if(!it){toast("没有落在任何认知上，再拖一次，叠到另一条上面再松手");return}
       if(it.dataset.id===d.id){toast("落回了自己身上，要叠到另一条上");return}
+      if(ringOf(it.dataset.id)){askMove(d.id,it.dataset.id);return}
       if(!dragTarget(it.dataset.id)){toast("这一行是结构分类，不是认知，不能合并");return}
       askDragRel(d.id,it.dataset.id);
     };
@@ -2002,7 +2044,7 @@ function askRel(from,to){
 }
 async function confirmRel(from,to,rel,opts){
   opts=opts||{};
-  if(!realCogUid(from)||!realCogUid(to)||from===to||!RELD[rel]){
+  if(!mergeable(from)||!mergeable(to)||from===to||!RELD[rel]){
     toast("非法关系端点或关系类型，未保存");return false;
   }
   const t=TREE||buildTree(),an=t.T[from]?.name||from,bn=t.T[to]?.name||to;
@@ -2051,6 +2093,59 @@ function findChainPath(id){
     const key=pre?pre+"/"+x:x;if(x===id){hit=key;return}
     w((t.T[x]||{}).children||[],key,anc.concat([x]))}})(t.roots,"",[]);
   return hit;
+}
+// 把一条认知（或一整条演化链）移到某个 SOP 节点下面。
+// 只改「挂在哪里」：认知的正文、编号、关系一个都不动。
+//   单条复盘 → cogtree.json 的 up[uid] = 环的 id
+//   演化链   → rels.json 里这条链的 parent = 环的节点 id
+function askMove(src,ringTree){
+  const r=ringOf(ringTree);if(!r)return;
+  const t=TREE||buildTree(),chain=chainsOf().find(c=>c.id===src);
+  const name=esc(t.T[src]?.name||src);
+  if(!chain){
+    const owner=Object.entries(D.p||{}).find(([,P])=>(P.rows||[]).some(x=>x.uid===src));
+    if(!owner)return toast("方法、历史记录、公司档案暂时不能挪位置，只有复盘认知和演化链可以");
+    if(owner[0]!==r.pid)return toast("「"+r.name+"」属于另一个项目，认知不能跨项目挪；要连起来请用「迁移」关系");
+  }
+  const from=parentIn(t,src),fromName=esc(t.T[from]?.name||"");
+  cogSheet('<div class="relq">移到这里</div>'+
+    '<div class="relarrow2"><b>'+name+'</b></div>'+
+    '<div class="relarrow2"><span>从</span><b>'+(fromName||"原位置")+'</b><span>移到</span><b>'+esc(r.name)+'</b></div>'+
+    '<div class="relq" style="font-weight:400;margin-top:6px">只改它挂在哪里，正文、编号和已有的关系都不变。</div>'+
+    '<div class="relfoot"><button class="relbtn cancel">取消</button><button class="relgo">移过去</button></div>',
+    (ev,m)=>{
+      if(ev.target.closest(".cancel")){m.remove();return}
+      if(ev.target.closest(".relgo")){m.remove();doMove(src,ringTree)}
+    });
+}
+async function doMove(src,ringTree){
+  const r=ringOf(ringTree);if(!r)return false;
+  const chain=chainsOf().find(c=>c.id===src);
+  const el=u=>{try{return document.querySelector('.cog .item[data-id="'+CSS.escape(u)+'"]')}catch(e){return null}};
+  const leaving=typeof document!=="undefined"?el(src):null;
+  if(leaving)leaving.classList.add("merging");
+  if(leaving)await new Promise(res=>setTimeout(res,330));
+  let ok=false;
+  if(chain){
+    const next=copyJSON(D.rels);
+    next.chains.find(c=>c.id===src).parent=ringTree;
+    ok=await saveRels(next,"移动演化链："+chain.name+" → "+r.name);
+  }else{
+    const before=D.cogtree,next=copyJSON(D.cogtree||{});
+    next.up=next.up||{};next.up[src]=r.ringId;
+    D.cogtree=next;treeDirty();
+    try{await put("cogtree.json",next,"移动认知："+src+" → "+r.name);ok=true}
+    catch(e){D.cogtree=before;treeDirty();toast("没能写回仓库，这次移动没算数："+e.message)}
+  }
+  if(!ok){if(leaving)leaving.classList.remove("merging");render();return false}
+  toast("已移到「"+r.name+"」");
+  const p=findChainPath(src);
+  if(p){const seg=p.split("/");for(let i=1;i<seg.length;i++)(S.topen=S.topen||{})[seg.slice(0,i).join("/")]=1}
+  render();
+  const n=el(src);
+  if(n){n.classList.add("merged");n.scrollIntoView({block:"center",behavior:"smooth"});
+    setTimeout(()=>n.classList.remove("merged"),600)}
+  return true;
 }
 function parentIn(t,id){for(const k in t.T)if((t.T[k].children||[]).includes(id))return k;return null}
 
@@ -2692,7 +2787,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-rpick],[data-relok],[data-chaingo],[data-cogjump],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-rpick],[data-relok],[data-coledit],[data-colsave],[data-colcancel],[data-coldel],[data-chaingo],[data-cogjump],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
   if(d.copysop){
     const id=S.arg||cur(),so=curSop(D.p[id]?.project);
@@ -2761,6 +2856,45 @@ document.addEventListener("click",async e=>{
     catch(err){P.rows.pop();return toast("新增失败："+err.message)}
     return go("row",date+"|"+i+"|"+id);
   }
+  if(d.coledit!=null){S.colEdit=+d.coledit;return render()}
+  if(d.colcancel){S.colEdit=null;return render()}
+  if(d.coldel!=null){
+    const box=t.closest(".row");const inp=box&&box.querySelector("[data-colname]");
+    const id=projId(),P=D.p[id],row=P&&P.rows[S.colEdit];
+    if(row&&String(row.cols?.[d.coldel]??"").trim())return toast("「"+d.coldel+"」这一栏有内容，先把内容清空再删");
+    if(box)box.remove();return;
+  }
+  if(d.colsave!=null){
+    const i=+d.colsave,id=projId(),P=D.p[id],row=P&&P.rows[i];if(!row)return;
+    const before=copyJSON(row);
+    const inputs=[...document.querySelectorAll("#coledit [data-colname]")];
+    const next=[],moves=[];
+    for(const el of inputs){
+      const nv=el.value.trim(),old=el.dataset.old||"";
+      if(!nv){if(old&&String(row.cols?.[old]??"").trim())return toast("「"+old+"」有内容，不能把名字清空");continue}
+      if(nv===PRI)continue;
+      if(next.includes(nv))return toast("栏目「"+nv+"」重复了");
+      next.push(nv);if(old&&old!==nv)moves.push([old,nv]);
+    }
+    if(!next.length)return toast("至少留一栏");
+    // 被删掉的旧栏目必须是空的（✕ 已经拦过一次，这里再兜一次底）
+    const kept=new Set(inputs.map(el=>el.dataset.old).filter(Boolean));
+    const dropped=rowColumns(P.project,row).filter(c=>!kept.has(c));
+    const lost=dropped.find(c=>String(row.cols?.[c]??"").trim());
+    if(lost)return toast("「"+lost+"」有内容，不能删");
+    row.cols=row.cols||{};
+    for(const [o,n] of moves){
+      if(String(row.cols[n]??"").trim()&&!moves.some(m=>m[0]===n))return toast("已经有一栏叫「"+n+"」并且有内容，换个名字");
+    }
+    const snap={...row.cols};
+    for(const [o] of moves)delete row.cols[o];
+    for(const [o,n] of moves)row.cols[n]=snap[o];
+    for(const c of dropped)delete row.cols[c];
+    row.columns=next.concat((before.columns||P.project.columns||[]).includes(PRI)?[PRI]:[]);
+    S.colEdit=null;
+    if(!(await saveRows(id,"改栏目："+next.join("／")))){P.rows[i]=before;render()}
+    return;
+  }
   if(d.rpick){S.relPick=S.relPick===null?"":null;return render()}
   if(d.ttoggle){S.topen=S.topen||{};S.topen[d.ttoggle]?delete S.topen[d.ttoggle]:S.topen[d.ttoggle]=1;return render()}
   if(d.tcollapse){S.topen={};return render()}
@@ -2777,10 +2911,12 @@ document.addEventListener("click",async e=>{
     const id=d.topen.split("/").pop(),n=(TREE||buildTree()).T[id];if(!n)return;
     // 触摸屏无 HTML5 拖放也可点选两端。结构节点不参与。
     if(S.relPick!==null){
-      if(!dragTarget(id))return toast("请点选有 UID 的认知或演化链");
-      if(!S.relPick){S.relPick=id;toast("请选择第二条认知");return}
+      if(!S.relPick){
+        if(!dragTarget(id))return toast("请先点选一条认知或演化链");
+        S.relPick=id;toast("再点一条认知（合并或连线），或点一个 SOP 节点（移到那里）");return}
+      if(!dropTarget(id))return toast("请点选认知、演化链或 SOP 节点");
       const first=S.relPick;S.relPick=null;render();
-      if(first!==id)return askDragRel(first,id);
+      if(first!==id)return ringOf(id)?askMove(first,id):askDragRel(first,id);
       return;
     }
     if(n.chain)return go("chain",id);
