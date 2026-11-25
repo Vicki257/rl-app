@@ -223,7 +223,10 @@ async function scenario(browser,device){
       const w=(id,pre,seen)=>{if(seen.includes(id))return;const k=pre?pre+"/"+id:id;S.topen[k]=1;
         (t.T[id]?.children||[]).forEach(x=>w(x,k,seen.concat(id)))};t.roots.forEach(r=>w(r,"",[]));render()});
     await page.waitForTimeout(400);
-    const anyRow=page.locator('#tree .item[data-id^="A"] > .line .node-label').first();
+    // 要挑一条真认知：SOP 节点（Continuity 等）有 UID 但是结构，本来就不能拖
+    const dragId0=await page.evaluate(()=>[...document.querySelectorAll("#tree .item")]
+      .find(x=>x.getClientRects().length&&dragTarget(x.dataset.id)&&!x.dataset.id.startsWith("chain-")).dataset.id);
+    const anyRow=page.locator('#tree .item[data-id="'+dragId0+'"] > .line .node-label');
     await anyRow.scrollIntoViewIfNeeded();await page.waitForTimeout(250);
     const src=await anyRow.boundingBox();
     const top=()=>page.evaluate(()=>document.body.scrollTop||document.scrollingElement.scrollTop);
@@ -236,6 +239,36 @@ async function scenario(browser,device){
     await page.mouse.up();await page.waitForTimeout(250);
     await page.evaluate(()=>document.querySelector(".relsheet")?.closest(".cog")?.remove());
     assert(y1>y0,device+": 拖到屏幕底边必须自动滚动，否则够不到屏幕外的节点（"+y0+" → "+y1+"）");
+  }
+  if(device!=="mobile"){
+    // 拖一条认知到 SOP 节点（这里用 Reflection）上 = 移到它下面，不是合并。
+    const ring=await page.evaluate(()=>{const n=(D.p.rl.project.sop.nodes||[]).find(x=>x.id==="reflection");return n&&n.uid});
+    assert(ring,"应读到 Reflection 节点");
+    await page.evaluate(()=>{const t=buildTree();S.topen={};
+      let path=null;(function f(ids,pre,seen){for(const x of ids){if(seen.includes(x))continue;const k=pre?pre+"/"+x:x;
+        if(x==="rl:rows"){path=k;return}f(t.T[x]?.children||[],k,seen.concat(x))}})(t.roots,"",[]);
+      path.split("/").forEach((_,i,a)=>S.topen[a.slice(0,i+1).join("/")]=1);
+      S.topen[path.replace(/rl:rows$/,"rl:sop")]=1;render()});
+    await page.waitForTimeout(300);
+    const mover=await page.evaluate(()=>[...document.querySelectorAll("#tree .item")].find(x=>
+      x.getClientRects().length&&D.p.rl.rows.some(r=>r.uid===x.dataset.id)&&!chainOfUid(x.dataset.id)).dataset.id);
+    await page.evaluate(id=>{const e=document.querySelector('#tree .item[data-id="'+id+'"]');e.scrollIntoView({block:"start"});
+      const b=document.scrollingElement.scrollTop?document.scrollingElement:document.body;b.scrollTop-=200},ring);
+    await page.waitForTimeout(250);
+    const mf=await page.locator('#tree .item[data-id="'+mover+'"] > .line .node-label').boundingBox();
+    const mt=await page.locator('#tree .item[data-id="'+ring+'"] > .line .node-label').boundingBox();
+    await page.mouse.move(mf.x+20,mf.y+mf.height/2);await page.mouse.down();
+    await page.mouse.move(mf.x+50,mf.y+mf.height/2,{steps:3});
+    await page.mouse.move(mt.x+20,mt.y+mt.height/2,{steps:10});
+    assert(await page.locator('#tree .item.dropok[data-id="'+ring+'"]').count()===1,
+      device+": 拖到 SOP 节点上必须高亮（它是移动目的地）");
+    await page.mouse.up();await page.waitForTimeout(300);
+    assert(/移到这里/.test(await page.locator(".relsheet").innerText()),device+": 拖到 SOP 节点上应弹「移到这里」，不是合并面板");
+    await page.locator(".relsheet .relgo").click();
+    await page.waitForFunction(()=>S.toast?.includes("已移到"));
+    assert(store.get("cogtree.json").up[mover]==="reflection",device+": 移动必须写回 cogtree.json 的新归属");
+    const parentNow=await page.evaluate(u=>{const t=buildTree();for(const k in t.T)if((t.T[k].children||[]).includes(u))return k},mover);
+    assert(parentNow===ring,device+": 移动后必须真的挂在 Reflection 下，实际 "+parentNow);
   }
   // 拒绝 PUT 时不得改变正式关系状态。
   denyWrites=true;

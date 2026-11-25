@@ -116,7 +116,9 @@ c.members.forEach(u=>{
 ok(chainOfUid(r.from)?.id===id,"应该能从认知找回它所在的链");
 // 关系查询必须认准这两个 UID，方向写死在 rels.json 里
 r.state="已确认";
-ok(relBetween(r.from,r.to)===r,"查这两个 UID 要拿回同一条关系");
+// 同一对 UID 之间可以不止一条关系（真实数据里就有：一条候选的修正、一条你确认过的继承），
+// 查询必须把这一条也带回来，不能只挑第一条。
+ok(relsBetween(r.from,r.to).includes(r),"查这两个 UID 要能拿回这一条关系");
 const outsider=Object.values(t2.T).find(x=>x.go&&x.id!==r.from&&x.id!==r.to);
 if(outsider)ok(!relBetween(r.from,outsider.id),"没确认过的两端之间不能凭空有关系");
 r.state="候选";
@@ -145,8 +147,9 @@ ok(evoRels.length>0,"应该有可以成链的演化关系");
     const seen=[];
     const ms=cB.members.slice().sort((x,y)=>{const a=(buildTree().T[x]||{}).d||"",b=(buildTree().T[y]||{}).d||"";
       return a&&b?(a<b?-1:a>b?1:0):a?-1:b?1:0});
-    for(let i=1;i<ms.length;i++){const rr=relBetween(ms[i-1],ms[i]);if(rr)seen.push(rr)}
-    const all=cB.members.flatMap((x,i)=>cB.members.slice(i+1).map(y=>relBetween(x,y))).filter(Boolean);
+    for(let i=1;i<ms.length;i++)seen.push(...relsBetween(ms[i-1],ms[i]));
+    // 一对之间可以有多条关系，全部取回来，不只取「恰好一条」的情况
+    const all=cB.members.flatMap((x,i)=>cB.members.slice(i+1).flatMap(y=>relsBetween(x,y)));
     ok(all.includes(r1),"用户确认过的那条关系必须还在链上找得到");
     all.forEach(rr=>ok(rr.state==="已确认","链上出现了没确认过的关系："+rr.from+"→"+rr.to));
     r1.state="候选";
@@ -241,7 +244,9 @@ ok(evoRels.length>0,"应该有可以成链的演化关系");
   const extra={from:r.from,to:r.to,rel:r.rel==="修正"?"支持":"修正",dir:"测试用",why:"测试用",state:"已确认"};
   const keep=r.state;r.state="已确认";D.rels.rels.push(extra);
   const all=relsBetween(r.from,r.to);
-  ok(all.length===2,"两条关系都要拿回来，实际 "+all.length);
+  // 期望值按数据现算：这一对在仓库里可能本来就有别的已确认关系
+  const expected=okRels().filter(x=>(x.from===r.from&&x.to===r.to)||(x.from===r.to&&x.to===r.from)).length;
+  ok(expected>=2&&all.length===expected,"这一对的全部已确认关系都要拿回来，应 "+expected+" 实际 "+all.length);
   ok(all.includes(r)&&all.includes(extra),"不能漏掉任何一条");
   D.rels.rels.pop();r.state=keep;
 }
