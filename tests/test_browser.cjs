@@ -214,6 +214,27 @@ async function scenario(browser,device){
   await page.locator('[data-tfocus]').click();
   assert(await page.locator('#tree .item.current[data-id="'+newId+'"]').isVisible(),
     device+": 刷新后仍能定位当前演化链");
+  if(device!=="mobile"){
+    // 拖到屏幕边缘要能自动滚动：树很长，目标经常不在同一屏，
+    // 而 elementFromPoint 对视口外的点返回 null，不滚就永远够不着。
+    await page.evaluate(()=>{S.topen={};const t=buildTree();
+      const w=(id,pre,seen)=>{if(seen.includes(id))return;const k=pre?pre+"/"+id:id;S.topen[k]=1;
+        (t.T[id]?.children||[]).forEach(x=>w(x,k,seen.concat(id)))};t.roots.forEach(r=>w(r,"",[]));render()});
+    await page.waitForTimeout(400);
+    const anyRow=page.locator('#tree .item[data-id^="A"] > .line .node-label').first();
+    await anyRow.scrollIntoViewIfNeeded();await page.waitForTimeout(250);
+    const src=await anyRow.boundingBox();
+    const top=()=>page.evaluate(()=>document.body.scrollTop||document.scrollingElement.scrollTop);
+    await page.mouse.move(src.x+20,src.y+src.height/2);await page.mouse.down();
+    await page.mouse.move(src.x+45,src.y+src.height/2,{steps:3});
+    const y0=await top();
+    await page.mouse.move(src.x+45,(await page.evaluate(()=>innerHeight))-20,{steps:6});
+    await page.waitForTimeout(700);
+    const y1=await top();
+    await page.mouse.up();await page.waitForTimeout(250);
+    await page.evaluate(()=>document.querySelector(".relsheet")?.closest(".cog")?.remove());
+    assert(y1>y0,device+": 拖到屏幕底边必须自动滚动，否则够不到屏幕外的节点（"+y0+" → "+y1+"）");
+  }
   // 拒绝 PUT 时不得改变正式关系状态。
   denyWrites=true;
   await page.evaluate(()=>{

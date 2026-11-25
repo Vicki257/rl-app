@@ -917,7 +917,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-11-25d";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-25e";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1735,6 +1735,25 @@ function bindCog(){
     const HOLD=320, MOVE=8;              // 手指要按住 320ms 才算拖，免得划不动页面
     const clear=()=>{tree.querySelectorAll(".dragging,.dropok")
       .forEach(n=>n.classList.remove("dragging","dropok"))};
+    // 拖到屏幕边缘时自动滚动：树很长，目标经常不在同一屏，
+    // 而 elementFromPoint 对视口外的点返回 null，不滚就永远够不着。
+    const EDGE=90,SPEED=14;let scroller=null;
+    const autoScroll=y=>{
+      const h=window.innerHeight;
+      const dir=y<EDGE?-1:(y>h-EDGE?1:0);
+      if(!dir){if(scroller){clearInterval(scroller);scroller=null}return}
+      if(scroller)return;
+      scroller=setInterval(()=>{
+        if(!drag||!drag.on){clearInterval(scroller);scroller=null;return}
+        const box=document.scrollingElement.scrollTop?document.scrollingElement:document.body;
+        box.scrollTop+=dir*SPEED;
+        if(drag.y2!=null){
+          tree.querySelectorAll(".dropok").forEach(n=>n.classList.remove("dropok"));
+          const t=under(drag.x2,drag.y2);if(t)t.classList.add("dropok");
+        }
+      },16);
+    };
+    const stopScroll=()=>{if(scroller){clearInterval(scroller);scroller=null}};
     const under=(x,y)=>{
       const el=document.elementFromPoint(x,y);
       const it=el&&el.closest?el.closest(".item"):null;
@@ -1766,13 +1785,15 @@ function bindCog(){
         else return;
       }
       drag.moved=true;e.preventDefault();
+      drag.x2=e.clientX;drag.y2=e.clientY;
+      autoScroll(e.clientY);
       tree.querySelectorAll(".dropok").forEach(n=>n.classList.remove("dropok"));
       const t=under(e.clientX,e.clientY);if(t)t.classList.add("dropok");
     },{passive:false});
     const finish=e=>{
       if(!drag||e.pointerId!==drag.pid)return;
       clearTimeout(drag.timer);
-      const d=drag;drag=null;clear();tree.classList.remove("nodrag-scroll");
+      const d=drag;drag=null;clear();stopScroll();tree.classList.remove("nodrag-scroll");
       if(!d.on||!d.moved)return;                           // 没真拖动过＝普通点击，交给原来的处理
       const el=document.elementFromPoint(e.clientX,e.clientY);
       const it=el&&el.closest?el.closest(".item"):null;
@@ -1787,7 +1808,7 @@ function bindCog(){
     tree.addEventListener("touchmove",e=>{if(drag&&drag.on)e.preventDefault()},{passive:false});
     tree.addEventListener("pointerup",finish);
     tree.addEventListener("pointercancel",e=>{if(drag&&e.pointerId===drag.pid){
-      clearTimeout(drag.timer);drag=null;clear();tree.classList.remove("nodrag-scroll")}});
+      clearTimeout(drag.timer);drag=null;clear();stopScroll();tree.classList.remove("nodrag-scroll")}});
     // 拖完松手那一下不要再当成「点开这条认知」
     tree.addEventListener("click",e=>{if(suppressClick){e.preventDefault();e.stopPropagation();}},true);
   }
