@@ -40,6 +40,9 @@ vm.runInContext(section("function widgetFrom(","/* ============ 导航")+
   section("function focusRow(P)","// 两个切换")+
   section("function topRowIdx(","function mainPage(")+
   section("function nightBlock(","const PRI=")+
+  // 行详情按「这一条自己的栏目」渲染，这个函数在认知树那一段里
+  (()=>{const a=html.indexOf("function rowColumns(pj,row){"),b=html.indexOf("\n}\n",a)+3;
+    assert(a>=0&&b>a,"function rowColumns");return html.slice(a,b)})()+
   section("async function pick(","async function setStatus(")+
   section("async function reanalyze(","function iter(")+
   "this.api={pick,setFocus,finishFocusSync,focusRow,focusRowOf,topRowIdx,rowPage,reanalyze}",ctx);

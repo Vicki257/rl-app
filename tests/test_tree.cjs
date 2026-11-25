@@ -60,8 +60,8 @@ const ctx={D,S:{},console,Date,Object,Array,JSON,Math,String,Number,Boolean,RegE
   topBar:()=>"",nav:()=>"",put:async()=>{},toast:()=>{},go:()=>{},render:()=>{},
 };
 vm.createContext(ctx);
-vm.runInContext(CODE+"\nthis.api={buildTree,mergeChain,relsOf,chainsOf,okRels,relBetween,relsBetween,relsTouching,chainOfUid,openPath,curUid,isEvo,realCogUid,validateRels,TREEOF:()=>TREE};",ctx);
-const {buildTree,mergeChain,relsOf,chainsOf,okRels,relBetween,relsBetween,relsTouching,chainOfUid,openPath,curUid,isEvo}=ctx.api;
+vm.runInContext(CODE+"\nthis.api={rowColumns,buildTree,mergeChain,relsOf,chainsOf,okRels,relBetween,relsBetween,relsTouching,chainOfUid,openPath,curUid,isEvo,realCogUid,validateRels,TREEOF:()=>TREE};",ctx);
+const {rowColumns,buildTree,mergeChain,relsOf,chainsOf,okRels,relBetween,relsBetween,relsTouching,chainOfUid,openPath,curUid,isEvo}=ctx.api;
 
 let n=0;const ok=(c,m)=>{assert(c,m);n++};
 const t=buildTree();
@@ -273,6 +273,30 @@ if(has){
        "rels.json 存在非法或悬空认知端点："+r.from+" → "+r.to);
   });
   ctx.api.validateRels(D.rels);ok(true,"真实关系和链 UID 安全校验通过");
+}
+// 有内容的字段永远要显示：每日思考迁过来的 7 条曾经因为字段名不在项目栏目里，
+// 页面上全是空的，看起来就像内容丢了。
+{
+  const pj={columns:["优先程度","为什么要改动","改了什么（第几版）"]};
+  const r1={cols:{"为什么要改动":"x","结论":"藏着的内容","空栏":""}};
+  const c1=rowColumns(pj,r1);
+  ok(c1.includes("结论"),"不在项目栏目里、但有内容的字段必须显示，实际 "+c1.join("／"));
+  ok(!c1.includes("空栏"),"空的非项目字段不必显示");
+  ok(!c1.includes("优先程度"),"优先程度在页头单独显示，不重复列出");
+  const r2={columns:["结论","依据与验证状态","优先程度"],cols:{"结论":"a","依据与验证状态":"b","为什么要改动":"旧"}};
+  const c2=rowColumns(pj,r2);
+  ok(c2[0]==="结论"&&c2[1]==="依据与验证状态","这一条有自己的栏目时按自己的顺序");
+  ok(c2.includes("为什么要改动"),"自己的栏目之外、仍有内容的字段也不能藏");
+  if(has){
+    const moved=(D.p.rl.rows||[]).filter(r=>r.from==="每日思考日志");
+    ok(moved.length===7,"从每日思考迁来的应是 7 条，实际 "+moved.length);
+    moved.forEach(r=>{
+      ok(!("详细" in (r.cols||{})),r.uid+" 不该再有揉成一团的「详细」");
+      const cs=rowColumns(D.p.rl.project,r);
+      ok(cs[0]==="结论"&&cs[1]==="依据与验证状态",r.uid+" 应按原日志的栏目显示，实际 "+cs.join("／"));
+      ok(String(r.cols["结论"]||"").trim(),r.uid+" 的「结论」不能是空的");
+    });
+  }
 }
 if(!has){
   const strict=process.env.TREE_TEST_REQUIRE_REAL_DATA==="1"||process.argv.includes("--require-real-data");

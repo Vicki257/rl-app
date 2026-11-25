@@ -679,7 +679,7 @@ function widgetFrom(id,P){
 }
 
 /* ============ 导航 ============ */
-function go(screen,arg){S.stack.push({screen:S.screen,arg:S.arg});S.screen=screen;S.arg=arg;S.open={};S.edit=false;render();window.scrollTo(0,0)}
+function go(screen,arg){S.stack.push({screen:S.screen,arg:S.arg});S.screen=screen;S.arg=arg;S.open={};S.edit=false;S.colEdit=null;render();window.scrollTo(0,0)}
 function back(){const b=S.stack.pop()||{screen:"today"};S.screen=b.screen;S.arg=b.arg;S.open={};S.edit=false;render()}
 function tab(s){S.stack=[];S.screen=s;S.arg=null;S.open={};S.edit=false;if(s!=="tree"){S.q=""}render();window.scrollTo(0,0)}
 const nav=a=>`<nav class="nav">${[["today","今天"],["plist","项目"],["tree","认知树"],["ilist","迭代"],["system","系统"]].map(([k,l])=>`<button data-tab="${k}" aria-current="${a===k}">${l}</button>`).join("")}</nav>`;
@@ -904,21 +904,38 @@ function rowIdx(P){
 function edr(i,k,v,ph,big){
   return `<div class="kv"><span class="k">${esc(k)}</span><div class="v ed${big?" big":""}" contenteditable data-ph="${esc(ph||"")}" data-rk="${i}|${esc(k)}">${esc(v||"")}</div></div>`;
 }
+function colEditor(i,pj,row){
+  const cols=rowColumns(pj,row);
+  return `<div class="kv" id="coledit" style="border-top:1px solid var(--line);padding-top:12px;margin-top:8px">
+    <span class="k">这一条的栏目</span>
+    <div class="small" style="margin:2px 0 8px">改名会把内容一起带过去；有内容的栏目要先清空才能删。只改这一条，不影响别的记录。</div>
+    ${cols.map(c=>`<div class="row" style="gap:6px;margin-bottom:6px">
+      <input class="srch" style="margin:0;flex:1" data-colname data-old="${esc(c)}" value="${esc(c)}">
+      <button class="back" data-coldel="${esc(c)}" title="删掉这一栏">✕</button></div>`).join("")}
+    <div class="row" style="gap:6px;margin-bottom:10px">
+      <input class="srch" style="margin:0;flex:1" data-colname data-old="" placeholder="加一栏，比如「结论」「下一步」">
+    </div>
+    <div class="row" style="gap:8px"><button class="btn" data-colsave="${i}">保存栏目</button>
+      <button class="btn ghost" data-colcancel="1">取消</button></div>
+  </div>`;
+}
 function rowPage(){
   const a3=String(S.arg||"").split("|")[2];
   const id=(a3&&D.p[a3])?a3:cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
   const i=rowIdx(P),row=P.rows[i];if(!row) return `<div class="center">这一条不在了</div>`;
-  const pj=P.project,cols=(pj.columns||[]).filter(c=>c!==PRI);
+  const pj=P.project,cols=rowColumns(pj,row);
   const LF=pj.labels?.f||"今日发现",LQ=pj.labels?.q||"留给明天的问题";
   const isSt=(pj.labels?.f||"")==="状态";
+  // 状态值不在本项目的四档里（比如从每日思考迁来的「已记录」），也要显示出来，不能一个都不亮
+  const stOpts=stsOf(pj).concat(row.f&&!stsOf(pj).includes(row.f)?[row.f]:[]);
   return `<div class="body">${topBar("",pj.name)}
     <div class="row" style="flex-wrap:wrap;gap:8px">
-      <span class="meta">${row.date}${isFocusRow(P,row)?" · 当前问题来自这一条":""}</span>
+      <span class="meta">${row.date}${row.from?" · 来自"+esc(row.from):""}${isFocusRow(P,row)?" · 当前问题来自这一条":""}</span>
       <span class="pw" style="margin-left:auto">优先 <input class="pin" value="${esc(row.cols?.[PRI]||"")}" placeholder="–" data-pri="${i}" inputmode="decimal"> / 10</span>
     </div>
     <div class="card">
       ${isSt?`<div class="kv"><span class="k">${esc(LF)}</span><div class="row" style="flex-wrap:wrap;gap:7px;margin-top:3px">
-        ${stsOf(pj).map(k=>`<button class="fp${row.f===k?" on":""}" data-setst="${i}|${k}">${k}</button>`).join("")}</div></div>`
+        ${stOpts.map(k=>`<button class="fp${row.f===k?" on":""}" data-setst="${i}|${esc(k)}">${esc(k)}</button>`).join("")}</div></div>`
         :edr(i,LF,row.f,"",true)}
       ${edr(i,LQ,row.q,"",true)}
       ${cols.map(c=> c===REALC
@@ -926,6 +943,7 @@ function rowPage(){
             ${["有","无"].map(v=>`<button class="fp${(row.cols?.[c]||"")===v?" on":""}" data-setreal="${i}|${v}">${v}</button>`).join("")}
             <span class="meta" style="margin-left:4px">有＝这次改动是现实逼出来的</span></div></div>`
         : edr(i,c,row.cols?.[c],"")).join("")}
+      ${S.colEdit===i?colEditor(i,pj,row):`<button class="back" data-coledit="${i}" style="margin-top:6px">改这一条的栏目</button>`}
     </div>
     <div class="h2">夜间分析</div>
     <div class="card" style="padding:4px 14px">${nightBlock(P,row,i)}</div>
@@ -940,7 +958,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-11-25g";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-25h";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -959,7 +977,8 @@ function rowsTable(id,P,selIdx){
       <td data-go="row" data-arg="${r.date}|${ix(r)}|${id}"><span class="pill ${stCls(r.f)}">${esc(r.f)}</span></td>
       <td class="meta" data-go="row" data-arg="${r.date}|${ix(r)}|${id}">${r.date.slice(5).replace("-","/")}</td>
       <td data-go="row" data-arg="${r.date}|${ix(r)}|${id}"><span class="cell">${esc(r.q)}</span></td>
-      ${cols.slice(0,2).map(c=>`<td data-go="row" data-arg="${r.date}|${ix(r)}|${id}"><span class="cell">${esc(r.cols?.[c]||"—")}</span></td>`).join("")}</tr>`).join("")
+      ${cols.slice(0,2).map((c,j)=>{const rc=rowColumns(pj,r)[j]||c,tag=rc!==c?rc+"：":"";
+        return `<td data-go="row" data-arg="${r.date}|${ix(r)}|${id}"><span class="cell">${esc(r.cols?.[rc]?tag+r.cols[rc]:"—")}</span></td>`}).join("")}</tr>`).join("")
       ||'<tr><td colspan="6" class="meta" style="padding:14px 10px">这一类现在没有</td></tr>'}
   </tbody></table></div>
   <button class="btn ghost" data-savepri="${esc(id)}" style="display:${S.priDirty?"":"none"}">保存优先分</button>`;
@@ -967,7 +986,8 @@ function rowsTable(id,P,selIdx){
 function filterBar(id,P){
   const cnt={};P.rows.forEach(r=>cnt[r.f]=(cnt[r.f]||0)+1);
   return `<div class="row" style="flex-wrap:wrap;gap:8px">
-    ${stsOf(P.project).filter(k=>cnt[k]).map(k=>`<button class="fp${S.filter===k?" on":""}" data-filter="${k}"><b>${cnt[k]}</b>${k}</button>`).join("")}
+    ${stsOf(P.project).concat(Object.keys(cnt).filter(k=>k&&!stsOf(P.project).includes(k)))
+      .filter(k=>cnt[k]).map(k=>`<button class="fp${S.filter===k?" on":""}" data-filter="${esc(k)}"><b>${cnt[k]}</b>${esc(k)}</button>`).join("")}
     <button class="fp" style="margin-left:auto" data-addrow>＋ 新增</button></div>`;
 }
 function listPage(){
@@ -1395,6 +1415,15 @@ function ML(){return (D.meth?.methods||[]).filter(m=>!m.archived)}
 function findM(id){return (D.meth?.methods||[]).find(m=>m.id===id)}
 
 /* ============ 认知树 ============ */
+// 一条记录显示哪些栏目：它自己有 columns 就用自己的（每条可以不一样），否则用项目的。
+// 不管哪种，cols 里只要有内容、却不在栏目表里的字段，都追加在后面显示——
+// 内容存在但页面不显示，看起来就像丢了（每日思考迁过来那 7 条就是这样）。
+function rowColumns(pj,row){
+  const own=Array.isArray(row.columns)&&row.columns.length;
+  const base=(own?row.columns:(pj.columns||[])).filter(c=>c!=="优先程度");
+  const extra=Object.keys(row.cols||{}).filter(k=>k!=="优先程度"&&!base.includes(k)&&String(row.cols[k]??"").trim());
+  return base.concat(extra);
+}
 /* 树不另存一份。每次从已经载入的项目、方法、历史现算，所以不会和仓库里的数据脱节。
    只有两样东西算不出来，放在 data/cogtree.json：
    rl 的复盘挂在哪个 SOP 环下（内容判断），以及顶两层结构。
@@ -1604,11 +1633,10 @@ function buildTree(){
   return TREE;
 }
 function rowNode(T,add,r,i,pid){
-  const cols=r.cols||{},det=[];
-  if(!cols["哪里不够用"]&&r.q)det.push(["哪里不够用",r.q]);
-  ["哪里不够用","碰现实了吗","为什么要改动","改了什么（第几版）","改后验证","假设","实验",
-   "做了什么","下一步","详细","对方","原预测","实际反应","假设更新"]
-    .forEach(k=>{if(cols[k])det.push([k,String(cols[k])])});
+  const cols=r.cols||{},det=[],pj=D.p[pid]?.project||{};
+  const LQ=pj.labels?.q||"哪里不够用";
+  if(!cols[LQ]&&r.q)det.push([LQ,r.q]);
+  rowColumns(pj,r).forEach(k=>{if(String(cols[k]??"").trim())det.push([k,String(cols[k])])});
   return add(r.uid,{name:(r.q||"").slice(0,40),status:ST_ROW(r.f),fs:r.f||"",d:r.date||"",
     detail:det,go:"row",arg:[r.date||"",i,pid].join("|")});
 }
@@ -2759,7 +2787,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-rpick],[data-relok],[data-chaingo],[data-cogjump],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-rpick],[data-relok],[data-coledit],[data-colsave],[data-colcancel],[data-coldel],[data-chaingo],[data-cogjump],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
   if(d.copysop){
     const id=S.arg||cur(),so=curSop(D.p[id]?.project);
@@ -2827,6 +2855,45 @@ document.addEventListener("click",async e=>{
     try{await put(`projects/${id}/rows.json`,P.rows,"新增记录");}
     catch(err){P.rows.pop();return toast("新增失败："+err.message)}
     return go("row",date+"|"+i+"|"+id);
+  }
+  if(d.coledit!=null){S.colEdit=+d.coledit;return render()}
+  if(d.colcancel){S.colEdit=null;return render()}
+  if(d.coldel!=null){
+    const box=t.closest(".row");const inp=box&&box.querySelector("[data-colname]");
+    const id=projId(),P=D.p[id],row=P&&P.rows[S.colEdit];
+    if(row&&String(row.cols?.[d.coldel]??"").trim())return toast("「"+d.coldel+"」这一栏有内容，先把内容清空再删");
+    if(box)box.remove();return;
+  }
+  if(d.colsave!=null){
+    const i=+d.colsave,id=projId(),P=D.p[id],row=P&&P.rows[i];if(!row)return;
+    const before=copyJSON(row);
+    const inputs=[...document.querySelectorAll("#coledit [data-colname]")];
+    const next=[],moves=[];
+    for(const el of inputs){
+      const nv=el.value.trim(),old=el.dataset.old||"";
+      if(!nv){if(old&&String(row.cols?.[old]??"").trim())return toast("「"+old+"」有内容，不能把名字清空");continue}
+      if(nv===PRI)continue;
+      if(next.includes(nv))return toast("栏目「"+nv+"」重复了");
+      next.push(nv);if(old&&old!==nv)moves.push([old,nv]);
+    }
+    if(!next.length)return toast("至少留一栏");
+    // 被删掉的旧栏目必须是空的（✕ 已经拦过一次，这里再兜一次底）
+    const kept=new Set(inputs.map(el=>el.dataset.old).filter(Boolean));
+    const dropped=rowColumns(P.project,row).filter(c=>!kept.has(c));
+    const lost=dropped.find(c=>String(row.cols?.[c]??"").trim());
+    if(lost)return toast("「"+lost+"」有内容，不能删");
+    row.cols=row.cols||{};
+    for(const [o,n] of moves){
+      if(String(row.cols[n]??"").trim()&&!moves.some(m=>m[0]===n))return toast("已经有一栏叫「"+n+"」并且有内容，换个名字");
+    }
+    const snap={...row.cols};
+    for(const [o] of moves)delete row.cols[o];
+    for(const [o,n] of moves)row.cols[n]=snap[o];
+    for(const c of dropped)delete row.cols[c];
+    row.columns=next.concat((before.columns||P.project.columns||[]).includes(PRI)?[PRI]:[]);
+    S.colEdit=null;
+    if(!(await saveRows(id,"改栏目："+next.join("／")))){P.rows[i]=before;render()}
+    return;
   }
   if(d.rpick){S.relPick=S.relPick===null?"":null;return render()}
   if(d.ttoggle){S.topen=S.topen||{};S.topen[d.ttoggle]?delete S.topen[d.ttoggle]:S.topen[d.ttoggle]=1;return render()}
