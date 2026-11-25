@@ -15,26 +15,48 @@ const D={index,p:Object.fromEntries(index.map(x=>[x.id,{project:J("projects/"+x.
 const ids=(D.p.rl?.rows||[]).filter(x=>x.uid).map(x=>x.uid);
 assert(ids.length>=5,"缺少至少五条真实 UID 认知");
 const [a,b,c,d,e]=ids;
-let writes=[],fail=false;
+let writes=[],fail=false,nativeDialogs=0;
 const ctx={D,S:{},console,Date,JSON,Object,Array,Math,Set,String,Number,Boolean,RegExp,
  copyJSON:x=>JSON.parse(JSON.stringify(x)),esc:x=>String(x??""),cur:()=>D.global.current,
  trF:(o,k)=>o[k]||"",focusRowOf:P=>P.rows[0],curRow:P=>P.rows[0],
- topBar:()=>"",nav:()=>"",confirm:()=>true,prompt:()=>"新链",toast:()=>{},render:()=>{},
+ topBar:()=>"",nav:()=>"",confirm:()=>{nativeDialogs++;return true},prompt:()=>{nativeDialogs++;return "新链"},toast:()=>{},render:()=>{},
  put:async(p,x)=>{if(fail)throw Error("模拟远端保存失败");writes.push(JSON.parse(JSON.stringify(x)))}
 };
 vm.createContext(ctx);
 vm.runInContext(html.slice(start,end)+"\nthis.api={buildTree,realCogUid,dragTarget,treeNode,askDragRel,confirmRel,saveRels,validateRels}",ctx);
-vm.runInContext('cogSheet=(html,handler)=>{this.modal={html,click:(key,value)=>{const btn={dataset:{[key]:String(value)},classList:{contains:()=>false}};handler({target:{closest:()=>btn}},{remove(){}})}};return {}}',ctx);
+// 拖完只弹一个面板：选成员（拖到链上时）、选关系、看方向（可反转）、给新链取名、确认。
+// 这里用一个最小的假 DOM 驱动它；handler 用 closest(选择器) 判断点的是什么。
+vm.runInContext(`cogSheet=(html,handler)=>{
+  const fake=()=>({hidden:false,innerHTML:"",value:"",textContent:"",disabled:false,dataset:{},
+    classList:{toggle(){},add(){},remove(){},contains:()=>false},focus(){}});
+  const els={};const m={querySelector:sel=>els[sel]||(els[sel]=fake()),querySelectorAll:()=>[],remove(){m.gone=true}};
+  this.modal={html,m,click:(kind,ds)=>{const btn=Object.assign(fake(),{dataset:ds||{}});
+    handler({target:{closest:sel=>sel===kind?btn:null}},m)}};
+  return m}`,ctx);
 const api=ctx.api,tick=()=>new Promise(r=>setTimeout(r,5));let count=0;
 function ok(v,m){assert(v,m);count++}
 function reset(chains=[]){D.rels={rels:[{from:a,to:b,rel:"关联",state:"已确认",why:"之前确认"}],chains:JSON.parse(JSON.stringify(chains))};
  writes=[];fail=false;ctx.modal=null;api.buildTree()}
-function click(k,v){ok(!!ctx.modal,"必须展示选择窗口");ctx.modal.click(k,v)}
+function click(kind,ds){ok(!!ctx.modal,"必须展示选择窗口");ctx.modal.click(kind,ds)}
+// 面板里的方向默认按记录时间（早的在前）。要得到指定方向就按需点一次「反过来」。
+const dOf=u=>(api.buildTree().T[u]||{}).d||"";
+const byDate=(x,y)=>{const a1=dOf(x),b1=dOf(y);return a1&&b1?(a1<b1?-1:a1>b1?1:0):a1?-1:b1?1:0};
+function finish(rel,from,to,name){
+  click(".relbtn[data-i]",{i:String(["推翻","修正","继承","迁移","支持","关联"].indexOf(rel))});
+  const def=[from,to].sort(byDate);
+  if(def[0]!==from)click(".relswap");
+  ctx.modal.m.querySelector(".chainname").value=name||"新链";
+  click(".relgo");
+}
 function check(){api.validateRels(D.rels);ok(D.rels.rels.every(x=>api.realCogUid(x.from)&&api.realCogUid(x.to)),"关系两端是真 UID");
  ok(D.rels.rels.some(x=>x.from===a&&x.to===b&&x.state==="已确认"),"保留原有已确认关系")}
 (async()=>{
  // A：两条认知之间，先选择六种关系，再明确方向。
- reset();api.askDragRel(c,d);click("i",1);click("dir",0);await tick();
+ nativeDialogs=0;
+ reset();api.askDragRel(c,d);finish("修正",c,d);await tick();
+ // 原生 confirm()/prompt() 会被一些浏览器环境静默拦截，返回空值，
+ // 结果就是「拖上去了但什么都没发生」。拖动这条路上一次都不许用。
+ ok(nativeDialogs===0,"拖动合并不得调用原生 confirm/prompt，实际 "+nativeDialogs+" 次");
  ok(D.rels.rels.some(x=>x.from===c&&x.to===d&&x.rel==="修正"),"A 未保存真正 UID");
  ok(D.rels.chains.length===1,"A 不得产生重复链");check();
  // 真数据中的同日「关联」没有方向；反过来点选仍应确认原候选并保留证据。
@@ -48,15 +70,15 @@ function check(){api.validateRels(D.rels);ok(D.rels.rels.every(x=>api.realCogUid
  ok(linked[0].state==="已确认"&&linked[0].why===association.why,"应确认原候选并保留原文依据");
 // B：C 拖到 A→B 链，先选 B，再确认 B→C。
  reset([{id:"chain-a",name:"A 到 B",parent:"proj:rl",members:[a,b]}]);
- api.askDragRel(c,"chain-a");ok(ctx.modal.html.includes("data-member"),"B 必须选择链内成员");
- click("member",1);click("i",1);click("dir",1);await tick();
+ api.askDragRel(c,"chain-a");ok(ctx.modal.html.includes("data-pick"),"B 必须选择链内成员");
+ click("[data-pick]",{pick:"b",u:b});finish("修正",b,c);await tick();
  ok(D.rels.rels.some(x=>x.from===b&&x.to===c&&x.rel==="修正"),"B 必须保存 B.uid→C.uid");
  ok(D.rels.chains.length===1&&new Set(D.rels.chains[0].members).size===3,"B 接长原链不重复");check();
  // C：双链先各选一个 UID，仍不得自动合并两条分支。
  reset([{id:"chain-a",name:"链甲",parent:"proj:rl",members:[a,b]},
  {id:"chain-b",name:"链乙",parent:"proj:rl",members:[c,d]}]);
- api.askDragRel("chain-a","chain-b");click("member",0);click("member",1);
- click("i",1);click("dir",0);await tick();
+ api.askDragRel("chain-a","chain-b");click("[data-pick]",{pick:"a",u:a});click("[data-pick]",{pick:"b",u:d});
+ finish("修正",a,d);await tick();
  ok(D.rels.rels.some(x=>x.from===a&&x.to===d&&x.rel==="修正"),"C 关系端点必须双选真实 UID");
  ok(D.rels.chains.length===2&&D.rels.chains.some(x=>x.id==="chain-a")&&D.rels.chains.some(x=>x.id==="chain-b"),"C 禁止自动合并分支");check();
  // 候选列表确认 B→C：两条已有演化链保持独立，只确认这一条关系。

@@ -27,7 +27,8 @@ async function scenario(browser,device){
   const rels=read("rels.json");
   rels.chains=[{id:"chain-browser",name:"测试既有链",parent:"proj:rl",members:[focus,selected]}];
   store.set("rels.json",rels);
-  page.on("dialog",d=>d.accept(d.type()==="prompt"?"浏览器测试演化链":undefined));
+  let dialogCount=0;
+  page.on("dialog",d=>{dialogCount++;d.accept(d.type()==="prompt"?"浏览器测试演化链":undefined)});
   await page.route("https://fonts.googleapis.com/**",r=>r.abort());
   await page.route("https://fonts.gstatic.com/**",r=>r.abort());
   await page.route("https://api.github.com/**",async route=>{
@@ -186,9 +187,8 @@ async function scenario(browser,device){
   const trace=await page.evaluate(()=>({events:window.__dragTrace,
     dialog:!!document.querySelector(".relsheet")}));
   assert(trace.dialog,device+": 真实指针拖放未弹出选择框："+JSON.stringify(trace.events));
-  await page.locator(".relsheet [data-member='1']").click();
-  await page.locator(".relsheet [data-i='1']").click(); // 修正
-  await page.locator(".relsheet [data-dir='1']").click(); // B → C
+  const dialogsBefore=dialogCount;
+  await sheetFinish(page,{pickB:selected,rel:"修正",from:selected,to:target});
   // 合并动画：两条认知要先塌下去，人才看得见「它们被合进链里了」。
   // CSS 一直都在，但有一阵子没有任何代码去加这两个 class，动画就静默消失了。
   const sank=await page.waitForFunction(
@@ -196,6 +196,8 @@ async function scenario(browser,device){
     .then(h=>h.jsonValue()).catch(()=>0);
   assert(sank>0,device+": 合并时两条认知必须有塌陷动画，不能瞬间消失");
   await page.waitForFunction(()=>document.querySelector(".toast")?.textContent?.includes("已写回仓库"));
+  // 原生 confirm()/prompt() 在一些浏览器环境里会被静默拦截，于是「拖上去了却什么都没发生」
+  assert(dialogCount===dialogsBefore,device+": 拖动合并全程不得弹原生 confirm/prompt，实际弹了 "+(dialogCount-dialogsBefore)+" 次");
   const popped=await page.waitForFunction(
     ()=>document.querySelectorAll("#tree .item.merged").length,{timeout:3000})
     .then(h=>h.jsonValue()).catch(()=>0);
@@ -259,9 +261,7 @@ async function scenario(browser,device){
   const countBefore=store.get("rels.json").rels.length;
   await page.locator('#tree .item[data-id="'+outsider+'"] > .line > .name')
     .dragTo(page.locator('#tree .item[data-id="'+newId+'"] > .line > .name'));
-  await page.locator(".relsheet [data-member='0']").click();
-  await page.locator(".relsheet [data-i='4']").click(); // 支持：横向
-  await page.locator(".relsheet [data-dir='0']").click();
+  await sheetFinish(page,{pickB:focus,rel:"支持"}); // 横向关系
   await page.waitForFunction(()=>S.toast?.includes("没能写回仓库"));
   assert(store.get("rels.json").rels.length===countBefore,device+": 失败保存不应修改正式数据");
   console.log("保存失败诊断："+JSON.stringify({putCount:writeCount,toast:await page.evaluate(()=>S.toast)}));
@@ -272,10 +272,11 @@ async function scenario(browser,device){
   await activate(page.locator('[data-rpick]'));
   await activate(page.locator('#tree .item[data-id="'+newId+'"] > .line > .name'));
   await activate(page.locator('#tree .item[data-id="'+outsider+'"] > .line > .name'));
-  await activate(page.locator(".relsheet [data-member='0']"));
-  await activate(page.locator(".relsheet [data-i='5']")); // 关联，不改变归属
+  await sheetFinish(page,{pickA:focus,rel:"关联",tap:device==="mobile"}); // 关联，不改变归属
   await page.waitForFunction(()=>S.toast?.includes("已写回仓库"));
-  assert(store.get("rels.json").rels.some(r=>r.from===focus&&r.to===outsider&&r.rel==="关联"),
+  // 关联没有方向，哪头在前都对
+  assert(store.get("rels.json").rels.some(r=>r.rel==="关联"&&
+    ((r.from===focus&&r.to===outsider)||(r.from===outsider&&r.to===focus))),
     device+": 触摸点选必须建立真实 UID 关系");
   console.log("Chromium "+device+" 真实触摸 tap 点选建立关系通过");
 
@@ -461,6 +462,24 @@ async function scenario(browser,device){
   console.log("Chromium "+device+"：方法增改归档、正式补充、触摸点选、部分失败恢复通过");
   await context.close();
   console.log("Chromium "+device+"：当前定位、链成员拖动、方向、保存、刷新与失败回滚通过");
+}
+
+// 拖完/点选完只弹一个面板。这里按用户真实点法驱动它：
+// 选链里的成员 → 选关系 → 方向不对就点「反过来」→ 新链没名字就填 → 点确认。
+async function sheetFinish(page,{pickA,pickB,rel,from,to,tap}){
+  const act=loc=>tap?loc.tap():loc.click();
+  if(pickA)await act(page.locator('.relsheet [data-pick="a"][data-u="'+pickA+'"]'));
+  if(pickB)await act(page.locator('.relsheet [data-pick="b"][data-u="'+pickB+'"]'));
+  const i=["推翻","修正","继承","迁移","支持","关联"].indexOf(rel);
+  await act(page.locator('.relsheet .relbtn[data-i="'+i+'"]'));
+  if(rel!=="关联"&&from){
+    const right=await page.evaluate(f=>{const b=document.querySelector(".relsheet .relarrow2 b");
+      return !!b&&b.textContent===buildTree().T[f].name},from);
+    if(!right)await act(page.locator(".relsheet .relswap"));
+  }
+  const nameBox=page.locator(".relsheet .chainname");
+  if(await nameBox.isVisible()&&!(await nameBox.inputValue()))await nameBox.fill("浏览器测试演化链");
+  await act(page.locator(".relsheet .relgo"));
 }
 (async()=>{await listen();const browser=await chromium.launch({headless:true});
   try{await scenario(browser,"desktop");await scenario(browser,"mobile")}

@@ -288,7 +288,30 @@ tr.add:hover>td{background:var(--accentSoft)}
 .cog{color-scheme:light;--bg:#f9f9f7;--paper:#fff;--ink:#262a29;--muted:#858b88;--line:#e7e9e5;--green:#087841;--yellow:#ad8000;--red:#d92f35;--gray:#797f7c;--yellow-bg:#fff8d9;--hover:#f7f8f5;--indent:25px}
 .cog *{box-sizing:border-box}.cog{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}.cog button{font:inherit;color:inherit;cursor:pointer}.cog button:focus-visible{outline:2px solid #d6a800;outline-offset:3px}.cog{max-width:930px;margin:0 auto;padding:36px 34px 52px}.cog header{display:flex;justify-content:space-between;align-items:center;margin:0 0 22px}.cog h1{font-size:23px;letter-spacing:-.03em;margin:0;font-weight:700}.cog .sub{color:var(--muted);font-size:12px;margin-top:4px}.cog .tools{display:flex;gap:6px}.cog .tool{border:1px solid var(--line);background:var(--paper);border-radius:9px;padding:7px 11px;font-size:12px;white-space:nowrap}.cog .tool:hover{background:var(--hover)}.cog .canvas{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px 27px 30px;box-shadow:0 3px 17px #202c1d04}.cog .root{font-size:19px;font-weight:750;margin:0 0 16px;letter-spacing:-.025em}.cog .branch{margin-left:var(--indent);position:relative}.cog .branch:before{content:"";position:absolute;top:0;bottom:19px;left:8px;border-left:1px solid var(--line)}.cog .branch>.item{position:relative}.cog .line{display:flex;align-items:center;min-height:40px;gap:7px;border-radius:8px;position:relative;padding:5px 8px 5px 0}
 .cog .line{touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.cog #tree.nodrag-scroll,.cog #tree.nodrag-scroll .line{touch-action:none}.cog .line:hover{background:var(--hover)}.cog .toggle{display:grid;place-items:center;width:19px;height:26px;border:0;background:none;padding:0;flex:none;color:#7e8780}.cog .toggle svg{width:13px;height:13px;transition:transform .15s}.cog .toggle[aria-expanded="true"] svg{transform:rotate(90deg)}.cog .toggle:disabled{cursor:default;visibility:hidden}.cog .name{display:flex;align-items:center;gap:8px;min-width:0;text-align:left;flex:1;border:0;background:none;padding:3px 0;line-height:1.6;font-weight:530}.cog .name span:last-child{min-width:0;overflow-wrap:anywhere}.cog .struct .name{font-weight:650}.cog .active .name{color:var(--yellow)}.cog .done .name{color:var(--green)}.cog .failed .name{color:var(--red)}.cog .pending .name{color:var(--gray)}.cog .status-icon{width:16px;height:16px;flex:none;display:block;color:inherit}.cog .status-icon svg{display:block;width:100%;height:100%}.cog .active .name,.cog .done .name,.cog .failed .name,.cog .pending .name{font-weight:550}.cog .name .node-label{min-width:0;overflow-wrap:anywhere}.cog .current .name{display:block;padding:7px 0}.cog .current .current-heading{display:block;font-size:11px;font-weight:650;letter-spacing:.03em;margin-bottom:4px;color:inherit}.cog .current .current-title{display:flex;align-items:center;gap:8px}.cog .current .current-question{display:block;color:var(--ink);font-size:13px;font-weight:500;margin:4px 0 0 24px}.cog .current .line{border:1px solid color-mix(in srgb,var(--yellow) 35%,var(--line));padding-left:3px;align-items:center}.cog .current .line:before{display:none}.cog .current .line:hover{background:var(--yellow-bg)}.cog .current .line{background:var(--yellow-bg)}.cog .current .line:before{content:"";position:absolute;left:-2px;top:7px;bottom:7px;width:3px;background:#e8ba15;border-radius:3px}.cog .flag{font-size:11px;font-weight:650;white-space:nowrap;color:#947000}.cog .alias{color:var(--muted);display:flex;flex:none;align-items:center}.cog .alias svg{width:14px;height:14px}.cog .detail{margin:3px 5px 12px 27px;padding:13px 15px;background:#fafbf9;border-left:2px solid #d9dfd7;border-radius:0 9px 9px 0;color:#47524b;font-size:13px}.cog .detail p{margin:0 0 10px}.cog .detail p:last-child{margin:0}.cog .detail strong{color:#29332d;display:block;font-size:12px;margin-bottom:3px}.cog .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding:18px 3px 0}.cog .legend span{display:flex;align-items:center;gap:6px}.cog .legend i{width:8px;height:8px;border-radius:50%;background:var(--c)}.cog .legend .empty i{background:transparent;border:1px solid var(--gray)}.cog .note{font-size:11px;color:var(--muted);margin:15px 3px 0}.cog .topbranch>.line .name{font-size:16px}.cog .topbranch:not(:first-child){margin-top:4px}.cog .children[hidden],.cog .detail[hidden]{display:none}.cog .next .flag{color:var(--gray)}
+.cog #tree.nodrag-scroll,.cog #tree.nodrag-scroll .line{touch-action:none}
+.cog .line,.cog .line *{-webkit-user-drag:none}
+.cog .relgroup{display:grid;gap:6px;margin-top:4px}
+.cog .relgh{font-size:12.5px;font-weight:650;color:var(--ink);margin:6px 0 1px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.cog .relgh em{font-style:normal;font-weight:400;color:var(--muted);font-size:11.5px}
+.cog .relbtn.on{border-color:var(--yellow);background:var(--yellow-bg)}
+.cog .relchips{display:flex;flex-wrap:wrap;gap:6px}
+.cog .relchip{border:1px solid var(--line);background:none;border-radius:999px;padding:5px 11px;font-size:12.5px;max-width:100%;text-align:left}
+.cog .relchip.on{border-color:var(--yellow);background:var(--yellow-bg);font-weight:600}
+.cog .reldir{border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
+.cog .relarrow2{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;line-height:1.5}
+.cog .relarrow2 span{color:var(--muted);font-weight:600}
+.cog .relswap{margin-top:7px;border:1px dashed var(--line);background:none;border-radius:8px;padding:4px 11px;font-size:12px;color:var(--muted)}
+.cog .relfoot{display:flex;gap:8px;margin-top:8px}
+.cog .relfoot .cancel{flex:1}
+.cog .relgo{flex:2;border:0;border-radius:11px;padding:11px 14px;font-size:14px;font-weight:650;background:var(--ink);color:var(--paper)}
+.cog .relgo:disabled{opacity:.35}
+.cog .relcard{max-height:calc(100vh - 32px);overflow:auto}
+.cog-ghost{position:fixed;left:0;top:0;z-index:60;pointer-events:none;max-width:260px;
+  padding:7px 12px;border-radius:9px;font-size:13px;font-weight:600;
+  background:#fff8d9;color:#262a29;border:1px solid #e8ba15;box-shadow:0 6px 20px #0000002a;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .cog-ghost{background:#39331b;color:#e9ede9;border-color:#f1d04c}}
+:root[data-theme=dark] .cog-ghost{background:#39331b;color:#e9ede9;border-color:#f1d04c}.cog .line:hover{background:var(--hover)}.cog .toggle{display:grid;place-items:center;width:19px;height:26px;border:0;background:none;padding:0;flex:none;color:#7e8780}.cog .toggle svg{width:13px;height:13px;transition:transform .15s}.cog .toggle[aria-expanded="true"] svg{transform:rotate(90deg)}.cog .toggle:disabled{cursor:default;visibility:hidden}.cog .name{display:flex;align-items:center;gap:8px;min-width:0;text-align:left;flex:1;border:0;background:none;padding:3px 0;line-height:1.6;font-weight:530}.cog .name span:last-child{min-width:0;overflow-wrap:anywhere}.cog .struct .name{font-weight:650}.cog .active .name{color:var(--yellow)}.cog .done .name{color:var(--green)}.cog .failed .name{color:var(--red)}.cog .pending .name{color:var(--gray)}.cog .status-icon{width:16px;height:16px;flex:none;display:block;color:inherit}.cog .status-icon svg{display:block;width:100%;height:100%}.cog .active .name,.cog .done .name,.cog .failed .name,.cog .pending .name{font-weight:550}.cog .name .node-label{min-width:0;overflow-wrap:anywhere}.cog .current .name{display:block;padding:7px 0}.cog .current .current-heading{display:block;font-size:11px;font-weight:650;letter-spacing:.03em;margin-bottom:4px;color:inherit}.cog .current .current-title{display:flex;align-items:center;gap:8px}.cog .current .current-question{display:block;color:var(--ink);font-size:13px;font-weight:500;margin:4px 0 0 24px}.cog .current .line{border:1px solid color-mix(in srgb,var(--yellow) 35%,var(--line));padding-left:3px;align-items:center}.cog .current .line:before{display:none}.cog .current .line:hover{background:var(--yellow-bg)}.cog .current .line{background:var(--yellow-bg)}.cog .current .line:before{content:"";position:absolute;left:-2px;top:7px;bottom:7px;width:3px;background:#e8ba15;border-radius:3px}.cog .flag{font-size:11px;font-weight:650;white-space:nowrap;color:#947000}.cog .alias{color:var(--muted);display:flex;flex:none;align-items:center}.cog .alias svg{width:14px;height:14px}.cog .detail{margin:3px 5px 12px 27px;padding:13px 15px;background:#fafbf9;border-left:2px solid #d9dfd7;border-radius:0 9px 9px 0;color:#47524b;font-size:13px}.cog .detail p{margin:0 0 10px}.cog .detail p:last-child{margin:0}.cog .detail strong{color:#29332d;display:block;font-size:12px;margin-bottom:3px}.cog .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding:18px 3px 0}.cog .legend span{display:flex;align-items:center;gap:6px}.cog .legend i{width:8px;height:8px;border-radius:50%;background:var(--c)}.cog .legend .empty i{background:transparent;border:1px solid var(--gray)}.cog .note{font-size:11px;color:var(--muted);margin:15px 3px 0}.cog .topbranch>.line .name{font-size:16px}.cog .topbranch:not(:first-child){margin-top:4px}.cog .children[hidden],.cog .detail[hidden]{display:none}.cog .next .flag{color:var(--gray)}
 @media(max-width:600px){.cog{--indent:12px}.cog{padding:23px 12px 30px}.cog header{margin-bottom:14px}.cog h1{font-size:21px}.cog .canvas{padding:18px 10px 22px;border-radius:13px}.cog .root{font-size:16px;padding:0 5px}.cog .line{gap:3px;min-height:39px;padding-right:4px}.cog .toggle{width:15px}.cog .branch:before{left:6px}.cog .name{font-size:14px;gap:6px}.cog .status-icon{width:14px;height:14px}.cog .current .current-question{margin-left:20px;font-size:12px}.cog .flag{font-size:10px}.cog .detail{margin-left:18px;padding:10px}.cog .legend{gap:12px}.cog .tool{padding:6px 8px}.cog .tools{gap:4px}}@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .cog{color-scheme:dark;--bg:#151716;--paper:#1e211f;--ink:#e9ede9;--muted:#949e97;--line:#343b36;--green:#7cda9b;--yellow:#f1d04c;--red:#ff8484;--gray:#939b95;--yellow-bg:#39331b;--hover:#282e29}:root:not([data-theme=light]) .cog .detail{background:#262c28;color:#c4cdc6;border-color:#4a564c}:root:not([data-theme=light]) .cog .detail strong{color:var(--ink)}:root:not([data-theme=light]) .cog .flag{color:#f1d04c}}:root[data-theme=dark] .cog{color-scheme:dark;--bg:#151716;--paper:#1e211f;--ink:#e9ede9;--muted:#949e97;--line:#343b36;--green:#7cda9b;--yellow:#f1d04c;--red:#ff8484;--gray:#939b95;--yellow-bg:#39331b;--hover:#282e29}:root[data-theme=dark] .cog .detail{background:#262c28;color:#c4cdc6;border-color:#4a564c}:root[data-theme=dark] .cog .detail strong{color:var(--ink)}:root[data-theme=dark] .cog .flag{color:#f1d04c}
 
 .cog [hidden]{display:none!important}.cog .back{display:inline-flex;align-items:center;gap:7px;border:0;background:none;padding:8px 0;color:var(--muted);font-size:14px;margin-bottom:24px}.cog .back:hover{color:var(--ink)}.cog .detail-path{font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:12px}.cog .page-title{font-size:25px;line-height:1.4;margin:0 0 12px;font-weight:700;letter-spacing:-.02em}.cog .page-status{display:flex;align-items:center;gap:7px;font-size:13px;margin:0 0 23px}.cog .page-status.active{color:var(--yellow)}.cog .page-status.done{color:var(--green)}.cog .page-status.failed{color:var(--red)}.cog .page-status.pending{color:var(--gray)}.cog .detail-card{background:var(--paper);border:1px solid var(--line);border-radius:17px;padding:26px 29px}.cog .detail-section+ .detail-section{border-top:1px solid var(--line);margin-top:22px;padding-top:22px}.cog .detail-section h2{font-size:13px;margin:0 0 9px;font-weight:650;color:var(--muted)}.cog .detail-section p{font-size:15px;line-height:1.85;margin:0;white-space:pre-wrap}.cog .detail-empty{color:var(--muted);font-size:14px}.cog .page-note{color:var(--muted);font-size:12px;line-height:1.7;margin:20px 2px 0}.cog .back svg{width:17px;height:17px}.cog .current .current-question{color:inherit}
@@ -917,7 +940,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-11-25e";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-25f";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1759,9 +1782,19 @@ function bindCog(){
       const it=el&&el.closest?el.closest(".item"):null;
       return it&&dragTarget(it.dataset.id)&&it.dataset.id!==drag.id?it:null;
     };
+    let ghost=null;
+    const showGhost=(x,y)=>{
+      if(!ghost){
+        ghost=document.createElement("div");ghost.className="cog-ghost";
+        ghost.textContent=(drag.el.querySelector(".node-label")||drag.el).textContent.trim().slice(0,28);
+        document.body.appendChild(ghost);
+      }
+      ghost.style.transform="translate("+(x+14)+"px,"+(y+10)+"px)";
+    };
+    const hideGhost=()=>{if(ghost){ghost.remove();ghost=null}};
     const begin=()=>{
       if(!drag||drag.on)return;
-      drag.on=true;drag.el.classList.add("dragging");
+      drag.on=true;drag.el.classList.add("dragging");showGhost(drag.x,drag.y);
       // 进入拖动之后必须禁掉滚动：否则手指一动浏览器就当成滑页面，
       // 直接发 pointercancel 把这次拖动掐掉（手机上拖不动就是这个原因）。
       tree.classList.add("nodrag-scroll");
@@ -1785,7 +1818,7 @@ function bindCog(){
         else return;
       }
       drag.moved=true;e.preventDefault();
-      drag.x2=e.clientX;drag.y2=e.clientY;
+      drag.x2=e.clientX;drag.y2=e.clientY;showGhost(e.clientX,e.clientY);
       autoScroll(e.clientY);
       tree.querySelectorAll(".dropok").forEach(n=>n.classList.remove("dropok"));
       const t=under(e.clientX,e.clientY);if(t)t.classList.add("dropok");
@@ -1793,22 +1826,28 @@ function bindCog(){
     const finish=e=>{
       if(!drag||e.pointerId!==drag.pid)return;
       clearTimeout(drag.timer);
-      const d=drag;drag=null;clear();stopScroll();tree.classList.remove("nodrag-scroll");
+      const d=drag;drag=null;clear();stopScroll();hideGhost();tree.classList.remove("nodrag-scroll");
       if(!d.on||!d.moved)return;                           // 没真拖动过＝普通点击，交给原来的处理
+      suppressClick=true;setTimeout(()=>suppressClick=false,50);   // 拖过就不再当成点开
       const el=document.elementFromPoint(e.clientX,e.clientY);
       const it=el&&el.closest?el.closest(".item"):null;
-      if(it&&dragTarget(it.dataset.id)&&it.dataset.id!==d.id){
-        suppressClick=true;setTimeout(()=>suppressClick=false,0);
-        askDragRel(d.id,it.dataset.id);
-      }
+      if(!it){toast("没有落在任何认知上，再拖一次，叠到另一条上面再松手");return}
+      if(it.dataset.id===d.id){toast("落回了自己身上，要叠到另一条上");return}
+      if(!dragTarget(it.dataset.id)){toast("这一行是结构分类，不是认知，不能合并");return}
+      askDragRel(d.id,it.dataset.id);
     };
     // touch-action 在手指按下那一刻就被浏览器锁定了，之后再改没用。
     // 真正能挡住滚动的只有在 touchmove 里 preventDefault（必须 passive:false）。
     // 不这么做，手指一动浏览器就判成滑页面并发 pointercancel，拖动当场中断。
     tree.addEventListener("touchmove",e=>{if(drag&&drag.on)e.preventDefault()},{passive:false});
+    // 任何原生拖拽一律不让它开始：Safari 会对按钮里的文字自己起一个拖拽，
+    // 一起就发 pointercancel，把我们的拖动掐掉——用户看到「拖得动但合不了」。
+    tree.addEventListener("dragstart",e=>e.preventDefault());
     tree.addEventListener("pointerup",finish);
     tree.addEventListener("pointercancel",e=>{if(drag&&e.pointerId===drag.pid){
-      clearTimeout(drag.timer);drag=null;clear();stopScroll();tree.classList.remove("nodrag-scroll")}});
+      const was=drag.on;
+      clearTimeout(drag.timer);drag=null;clear();stopScroll();hideGhost();tree.classList.remove("nodrag-scroll");
+      if(was)toast("拖动被浏览器打断了，请再拖一次");}});
     // 拖完松手那一下不要再当成「点开这条认知」
     tree.addEventListener("click",e=>{if(suppressClick){e.preventDefault();e.stopPropagation();}},true);
   }
@@ -1868,9 +1907,71 @@ function pickCog(id,done){
       m.remove();if(!btn.classList.contains("cancel"))done(members[+btn.dataset.member]);
     });
 }
+// 拖完（或点选完）只弹一个面板，一次确认：
+// 选链里哪一条（如果拖到了链上）、选关系、看方向、给新链取名，全在一屏里。
+// 不再用 confirm() / prompt()——有些浏览器环境会静默拦截它们，
+// 结果就是「拖上去了但什么都没发生」。
 function askDragRel(from,to){
   if(!dragTarget(from)||!dragTarget(to))return;
-  pickCog(from,a=>pickCog(to,b=>{if(a!==b)askRel(a,b)}));
+  const t=TREE||buildTree(),nm=u=>esc(t.T[u]?.name||u),dt=u=>t.T[u]?.d||"";
+  const chainOf=id=>chainsOf().find(c=>c.id===id);
+  const membersOf=id=>{const c=chainOf(id);return c?(c.members||[]).filter(realCogUid):[id]};
+  const byDate=(x,y)=>{const a=dt(x),b2=dt(y);return a&&b2?(a<b2?-1:a>b2?1:0):a?-1:b2?1:0};
+  const latest=id=>membersOf(id).slice().sort(byDate).pop();
+  const st={a:latest(from),b:latest(to),rel:null,rev:false};
+  const pickRow=(id,key,label)=>{const ms=membersOf(id);if(ms.length<2)return"";
+    return '<div class="relq">'+label+'「'+esc(chainOf(id).name)+'」里的哪一条？</div><div class="relchips">'+
+      ms.map(u=>'<button class="relchip" data-pick="'+key+'" data-u="'+esc(u)+'">'+nm(u)+'</button>').join("")+'</div>'};
+  const m=cogSheet(
+    '<div class="relq">把这两条连起来</div>'+
+    pickRow(from,"a","拖起来的是")+pickRow(to,"b","放上去的是")+
+    '<div class="relgroup"><div class="relgh">合成演化链<em>两条收进一条链，从树上原位置消失</em></div>'+
+      REL6.slice(0,3).map((r,i)=>'<button class="relbtn" data-i="'+i+'">'+r[0]+'<em>'+r[1]+'</em></button>').join("")+'</div>'+
+    '<div class="relgroup"><div class="relgh">只连线<em>两条都留在原位，详情页里互相能跳</em></div>'+
+      REL6.slice(3).map((r,i)=>'<button class="relbtn" data-i="'+(i+3)+'">'+r[0]+'<em>'+r[1]+'</em></button>').join("")+'</div>'+
+    '<div class="reldir" hidden></div>'+
+    '<div class="nameask" hidden><div class="relq">这条演化链叫什么？</div><input class="chainname"></div>'+
+    '<div class="relfoot"><button class="relbtn cancel">取消</button><button class="relgo" disabled>确认</button></div>',
+    (ev,mm)=>{
+      const pk=ev.target.closest("[data-pick]");
+      if(pk){st[pk.dataset.pick]=pk.dataset.u;sync();return}
+      const rb=ev.target.closest(".relbtn[data-i]");
+      if(rb){st.rel=REL6[+rb.dataset.i][0];sync();return}
+      if(ev.target.closest(".relswap")){st.rev=!st.rev;sync();return}
+      if(ev.target.closest(".cancel")){mm.remove();return}
+      if(ev.target.closest(".relgo")&&st.rel){
+        const [x,y]=order();
+        const name=(mm.querySelector(".chainname").value||"").trim();
+        if(needName()&&!name){mm.querySelector(".chainname").focus();return}
+        mm.remove();
+        confirmRel(x,y,st.rel,{silent:true,name:name});
+      }
+    });
+  // 方向默认按记录时间：早的在前（旧 → 新）；一键能反过来
+  function order(){const p=[st.a,st.b].sort(byDate);return st.rev?[p[1],p[0]]:p}
+  function needName(){
+    if(!st.rel||!isEvo(st.rel))return false;
+    const ca=chainOfUid(st.a),cb=chainOfUid(st.b);
+    if(ca&&cb&&ca.id===cb.id)return false;                 // 同一条链里补关系，不建新链
+    return cogProject(st.a)===cogProject(st.b)&&!(ca&&cb);  // 跨项目、两条不同链都不自动合并
+  }
+  function sync(){
+    m.querySelectorAll("[data-pick]").forEach(b2=>b2.classList.toggle("on",st[b2.dataset.pick]===b2.dataset.u));
+    m.querySelectorAll(".relbtn[data-i]").forEach(b2=>b2.classList.toggle("on",REL6[+b2.dataset.i][0]===st.rel));
+    const dir=m.querySelector(".reldir"),na=m.querySelector(".nameask"),go=m.querySelector(".relgo");
+    if(!st.rel){dir.hidden=true;na.hidden=true;go.disabled=true;return}
+    const [x,y]=order();
+    dir.hidden=false;
+    dir.innerHTML='<div class="relq">方向</div><div class="relarrow2"><b>'+nm(x)+'</b><span>'+
+      (st.rel==="关联"?"↔":"→ "+esc(st.rel)+" →")+'</span><b>'+nm(y)+'</b></div>'+
+      (st.rel==="关联"?"":'<button class="relswap">⇄ 反过来</button>');
+    const need=needName();na.hidden=!need;
+    if(need){const inp=m.querySelector(".chainname");
+      if(!inp.value){const c=chainOfUid(st.a)||chainOfUid(st.b);inp.value=c?c.name:""}}
+    go.disabled=false;
+    go.textContent=isEvo(st.rel)&&need?"合成演化链":"确认";
+  }
+  sync();
 }
 function askDirection(from,to,rel){
   if(!realCogUid(from)||!realCogUid(to)||from===to)return;
@@ -1899,14 +2000,15 @@ function askRel(from,to){
        if(rel==="关联")confirmRel(from,to,rel);else askDirection(from,to,rel);
      }});
 }
-async function confirmRel(from,to,rel){
+async function confirmRel(from,to,rel,opts){
+  opts=opts||{};
   if(!realCogUid(from)||!realCogUid(to)||from===to||!RELD[rel]){
     toast("非法关系端点或关系类型，未保存");return false;
   }
   const t=TREE||buildTree(),an=t.T[from]?.name||from,bn=t.T[to]?.name||to;
   const cf=chainOfUid(from),ct=chainOfUid(to),cross=cf&&ct&&cf.id!==ct.id,
     crossProject=cogProject(from)!==cogProject(to);
-  if(!confirm(an+"\n  └ "+rel+(rel==="关联"?" ↔ ":" → ")+bn+
+  if(!opts.silent&&!confirm(an+"\n  └ "+rel+(rel==="关联"?" ↔ ":" → ")+bn+
     ((cross||crossProject)&&isEvo(rel)?"\n不同演化链或项目仍保持原有归属，不会自动合并。":"")+
     "\n\n"+(rel==="关联"?"确认保存这条无向关联吗？":"确认保存这个方向的关系吗？")))return false;
   let next=copyJSON(D.rels),newChain=null;next.chains=next.chains||[];next.rels=next.rels||[];
@@ -1914,8 +2016,8 @@ async function confirmRel(from,to,rel){
     (rel==="关联"&&r.from===to&&r.to===from)));
   if(hit?.state==="已确认")return true;
   if(isEvo(rel)&&!cross&&!crossProject&&!(cf&&ct&&cf.id===ct.id)){
-    const nm=(prompt("这条演化链叫什么？\n\n"+an+"\n  └ "+rel+"\n"+bn,cf?.name||ct?.name||"")||"").trim();
-    if(!nm)return false;
+    const nm=(opts.name!=null?String(opts.name):(prompt("这条演化链叫什么？\n\n"+an+"\n  └ "+rel+"\n"+bn,cf?.name||ct?.name||"")||"")).trim()
+      ||cf?.name||ct?.name||(an.slice(0,12)+" → "+bn.slice(0,12));
     const keep=D.rels;D.rels=next;
     try{newChain=mergeChain(from,to,nm)}finally{next=D.rels;D.rels=keep}
   }
