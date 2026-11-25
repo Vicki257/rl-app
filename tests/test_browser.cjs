@@ -152,11 +152,40 @@ async function scenario(browser,device){
       document.querySelector("#tree").addEventListener(ev,e=>
         window.__dragTrace.push([ev,e.target.closest(".item")?.dataset.id,dragId]),true);
   });
-  await from.dragTo(to);
+  // 拖动必须按真实指针来：鼠标按下-移动-松手、手指长按-移动-松手。
+  // 以前用 dragTo 走 HTML5 drag-and-drop，Playwright 能触发，真浏览器不能——
+  // 整行就是一个 <button>，在按钮上按下不会启动原生拖拽，于是真机拖不动而测试全绿。
+  assert(await page.locator('#tree .item[draggable="true"]').count()===0,
+    device+": 不能再依赖 HTML5 原生拖拽，整行是按钮时真浏览器不会启动它");
+  const rectOf=async loc=>{await loc.scrollIntoViewIfNeeded();return await loc.boundingBox()};
+  const ba=await rectOf(from),bb=await rectOf(to);
+  if(device==="mobile"){
+    const cdp=await context.newCDPSession(page);
+    const touch=(type,x,y)=>cdp.send("Input.dispatchTouchEvent",{type,
+      touchPoints:type==="touchEnd"?[]:[{x,y,radiusX:8,radiusY:8,force:1,id:1}]});
+    await touch("touchStart",ba.x+20,ba.y+ba.height/2);
+    await page.waitForTimeout(420);                       // 长按超过阈值才算拖
+    assert(await page.locator("#tree .item.dragging").count()===1,
+      device+": 手指长按之后必须进入拖动状态");
+    await touch("touchMove",bb.x+20,bb.y+bb.height/2);
+    await page.waitForTimeout(150);
+    assert(await page.locator("#tree .item.dropok").count()===1,
+      device+": 手指拖到目标上必须高亮，之前浏览器会当成滑页面把拖动掐掉");
+    await touch("touchEnd",bb.x+20,bb.y+bb.height/2);
+  }else{
+    await page.mouse.move(ba.x+20,ba.y+ba.height/2);
+    await page.mouse.down();
+    await page.mouse.move(ba.x+40,ba.y+ba.height/2,{steps:3});
+    assert(await page.locator("#tree .item.dragging").count()===1,
+      device+": 在文字（按钮内部）上按下并移动必须进入拖动状态");
+    await page.mouse.move(bb.x+20,bb.y+bb.height/2,{steps:10});
+    assert(await page.locator("#tree .item.dropok").count()===1,device+": 拖到目标上必须高亮");
+    await page.mouse.up();
+  }
+  await page.waitForTimeout(350);
   const trace=await page.evaluate(()=>({events:window.__dragTrace,
-    dialog:!!document.querySelector(".relsheet"),source:document.querySelector(".dragging")?.dataset.id}));
-  console.log("拖动追踪："+JSON.stringify(trace));
-  assert(trace.dialog,device+": 真实拖放未弹出选择框："+JSON.stringify(trace.events));
+    dialog:!!document.querySelector(".relsheet")}));
+  assert(trace.dialog,device+": 真实指针拖放未弹出选择框："+JSON.stringify(trace.events));
   await page.locator(".relsheet [data-member='1']").click();
   await page.locator(".relsheet [data-i='1']").click(); // 修正
   await page.locator(".relsheet [data-dir='1']").click(); // B → C
@@ -185,6 +214,27 @@ async function scenario(browser,device){
   await page.locator('[data-tfocus]').click();
   assert(await page.locator('#tree .item.current[data-id="'+newId+'"]').isVisible(),
     device+": 刷新后仍能定位当前演化链");
+  if(device!=="mobile"){
+    // 拖到屏幕边缘要能自动滚动：树很长，目标经常不在同一屏，
+    // 而 elementFromPoint 对视口外的点返回 null，不滚就永远够不着。
+    await page.evaluate(()=>{S.topen={};const t=buildTree();
+      const w=(id,pre,seen)=>{if(seen.includes(id))return;const k=pre?pre+"/"+id:id;S.topen[k]=1;
+        (t.T[id]?.children||[]).forEach(x=>w(x,k,seen.concat(id)))};t.roots.forEach(r=>w(r,"",[]));render()});
+    await page.waitForTimeout(400);
+    const anyRow=page.locator('#tree .item[data-id^="A"] > .line .node-label').first();
+    await anyRow.scrollIntoViewIfNeeded();await page.waitForTimeout(250);
+    const src=await anyRow.boundingBox();
+    const top=()=>page.evaluate(()=>document.body.scrollTop||document.scrollingElement.scrollTop);
+    await page.mouse.move(src.x+20,src.y+src.height/2);await page.mouse.down();
+    await page.mouse.move(src.x+45,src.y+src.height/2,{steps:3});
+    const y0=await top();
+    await page.mouse.move(src.x+45,(await page.evaluate(()=>innerHeight))-20,{steps:6});
+    await page.waitForTimeout(700);
+    const y1=await top();
+    await page.mouse.up();await page.waitForTimeout(250);
+    await page.evaluate(()=>document.querySelector(".relsheet")?.closest(".cog")?.remove());
+    assert(y1>y0,device+": 拖到屏幕底边必须自动滚动，否则够不到屏幕外的节点（"+y0+" → "+y1+"）");
+  }
   // 拒绝 PUT 时不得改变正式关系状态。
   denyWrites=true;
   await page.evaluate(()=>{
