@@ -1,17 +1,71 @@
-name: RL-app 安全保存测试
+name: RL-app 测试
 on:
   push:
     paths:
       - "index.html"
-      - "tests/test_safe_save.cjs"
+      - "tests/**"
       - ".github/workflows/safe-save-check.yml"
   pull_request:
 permissions:
   contents: read
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: 测试陈旧写入与 UID 保留
+      - name: 必须配置私有数据仓库只读凭据
+        env:
+          RL_DATA_TOKEN: ${{ secrets.RL_DATA_TOKEN }}
+        run: |
+          if [ -z "$RL_DATA_TOKEN" ]; then
+            echo "::error::缺少 RL_DATA_TOKEN：请配置只对 Vicki257/rl-data 有 Contents: Read 权限的 fine-grained token"
+            exit 1
+          fi
+      - name: 读取真实 RL-data 的同名开发分支
+        uses: actions/checkout@v4
+        with:
+          repository: Vicki257/rl-data
+          ref: ${{ github.head_ref || github.ref_name }}
+          path: rl-data
+          fetch-depth: 0
+          token: ${{ secrets.RL_DATA_TOKEN }}
+          persist-credentials: false
+      - name: 打印并核对真实数据来源
+        env:
+          DATA_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          test "$(git -C rl-data rev-parse --is-shallow-repository)" = false
+          test -f rl-data/data/rels.json || { echo "::error::缺少真实 rels.json"; exit 1; }
+          echo "RL-data repository: Vicki257/rl-data"
+          echo "RL-data branch: $DATA_BRANCH"
+          echo "RL-data commit: $(git -C rl-data rev-parse HEAD)"
+          mv rl-data ../rl-data
+      - name: 用真实 RL-data 核验永久 UID，离线模拟新方法发号
+        run: |
+          python3 ../rl-data/tools/ids.py verify
+          python3 tests/test_uid_allocator.py
+      - name: UID 双工作流并发与远端重算反例
+        run: python3 tests/test_uid_race.py
+      - name: 版本更新提示测试
+        run: node tests/test_version.cjs
+      - name: 安全保存与开发分支测试
         run: node tests/test_safe_save.cjs
+      - name: 认知树、关系、UID、引用、环与演化链（强制真实数据）
+        run: |
+          test -f ../rl-data/data/rels.json
+          node tests/test_tree.cjs --require-real-data
+      - name: 焦点显示和中断切换回放
+        run: node tests/test_focus_integrity.cjs
+      - name: 拖动关系和端点反例
+        run: node tests/test_rel_drag.cjs --require-real-data
+      - name: 校验整份 index.html 的 JavaScript 语法
+        run: |
+          node -e 'const fs=require("fs"),vm=require("vm");const s=fs.readFileSync("index.html","utf8");new vm.Script(s.split("<script>")[1].split("</script>")[0]);console.log("index.html 脚本语法通过")'
+      - name: 安装 Chromium 交互测试环境
+        run: |
+          npm install --no-save playwright@1.58.2
+          npx playwright install chromium
+      - name: Chromium 电脑与手机端：拖放、保存、刷新和定位
+        run: node tests/test_browser.cjs
+      - name: 缺新数据表时必须降级而不是整个打不开
+        run: node tests/test_degrade.cjs --require-real-data

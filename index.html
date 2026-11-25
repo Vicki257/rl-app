@@ -247,6 +247,121 @@ tr.add:hover>td{background:var(--accentSoft)}
   border-left:2px solid var(--wnline);border-radius:0 8px 8px 0;padding:9px 12px;white-space:pre-line}
 
 .whole{font-size:17px;line-height:1.7;color:var(--accent);margin:12px 0 14px;padding-left:11px;border-left:2px solid var(--accentSoft)}
+
+/* ---- 认知树 ---- */
+.tree{margin:2px 0 14px}
+.tn{position:relative}
+.tn .tkids{margin-left:13px;padding-left:12px;border-left:1px solid var(--line)}
+.tline{display:flex;align-items:flex-start;gap:3px;border-radius:9px;padding:1px 2px}
+.tchev{flex:none;width:22px;height:30px;border:0;background:none;color:var(--ink3);font-size:13px;line-height:30px;padding:0;cursor:pointer}
+.tchev:disabled{opacity:0;cursor:default}
+.tname{flex:1;display:flex;align-items:flex-start;gap:7px;min-width:0;border:0;background:none;color:inherit;
+  font:inherit;text-align:left;padding:5px 6px 5px 0;line-height:1.45;cursor:pointer;border-radius:8px}
+.tname:hover{background:var(--soft)}
+.tname>span{min-width:0;overflow-wrap:anywhere}
+.tmark{flex:none;width:15px;height:15px;margin-top:3px;display:inline-block}
+.tmark svg{width:15px;height:15px;display:block}
+.tn.struct>.tline>.tname{color:var(--ink);font-weight:600}
+.tn.done>.tline>.tname{color:var(--fx)}
+.tn.active>.tline>.tname{color:var(--accent)}
+.tn.failed>.tline>.tname{color:var(--bad)}
+.tn.pending>.tline>.tname{color:var(--ink3)}
+.tn.cur>.tline{background:var(--accentSoft);outline:1px solid var(--wnline);outline-offset:0}
+.tn.cur>.tline>.tname{font-weight:600}
+.tlegend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink3);padding:10px 0 4px;border-top:1px solid var(--line)}
+.tlegend span{display:inline-flex;align-items:center;gap:5px}
+.tlegend .done{color:var(--fx)}.tlegend .active{color:var(--accent)}
+.tlegend .failed{color:var(--bad)}.tlegend .pending{color:var(--ink3)}
+.relc .relwhy{font-size:12.5px;color:var(--ink3);line-height:1.65;border-left:2px solid var(--line);padding-left:10px;margin-top:7px}
+.relc .relnote{font-size:12px;color:var(--wn);margin-top:6px}
+.relc.ok{border-color:var(--fx)}
+.cend{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:2px 0;line-height:1.5}
+.cend[data-go]{cursor:pointer}.cend[data-go]:hover{background:var(--soft);border-color:var(--edge)}
+.cend.done{color:var(--fx)}.cend.active{color:var(--accent)}
+.cend.failed{color:var(--bad)}.cend.pending{color:var(--ink3)}
+.cend .meta{display:block;margin-bottom:3px}
+.cmid{display:flex;align-items:center;gap:8px;padding:6px 0 6px 13px;border-left:2px solid var(--line);margin-left:11px;font-size:13px}
+
+/* ===== 认知树：原样搬自已验收的「认知树.html」，只把选择器收进 .cog 里， 免得影响 app 其它页面。改动仅限于作用域前缀。 ===== */
+.cog{display:block;padding:0 0 70px}
+
+.cog{color-scheme:light;--bg:#f9f9f7;--paper:#fff;--ink:#262a29;--muted:#858b88;--line:#e7e9e5;--green:#087841;--yellow:#ad8000;--red:#d92f35;--gray:#797f7c;--yellow-bg:#fff8d9;--hover:#f7f8f5;--indent:25px}
+.cog *{box-sizing:border-box}.cog{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}.cog button{font:inherit;color:inherit;cursor:pointer}.cog button:focus-visible{outline:2px solid #d6a800;outline-offset:3px}.cog{max-width:930px;margin:0 auto;padding:36px 34px 52px}.cog header{display:flex;justify-content:space-between;align-items:center;margin:0 0 22px}.cog h1{font-size:23px;letter-spacing:-.03em;margin:0;font-weight:700}.cog .sub{color:var(--muted);font-size:12px;margin-top:4px}.cog .tools{display:flex;gap:6px}.cog .tool{border:1px solid var(--line);background:var(--paper);border-radius:9px;padding:7px 11px;font-size:12px;white-space:nowrap}.cog .tool:hover{background:var(--hover)}.cog .canvas{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px 27px 30px;box-shadow:0 3px 17px #202c1d04}.cog .root{font-size:19px;font-weight:750;margin:0 0 16px;letter-spacing:-.025em}.cog .branch{margin-left:var(--indent);position:relative}.cog .branch:before{content:"";position:absolute;top:0;bottom:19px;left:8px;border-left:1px solid var(--line)}.cog .branch>.item{position:relative}.cog .line{display:flex;align-items:center;min-height:40px;gap:7px;border-radius:8px;position:relative;padding:5px 8px 5px 0}.cog .line:hover{background:var(--hover)}.cog .toggle{display:grid;place-items:center;width:19px;height:26px;border:0;background:none;padding:0;flex:none;color:#7e8780}.cog .toggle svg{width:13px;height:13px;transition:transform .15s}.cog .toggle[aria-expanded="true"] svg{transform:rotate(90deg)}.cog .toggle:disabled{cursor:default;visibility:hidden}.cog .name{display:flex;align-items:center;gap:8px;min-width:0;text-align:left;flex:1;border:0;background:none;padding:3px 0;line-height:1.6;font-weight:530}.cog .name span:last-child{min-width:0;overflow-wrap:anywhere}.cog .struct .name{font-weight:650}.cog .active .name{color:var(--yellow)}.cog .done .name{color:var(--green)}.cog .failed .name{color:var(--red)}.cog .pending .name{color:var(--gray)}.cog .status-icon{width:16px;height:16px;flex:none;display:block;color:inherit}.cog .status-icon svg{display:block;width:100%;height:100%}.cog .active .name,.cog .done .name,.cog .failed .name,.cog .pending .name{font-weight:550}.cog .name .node-label{min-width:0;overflow-wrap:anywhere}.cog .current .name{display:block;padding:7px 0}.cog .current .current-heading{display:block;font-size:11px;font-weight:650;letter-spacing:.03em;margin-bottom:4px;color:inherit}.cog .current .current-title{display:flex;align-items:center;gap:8px}.cog .current .current-question{display:block;color:var(--ink);font-size:13px;font-weight:500;margin:4px 0 0 24px}.cog .current .line{border:1px solid color-mix(in srgb,var(--yellow) 35%,var(--line));padding-left:3px;align-items:center}.cog .current .line:before{display:none}.cog .current .line:hover{background:var(--yellow-bg)}.cog .current .line{background:var(--yellow-bg)}.cog .current .line:before{content:"";position:absolute;left:-2px;top:7px;bottom:7px;width:3px;background:#e8ba15;border-radius:3px}.cog .flag{font-size:11px;font-weight:650;white-space:nowrap;color:#947000}.cog .alias{color:var(--muted);display:flex;flex:none;align-items:center}.cog .alias svg{width:14px;height:14px}.cog .detail{margin:3px 5px 12px 27px;padding:13px 15px;background:#fafbf9;border-left:2px solid #d9dfd7;border-radius:0 9px 9px 0;color:#47524b;font-size:13px}.cog .detail p{margin:0 0 10px}.cog .detail p:last-child{margin:0}.cog .detail strong{color:#29332d;display:block;font-size:12px;margin-bottom:3px}.cog .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding:18px 3px 0}.cog .legend span{display:flex;align-items:center;gap:6px}.cog .legend i{width:8px;height:8px;border-radius:50%;background:var(--c)}.cog .legend .empty i{background:transparent;border:1px solid var(--gray)}.cog .note{font-size:11px;color:var(--muted);margin:15px 3px 0}.cog .topbranch>.line .name{font-size:16px}.cog .topbranch:not(:first-child){margin-top:4px}.cog .children[hidden],.cog .detail[hidden]{display:none}.cog .next .flag{color:var(--gray)}
+@media(max-width:600px){.cog{--indent:12px}.cog{padding:23px 12px 30px}.cog header{margin-bottom:14px}.cog h1{font-size:21px}.cog .canvas{padding:18px 10px 22px;border-radius:13px}.cog .root{font-size:16px;padding:0 5px}.cog .line{gap:3px;min-height:39px;padding-right:4px}.cog .toggle{width:15px}.cog .branch:before{left:6px}.cog .name{font-size:14px;gap:6px}.cog .status-icon{width:14px;height:14px}.cog .current .current-question{margin-left:20px;font-size:12px}.cog .flag{font-size:10px}.cog .detail{margin-left:18px;padding:10px}.cog .legend{gap:12px}.cog .tool{padding:6px 8px}.cog .tools{gap:4px}}@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .cog{color-scheme:dark;--bg:#151716;--paper:#1e211f;--ink:#e9ede9;--muted:#949e97;--line:#343b36;--green:#7cda9b;--yellow:#f1d04c;--red:#ff8484;--gray:#939b95;--yellow-bg:#39331b;--hover:#282e29}:root:not([data-theme=light]) .cog .detail{background:#262c28;color:#c4cdc6;border-color:#4a564c}:root:not([data-theme=light]) .cog .detail strong{color:var(--ink)}:root:not([data-theme=light]) .cog .flag{color:#f1d04c}}:root[data-theme=dark] .cog{color-scheme:dark;--bg:#151716;--paper:#1e211f;--ink:#e9ede9;--muted:#949e97;--line:#343b36;--green:#7cda9b;--yellow:#f1d04c;--red:#ff8484;--gray:#939b95;--yellow-bg:#39331b;--hover:#282e29}:root[data-theme=dark] .cog .detail{background:#262c28;color:#c4cdc6;border-color:#4a564c}:root[data-theme=dark] .cog .detail strong{color:var(--ink)}:root[data-theme=dark] .cog .flag{color:#f1d04c}
+
+.cog [hidden]{display:none!important}.cog .back{display:inline-flex;align-items:center;gap:7px;border:0;background:none;padding:8px 0;color:var(--muted);font-size:14px;margin-bottom:24px}.cog .back:hover{color:var(--ink)}.cog .detail-path{font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:12px}.cog .page-title{font-size:25px;line-height:1.4;margin:0 0 12px;font-weight:700;letter-spacing:-.02em}.cog .page-status{display:flex;align-items:center;gap:7px;font-size:13px;margin:0 0 23px}.cog .page-status.active{color:var(--yellow)}.cog .page-status.done{color:var(--green)}.cog .page-status.failed{color:var(--red)}.cog .page-status.pending{color:var(--gray)}.cog .detail-card{background:var(--paper);border:1px solid var(--line);border-radius:17px;padding:26px 29px}.cog .detail-section+ .detail-section{border-top:1px solid var(--line);margin-top:22px;padding-top:22px}.cog .detail-section h2{font-size:13px;margin:0 0 9px;font-weight:650;color:var(--muted)}.cog .detail-section p{font-size:15px;line-height:1.85;margin:0;white-space:pre-wrap}.cog .detail-empty{color:var(--muted);font-size:14px}.cog .page-note{color:var(--muted);font-size:12px;line-height:1.7;margin:20px 2px 0}.cog .back svg{width:17px;height:17px}.cog .current .current-question{color:inherit}
+@media(max-width:600px){.cog .detail-card{padding:21px 19px}.cog .page-title{font-size:23px}.cog .back{margin-bottom:15px}}
+
+.cog .record-editor{display:block;width:100%;min-height:340px;resize:vertical;border:0;background:transparent;color:inherit;font:inherit;line-height:1.9;padding:0;outline:none}.cog .record-editor:focus{outline:none}.cog .record-editor::placeholder{color:var(--muted)}.cog .record-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:15px;padding-top:15px;border-top:1px solid var(--line)}.cog .save-note{font-size:12px;color:var(--muted);margin-right:auto}.cog .save-record{background:var(--ink);color:var(--paper);border:0;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600}.cog .save-record:disabled{opacity:.35;cursor:default}
+
+.cog .item.dragging>.line{opacity:.45}
+.cog .item.dropok>.line{outline:2px dashed var(--yellow);outline-offset:1px;border-radius:9px}
+.cog .item.merging>.line{transform:translateY(6px) scaleY(.4);opacity:0;transition:all .5s cubic-bezier(.4,0,.2,1)}
+.cog .item.merged>.line{animation:pop .5s ease}
+@keyframes pop{0%{background:var(--yellow-bg)}45%{background:var(--yellow-bg);box-shadow:0 0 0 4px color-mix(in srgb,var(--yellow) 22%,transparent)}100%{background:transparent;box-shadow:none}}
+.cog .relsheet{position:fixed;inset:0;background:#0b0d0c5c;display:grid;place-items:end center;z-index:50;padding:16px}
+.cog .relcard{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;width:min(420px,100%);
+  box-shadow:0 12px 40px #0000002e;display:grid;gap:7px}
+.cog .relq{font-size:12.5px;color:var(--muted);margin-bottom:2px;font-weight:600}
+.cog .relpair{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:9px;flex-wrap:wrap}
+.cog .relpair b{font-weight:600}.cog .relpair span{color:var(--muted)}
+.cog .relbtn{display:flex;align-items:baseline;gap:9px;width:100%;text-align:left;border:1px solid var(--line);
+  background:none;border-radius:11px;padding:11px 14px;font-size:14px;font-weight:600}
+.cog .relbtn em{font-style:normal;font-size:12px;font-weight:400;color:var(--muted)}
+.cog .relbtn:hover{background:var(--hover);border-color:var(--yellow)}
+.cog .relbtn.cancel{justify-content:center;font-weight:500;color:var(--muted);border-color:transparent}
+
+.cog .relnote{font-size:13px;color:var(--muted);line-height:1.7;margin:2px 0 20px;max-width:62ch}
+.cog .relnote b{color:var(--ink);font-weight:600}
+.cog .relgrp{margin-bottom:26px}
+.cog .relgrp>h3{font-size:14px;font-weight:600;margin:0 0 3px;display:flex;align-items:center;gap:8px}
+.cog .relgrp>p{font-size:12px;color:var(--muted);margin:0 0 11px}
+.cog .reltag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--hover);color:var(--muted)}
+.cog .relrow{border:1px solid var(--line);border-radius:13px;padding:13px 15px;margin-bottom:9px;display:grid;gap:7px}
+.cog .relrow.ok{border-color:var(--green);background:color-mix(in srgb,var(--green) 6%,transparent)}
+.cog .relends{display:grid;gap:5px;font-size:13.5px;line-height:1.5}
+.cog .relends i{font-style:normal;font-size:11px;color:var(--muted);margin-right:6px}
+.cog .relarrow{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.cog .relarrow b{color:var(--ink);font-weight:600}
+.cog .relwhy{font-size:12px;color:var(--muted);line-height:1.65;border-left:2px solid var(--line);padding-left:10px}
+.cog .relamb{font-size:11.5px;color:var(--yellow-ink,#8a6400);font-weight:500}
+.cog .relact{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.cog .relact button{border:1px solid var(--line);background:none;border-radius:8px;padding:6px 13px;font-size:12.5px;font-weight:600}
+.cog .relact button.yes{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.cog .relact button:disabled{opacity:.4}
+.cog .relact .done{font-size:12px;color:var(--green);margin-right:auto;font-weight:600}
+.cog .chainbox{border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:11px;margin-bottom:14px}
+.cog .chainend{display:block;width:100%;text-align:left;border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:13.5px;line-height:1.5;background:none;color:var(--ink)}
+.cog .chainend:hover{background:var(--hover);border-color:var(--yellow)}
+.cog .chainend.done{color:var(--green)}.cog .chainend.active{color:var(--yellow)}
+.cog .chainend.failed{color:var(--red)}.cog .chainend.pending{color:var(--gray)}
+.cog .chainend i .status-icon{margin-right:5px}
+.cog .chainend i{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-bottom:3px}
+.cog .chainmid{display:flex;align-items:center;gap:10px;font-size:13px;padding-left:4px}
+.cog .chainmid .bar{width:2px;height:20px;background:var(--line)}
+.cog .chainmid b{font-weight:600}
+.cog .chainmid em{font-style:normal;color:var(--muted);font-size:12px}
+.cog .fldcard{border:1px solid var(--line);border-radius:16px;padding:4px 18px 8px;margin-bottom:14px}
+.cog .fld{padding:14px 0;border-bottom:1px solid var(--line)}
+.cog .fld:last-child{border-bottom:0}
+.cog .fld h4{font-size:12.5px;font-weight:600;color:var(--yellow-deep,#8a6a12);margin:0 0 7px;letter-spacing:.02em}
+.cog .fld p{margin:0;font-size:14.5px;line-height:1.75}
+.cog .fld p.muted{color:var(--muted);font-size:13.5px}
+.cog .chips{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cog .chip{border:1px solid var(--line);border-radius:999px;padding:5px 15px;font-size:13px;color:var(--muted)}
+.cog .chip.on{border-color:var(--yellow);background:var(--yellow-bg);color:var(--ink);font-weight:600}
+.cog .chips em{font-style:normal;font-size:12px;color:var(--muted)}
+.cog .crumblink{border:0;background:none;padding:0;font:inherit;color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.cog .setrel{border:1px dashed var(--line);background:none;border-radius:8px;padding:4px 11px;font-size:12px;color:var(--muted)}
+.cog .setrel:hover{border-color:var(--yellow);color:var(--ink)}
+.cog .offchain{margin-top:16px;border-top:1px solid var(--line);padding-top:13px}
+.cog .offchain h4{font-size:12.5px;font-weight:600;margin:0 0 7px;color:var(--muted)}
+.cog .offchain ul{margin:0;padding-left:18px;font-size:13px;line-height:1.8}
+.cog .offchain b{font-weight:600}
+.cog .nameask input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;background:none;color:var(--ink)}
+.cog .page-title[contenteditable]{outline:none;border-radius:6px}
+.cog .page-title[contenteditable]:focus{box-shadow:0 0 0 2px color-mix(in srgb,var(--yellow) 45%,transparent)}
+
 </style>
 </head>
 <body>
@@ -269,7 +384,7 @@ applyTheme(theme());
 function saveCfg(){try{localStorage.setItem(LS,JSON.stringify(cfg))}catch(e){}}
 const b64e=s=>{const b=new TextEncoder().encode(s);let x="";b.forEach(c=>x+=String.fromCharCode(c));return btoa(x)};
 const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
-const SHA={},BASE={};
+const SHA={},BASE={},READ={}; // 已确认的来源、文件 SHA 或精确 404，绝不把网络错误当空文件
 const copyJSON=v=>JSON.parse(JSON.stringify(v));
 function withoutUid(v){
   if(Array.isArray(v))return v.map(withoutUid);
@@ -328,58 +443,119 @@ function applyRemoteUid(before,local,remote){
   // 全部身份核验通过后才修改内存，避免中途报错留下半合并状态。
   for(const [obj,uid] of pending)obj.uid=uid;
 }
+// 开发版未指定数据分支只读；部署在 main 的正式版保持原实现不受影响。
+// 旧正式版在官方 GitHub Pages 留空分支时仍读取 main；其他预览/开发页面禁止默认写入。
+function officialApp(){
+  return typeof location!=="undefined"&&location.hostname.toLowerCase()==="vicki257.github.io"&&
+    /^\/rl-app\/?(?:index\.html)?$/.test(location.pathname);
+}
+function branch(){
+  return (cfg.branch||"").trim()||(officialApp()?"main":"");
+}
+const sourceKey=()=>[cfg.owner||"",cfg.repo||"",branch()].join("|");
+let cacheSource=null;
+let branchOK=null,checkedSource=null;    // 每个数据源分别验证，旧请求不能授权新分支
+async function ensureBranch(){
+  const b=branch(),origin=sourceKey();
+  if(!b) throw new Error("开发版未指定数据分支，禁止写入默认分支");
+  if(b==="main"&&!officialApp())throw new Error("开发预览只可读取 main，不能写入正式分支");
+  if(checkedSource===origin&&branchOK===true)return true;
+  if(checkedSource===origin&&typeof branchOK==="string")throw new Error(branchOK);
+  const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/branches/${encodeURIComponent(b)}`,
+    {headers:{Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json"},cache:"no-store"});
+  if(origin!==sourceKey())throw new Error("验证分支期间数据源已切换，请重新读取");
+  checkedSource=origin;
+  if(!r.ok){branchOK=`分支 ${b} 在 ${cfg.owner}/${cfg.repo} 上不存在（${r.status}），没有写任何东西`;throw new Error(branchOK)}
+  branchOK=true;return true;
+}
 async function gh(path,opt={}){
-  const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/data/${path}`,{...opt,headers:{Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json",...(opt.headers||{})},cache:"no-store"});
-  if(!r.ok){const t=await r.text();throw new Error(`${r.status} ${path}：${t.slice(0,120)}`)}
+  const b=branch();
+  const q=b&&(!opt.method||opt.method==="GET")?`?ref=${encodeURIComponent(b)}`:"";
+  const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/data/${path}${q}`,{...opt,headers:{Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json",...(opt.headers||{})},cache:"no-store"});
+  if(!r.ok){const t=await r.text();const e=new Error(`${r.status} ${path}：${t.slice(0,120)}`);e.status=r.status;throw e}
   return r.json();
 }
 async function get(path){
+  const source=sourceKey();
+  if(cacheSource!==null&&cacheSource!==source){
+    for(const bag of [SHA,BASE,READ])Object.keys(bag).forEach(k=>delete bag[k]);
+  }
+  cacheSource=source;
+  // 新一次读取失败即撤销该文件的写入资格；旧 SHA 不能继续使用。
+  delete READ[path];delete SHA[path];delete BASE[path];
   const j=await gh(path),v=JSON.parse(b64d(j.content));
-  SHA[path]=j.sha;BASE[path]=copyJSON(v);
+  if(source!==sourceKey())throw new Error("仓库或分支已切换，请重新加载");
+  if(!j.sha||!j.content)throw new Error("缺少 GitHub 文件 SHA 或内容："+path);
+  SHA[path]=j.sha;BASE[path]=copyJSON(v);READ[path]={source,sha:j.sha,exists:true};
   return v;
 }
-async function put(path,obj,msg){
+async function getOptional(path,missingValue){
+  try{return await get(path)}
+  catch(e){
+    // 只有 GitHub contents API 明确 404 才确认为不存在，拒绝把 401/403/网络故障当空文件。
+    if(e.status!==404)throw e;
+    READ[path]={source:sourceKey(),sha:null,exists:false};
+    return copyJSON(missingValue);
+  }
+}
+const writing=new Set();
+async function put(path,obj,msg,options={}){
+  const key=JSON.stringify([sourceKey(),path]);
+  if(writing.has(key))throw new Error("上一笔保存尚未完成，请重试："+path);
+  writing.add(key);
+  try{return await putOnce(path,obj,msg,options)}
+  finally{writing.delete(key)}
+}
+async function putOnce(path,obj,msg,options){
+  const source=sourceKey(),readBefore=READ[path];
+  if(cacheSource!==null&&cacheSource!==source)throw new Error("数据源已切换，请先重新读取新分支");
+  cacheSource=source;
+  const guard=()=>{if(source!==sourceKey())throw new Error("数据源已切换，禁止使用旧文件 SHA")};
   const message=msg||`更新 ${path}`;
-  const payload=sha=>{
-    const body={message,content:b64e(JSON.stringify(obj,null,2)+"\n")};
+  async function send(sha){
+    guard();
+    // 缓存必须记录实际发送的快照，而不是等待响应时仍可被界面修改的对象。
+    const content=JSON.stringify(obj,null,2)+"\n";
+    const body={message,content:b64e(content),branch:branch()};
     if(sha)body.sha=sha;
-    return body;
-  };
-  if(!SHA[path]){
+    const j=await gh(path,{method:"PUT",body:JSON.stringify(body)});guard();
+    SHA[path]=j.content.sha;BASE[path]=JSON.parse(content);
+    READ[path]={source,sha:j.content.sha,exists:true};
+  }
+  await ensureBranch();guard();
+  if(READ[path]!==readBefore)throw new Error("保存期间文件已重新读取，请重试："+path);
+  let read=readBefore;
+  // 首次创建必须有调用方明确授权，并再次确认文件确实不存在。
+  if(!read&&options.create){
+    try{await get(path);read=READ[path]}
+    catch(e){if(e.status!==404)throw e;read=READ[path]={source,sha:null,exists:false}}
+  }
+  if(!read||read.source!==source||read.exists&&(!read.sha||read.sha!==SHA[path]))
+    throw new Error("文件未成功读取或 SHA 与当前分支不一致，拒绝写入："+path);
+  if(!read.exists){
+    if(!options.create)throw new Error("未确认创建新文件，禁止写入："+path);
+    // 精确 404 已确认；不带 sha 的首次创建只允许在这里。
     try{
-      const j=await gh(path);
-      SHA[path]=j.sha;BASE[path]=JSON.parse(b64d(j.content));
-    }catch(e){
-      if(!String(e.message).startsWith("404"))throw e;
-      // 缺少目标文件时保留原来的首次创建能力（不带 sha）。
-      try{
-        const j=await gh(path,{method:"PUT",body:JSON.stringify(payload())});
-        SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
-        return;
-      }catch(err){
-        const m=String(err.message);
-        if(m.startsWith("409")||m.startsWith("422"))
-          throw new Error("该文件已被其他会话创建，请刷新后再试，未覆盖远端数据");
-        throw err;
-      }
+      await send();return;
+    }catch(err){
+      if(err.status===409||err.status===422)
+        throw new Error("该文件已被其他会话创建，请刷新后再试，未覆盖远端数据");
+      throw err;
     }
   }
   try{
-    const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(SHA[path]))});
-    SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
-    return;
+    await send(read.sha);return;
   }catch(e){
     const m=String(e.message);
     if(!m.startsWith("422")&&!m.startsWith("409"))throw e;
   }
   // 远端有新内容时禁止陈旧整文件覆盖；只有补发 UID 可按相同对象合并。
-  const latest=await gh(path),server=JSON.parse(b64d(latest.content));
-  if(!BASE[path]||JSON.stringify(withoutUid(BASE[path]))!==JSON.stringify(withoutUid(server)))
+  const latest=await gh(path);guard();const server=JSON.parse(b64d(latest.content));
+  if(READ[path]!==read||!BASE[path]||JSON.stringify(withoutUid(BASE[path]))!==JSON.stringify(withoutUid(server)))
     throw new Error("数据已在别处更新，请刷新后重试；本次未覆盖远端数据");
   applyRemoteUid(BASE[path],obj,server);
   try{
-    const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(latest.sha))});
-    SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
+    await send(latest.sha);
   }catch(e){
     const m=String(e.message);
     if(m.startsWith("422")||m.startsWith("409"))
@@ -390,7 +566,7 @@ async function put(path,obj,msg){
 
 /* ============ 状态 ============ */
 const D={global:null,index:[],status:null,p:{},meth:null};
-const S={screen:"today",arg:null,stack:[],open:{},sheet:false,edit:false,loading:true,err:"",toast:"",ost:"待改",og:{}};
+const S={screen:"today",arg:null,stack:[],open:{},sheet:false,edit:false,loading:true,err:"",toast:"",ost:"待改",og:{},relPick:null};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const cur=()=>D.global?.current;
@@ -398,18 +574,55 @@ async function loadProject(id,force,quiet){
   if(D.p[id]&&!force) return D.p[id];
   const [project,rows,current,iteration]=await Promise.all(["project","rows","current","iteration"].map(n=>get(`projects/${id}/${n}.json`)));
   D.p[id]={project,rows,current,iteration};
-  if(quiet) return D.p[id];                 // 后台只读，绝不回写别的项目
-  // 夜间分析只认 current.json 的 focus。行数据可能在 app 外面被改过（导入、脚本），
-  // 所以每次载入都对一次；没变的话 syncFocus 自己会跳过，不会白写。
-  syncFocus(id).catch(()=>{});
+  // 老版本只存了日期和正文：仅在唯一匹配且有真实 UID 时补写，不依据 idx 猜。
+  if(!quiet&&!current.focus?.focusUid&&current.focus?.date&&current.focus?.q){
+    const matches=rows.filter(r=>r.date===current.focus.date&&r.q===current.focus.q&&r.uid);
+    if(matches.length===1){
+      const upgraded=copyJSON(current);upgraded.focus.focusUid=matches[0].uid;
+      try{await put(`projects/${id}/current.json`,upgraded,"迁移旧当前焦点到永久 UID");
+        D.p[id].current=upgraded}
+      catch(e){S.focusWarning="旧焦点迁移失败，请手动选择："+e.message}
+    }else S.focusWarning="旧焦点没有唯一 UID 匹配，请重新选择";
+  }
+  // 同一条 syncPending 必须等待一次恢复完成，不能同时启动两个写入流程。
+  if(PendingFocus(id)){
+    try{await finishFocusSync(id)}
+    catch(e){S.focusWarning="焦点同步未完成："+e.message}
+  }
+  if(quiet)return D.p[id];                  // 后台仅恢复明确遗留的 pending
+  if(!PendingFocus(id))syncFocus(id).catch(()=>{});
   return D.p[id];
 }
 async function loadAll(){
-  S.loading=true;S.err="";render();
+  S.loading=true;S.err="";S.focusWarning="";render();
   try{
-    [D.global,D.index,D.status,D.meth]=await Promise.all([get("global.json"),get("projects/index.json"),get("status.json").catch(()=>null),get("methods.json").catch(()=>({name:"方法库",cats:[],methods:[]}))]);
+    // 方法、历史与项目数据属于必读原件：读取失败就报错，不允许伪装成空数据。
+    // 本轮新增的 cogtree / rels 用 getOptional：只有确认的 404 才降级，
+    // 这样合并顺序不会让正式版整个打不开。
+    const settled=await Promise.allSettled([
+      get("global.json"),get("projects/index.json"),getOptional("status.json",null),
+      get("methods.json"),
+      // cogtree / rels 是本轮新增的两张表，仓库里可能还没有（例如 app 先合进 main、
+      // 数据还没合，或者有人把分支指到旧提交）。缺它们只该让认知树降级，
+      // 不该让整个 app 打不开。getOptional 只认「确认的 404」，
+      // 401/403/网络故障照旧抛错，「读取失败不得当成空数据」这条没有放松。
+      getOptional("cogtree.json",{up:{},struct:{roots:[],nodes:{}},hideProjects:["journal"]}),
+      getOptional("rels.json",{rels:[],chains:[]}),get("history.json"),
+      getOptional("cognotes.json",{}),get("widget.json")]);
+    const error=settled.find(x=>x.status==="rejected");
+    if(error)throw error.reason;
+    [D.global,D.index,D.status,D.meth,D.cogtree,D.rels,D.hist,D.notes,D.widget]=settled.map(x=>x.value);
     await loadProject(cur(),true);
-  }catch(e){S.err=e.message}
+    const active=D.p[cur()];
+    if(active&&!PendingFocus(cur())&&D.widget?.focusUid&&D.widget.focusUid!==active.current?.focus?.focusUid)
+      S.focusWarning="Today 和小组件当前认知不一致，请重新选择今日焦点";
+  }catch(e){
+    // 等全部读取完成后统一撤销写入资格，旧内存无法再保存。
+    for(const bag of [SHA,BASE,READ])Object.keys(bag).forEach(k=>delete bag[k]);
+    D.p={};D.global=null;D.index=[];D.status=null;D.meth=null;D.cogtree=null;
+    D.rels=null;D.hist=null;D.notes=null;D.widget=null;treeDirty();
+    S.err="数据加载失败（禁止写入未加载文件）："+e.message;
+  }
   S.loading=false;render();
   // 「所有未解决问题」要跨项目，所以首屏之后把其余项目也读进来；只读，不动它们的 current.json
   (D.index||[]).filter(x=>x.state!=="archived"&&x.id!==cur())
@@ -428,32 +641,33 @@ function nightState(c){
 }
 // 写入新问题后，分析要在下一个早上 8:00（日本时间）之前跑出来；过了就算没跑成
 function next8(){const d=new Date();const jst=new Date(d.getTime()+9*36e5);if(jst.getUTCHours()>=8)jst.setUTCDate(jst.getUTCDate()+1);jst.setUTCHours(8,0,0,0);return new Date(jst.getTime()-9*36e5).toISOString()}
-const nightPill=st=>({done:'<span class="pill ok">夜间分析已完成</span>',wait:'<span class="pill ok">等待 AI 分析</span>',run:'<span class="pill ok">AI 分析中</span>',fail:'<span class="pill bd">夜间分析未完成</span>'}[st]);
 function curRow(P){return P.rows.find(r=>r.date===P.current.rowDate)||P.rows[P.rows.length-1]}
 function widgetFrom(id,P){
   const row=focusRowOf(P),n=row?.night||{};
   const isList=!!P.project.labels;
-  return {project:id,name:P.project.name,
-    q:isList?(row?.q||P.current.q):P.current.q,
+  if(!row?.uid)throw new Error("当前认知 UID 无效，拒绝更新小组件");
+  return {project:id,name:P.project.name,focusUid:row.uid,
+    q:row.q,
     writtenAt:P.current.writtenAt,
-    night:{status:P.current.night?.status||"wait",deadline:P.current.night?.deadline||null,error:P.current.night?.error||null,
+    night:{status:P.current.night?.status==="done"&&!n.c?"skip":P.current.night?.status||"wait",deadline:P.current.night?.deadline||null,error:P.current.night?.error||null,
       c:n.cs||"",r:n.r||"",x:n.recall?.[0]?.t||""}};
 }
 
 /* ============ 导航 ============ */
 function go(screen,arg){S.stack.push({screen:S.screen,arg:S.arg});S.screen=screen;S.arg=arg;S.open={};S.edit=false;render();window.scrollTo(0,0)}
 function back(){const b=S.stack.pop()||{screen:"today"};S.screen=b.screen;S.arg=b.arg;S.open={};S.edit=false;render()}
-function tab(s){S.stack=[];S.screen=s;S.arg=null;S.open={};S.edit=false;if(s!=="meth"){S.q="";S.mproj=""}render();window.scrollTo(0,0)}
-const nav=a=>`<nav class="nav">${[["today","今天"],["plist","项目"],["meth","方法"],["ilist","迭代"],["system","系统"]].map(([k,l])=>`<button data-tab="${k}" aria-current="${a===k}">${l}</button>`).join("")}</nav>`;
+function tab(s){S.stack=[];S.screen=s;S.arg=null;S.open={};S.edit=false;if(s!=="tree"){S.q=""}render();window.scrollTo(0,0)}
+const nav=a=>`<nav class="nav">${[["today","今天"],["plist","项目"],["tree","认知树"],["ilist","迭代"],["system","系统"]].map(([k,l])=>`<button data-tab="${k}" aria-current="${a===k}">${l}</button>`).join("")}</nav>`;
 const topBar=(title,right="")=>`<div class="top"><button class="back" data-back>‹ 返回</button><span class="meta">${esc(right)}</span></div>${title?`<h2 class="h1" style="font-size:24px">${esc(title)}</h2>`:""}`;
 
 /* ============ 页面 ============ */
 function settings(){
   return `<div class="body"><h1 class="h1">连接数据</h1>
-  <p class="small">第一次使用需要填写存数据的 GitHub 私有仓库。令牌只保存在这台手机的浏览器里。</p>
+  <p class="small">数据源：${esc(cfg.owner||"未配置")}/${esc(cfg.repo||"未配置")} · ${esc(branch()||"未配置分支（只读）")}。令牌只保存在本浏览器。</p>
   <div class="card" style="display:flex;flex-direction:column;gap:10px">
     <label class="small" for="owner">GitHub 用户名</label><input id="owner" value="${esc(cfg.owner||"")}" autocapitalize="off">
     <label class="small" for="repo">数据仓库名</label><input id="repo" value="${esc(cfg.repo||"rl-data")}" autocapitalize="off">
+    <label class="small" for="dbranch">分支（开发版必填，留空禁止写入）</label><input id="dbranch" value="${esc(cfg.branch||"")}" autocapitalize="off" placeholder="claude/loving-cerf-ufxzgm">
     <label class="small" for="token">令牌（需要该仓库 Contents 读写权限）</label><input id="token" type="password" value="${esc(cfg.token||"")}">
   </div>
   <button class="btn" data-savecfg>保存并连接</button></div>`;
@@ -467,35 +681,106 @@ function focusRow(P){
 // 夜间分析照 current.focus 定位，所以这里必须跟着改，否则两边又会指到不同的行。
 // 用户手动定过焦点就以用户的为准；没定过才回落到优先分最高的那一条
 function focusRowOf(P){
-  const f=P.current?.focus;
-  if(f&&f.manual&&P.rows[f.idx]) return P.rows[f.idx];
-  return focusRow(P);
+  const f=P.current?.focus||{};
+  if(f.focusUid)return P.rows.find(r=>r.uid===f.focusUid)||null;
+  // 旧数据只允许唯一「日期+正文」回填，绝不使用会随增删漂移的 idx。
+  if(f.date&&f.q){
+    const matches=P.rows.filter(r=>r.date===f.date&&r.q===f.q&&r.uid);
+    if(matches.length===1)return matches[0];
+  }
+  return null;
+}
+const PendingFocus=id=>!!D.p[id]?.current?.focus?.syncPending;
+const isFocusRow=(P,row)=>!!row&&focusRowOf(P)===row;
+let focusWriteQueue=Promise.resolve();
+// 同一个页面的连续选择按点击顺序写入，而不是让后一次撞上上一笔的全局锁。
+function queueFocusWrite(action){
+  const source=sourceKey();
+  const run=focusWriteQueue.then(()=>{
+    if(source!==sourceKey()){toast("数据源已切换，请重新选择焦点");return false}
+    return action();
+  });
+  focusWriteQueue=run.catch(()=>{});
+  return run;
+}
+function resetNightOnFocusChange(P,next,row){
+  if(isFocusRow(P,row))return;
+  // 旧认知的排队或分析状态不能跟着换人。新记录有旧结果可展示，但不自动排队。
+  next.night={status:row.night?.c?"done":"skip"};
+}
+// 每次明确选择都记录上一份全局选择。较新提交成功后，刷新不能再重放较旧的切换。
+const newFocusIntent=()=>({id:crypto.randomUUID(),previous:D.global?.focusSelection||null});
+async function clearFocusSync(pid,P){
+  const next=copyJSON(P.current);
+  delete next.focus.syncPending;
+  delete next.focus.syncIntent;
+  delete next.focus.syncLocal;
+  await put(`projects/${pid}/current.json`,next,"完成当前焦点同步");
+  P.current=next;
+}
+async function finishFocusSync(pid){
+  const P=D.p[pid];if(!P||!PendingFocus(pid))return true;
+  const uid=P.current.focus.focusUid;
+  if(!P.rows.some(r=>r.uid===uid))throw new Error("当前认知 UID 已失效，请重新选择");
+  const intent=P.current.focus.syncIntent,selected=D.global?.focusSelection||null;
+  if((P.current.focus.syncLocal&&cur()!==pid)||(intent&&selected!==intent.previous&&selected!==intent.id)){
+    // 只清理废弃的同步标记，不触碰用户原来的认知，也不改小组件或当前项目。
+    await clearFocusSync(pid,P);return false;
+  }
+  if(cur()!==pid||(intent&&selected!==intent.id)){
+    const next=copyJSON(D.global);next.current=pid;
+    if(intent)next.focusSelection=intent.id;
+    await put("global.json",next,"恢复未完成的当前项目同步");D.global=next;
+  }
+  const widget=widgetFrom(pid,P);
+  await put("widget.json",widget,"恢复未完成的小组件同步");D.widget=widget;
+  await clearFocusSync(pid,P);
+  S.focusWarning="";return true;
 }
 async function setFocus(pid,i){
-  const P=D.p[pid];if(!P) return;const r=P.rows[i];if(!r) return;
-  P.current.focus={date:r.date||null,idx:i,q:r.q||"",manual:true,at:new Date().toISOString()};
-  P.current.rowDate=r.date||P.current.rowDate;
-  P.current.q=r.q||"";                       // 只动 current.json，不碰 rows 的状态和优先分
+  const uid=D.p[pid]?.rows[i]?.uid;
+  if(!uid){toast("这条记录缺少永久 UID，无法设为当前认知");return false}
+  return queueFocusWrite(()=>writeFocus(pid,uid));
+}
+async function writeFocus(pid,uid){
+  const P=D.p[pid],r=P?.rows.find(x=>x.uid===uid);
+  if(!r){toast("这条认知已不能定位，请重新选择");return false}
+  const next=copyJSON(P.current);
+  resetNightOnFocusChange(P,next,r);
+  next.focus={focusUid:r.uid,date:r.date||null,q:r.q||"",manual:true,
+    at:new Date().toISOString(),syncPending:true,syncIntent:newFocusIntent()};
+  next.rowDate=r.date||next.rowDate;next.q=r.q||"";
+  // 第一笔提交成功才更新正式内存；后续失败保留可由刷新继续的 syncPending。
   try{
-    await put(`projects/${pid}/current.json`,P.current,"今日焦点：用户手动选定");
-    if(pid!==cur()){D.global.current=pid;await put("global.json",D.global,"当前项目跟随今日焦点")}
-    await put("widget.json",widgetFrom(pid,P),"小组件：跟随今日焦点");
-    S.screen="today";S.arg=null;toast("今日焦点已更新");render();
-  }catch(e){toast("保存失败："+e.message)}
+    await put(`projects/${pid}/current.json`,next,"今日焦点：用户手动选定");
+    P.current=next;S.focusWarning="焦点已保存，正在同步项目与小组件";
+    if(!(await finishFocusSync(pid)))throw new Error("已有较新的焦点选择");
+    S.screen="today";S.arg=null;toast("今日焦点与小组件已同步");render();return true;
+  }catch(e){
+    // 之前写成功的 current.json 不回滚伪装失败，而是明确标为待恢复。
+    S.focusWarning=P.current.focus?.syncPending?"焦点已写入，但同步未完成，刷新后可重试":"焦点未保存";
+    toast(S.focusWarning+"："+e.message);return false;
+  }
 }
 async function syncFocus(id){
-  const P=D.p[id];if(!P?.project.labels) return;
-  if(P.current.focus&&P.current.focus.manual) return;   // 用户定过了，AI 不许覆盖
-  const row=focusRow(P),idx=P.rows.indexOf(row);
-  const f=P.current.focus;
-  if(f&&f.idx===idx&&f.date===(row?.date||null)) return;   // 没换人，什么都不做
-  P.current.focus={date:row?.date||null,idx,q:row?.q||""};
-  P.current.rowDate=row?.date||P.current.rowDate;
-  P.current.q=row?.q||"";
+  const P=D.p[id];if(!P?.project.labels)return;
+  if(PendingFocus(id))return finishFocusSync(id);
+  if(P.current.focus?.focusUid&&!P.rows.some(r=>r.uid===P.current.focus.focusUid)){
+    S.focusWarning="当前认知 UID 已失效，请重新选择";return;
+  }
+  if(P.current.focus?.manual)return;
+  const row=focusRow(P);if(!row?.uid)return;
+  if(P.current.focus?.focusUid===row.uid)return;
+  const next=copyJSON(P.current);
+  resetNightOnFocusChange(P,next,row);
+  next.focus={focusUid:row.uid,date:row.date||null,q:row.q||"",syncPending:id===cur()};
+  if(next.focus.syncPending)next.focus.syncLocal=true;
+  next.rowDate=row.date||next.rowDate;next.q=row.q||"";
   try{
-    await put(`projects/${id}/current.json`,P.current,"今天页换成优先分最高的那一条");
-    if(id===cur()) await put("widget.json",widgetFrom(id,P),"小组件：换问题");
-  }catch(e){toast("今天页没换过去："+e.message)}
+    await put(`projects/${id}/current.json`,next,"更新当前认知 UID");
+    P.current=next;
+    if(id===cur())await finishFocusSync(id);
+  }catch(e){S.focusWarning="焦点更新或同步失败："+e.message;toast(S.focusWarning)}
 }
 // 两个切换：「待改」= 还没动的（量化/财富/人与关系那三个项目把这一档叫「待验」）；「改了未验」只有强化学习项目有
 const OST={"待改":["待改","待验"],"改了未验":["改了未验"]};
@@ -534,10 +819,10 @@ function today(){
     ["真正稀缺的是认知复利：把零散的思考连点成线，让用户在各种干扰中，仍能沿着自己真正想推进的方向不断行动、反思和迭代，每一次投入都接着上一次往前走。"]
   ].reverse();
   const changeHTML=(r,i)=>`<div style="padding:${i?13:2}px 0;border-top:${i?"1px solid var(--line)":"0"}"><div style="font-weight:600;line-height:1.6;font-size:${i?"15px":"18px"}">${esc(r[0])}</div>${r[1]?`<div class="meta" style="margin-top:6px">${esc(r[1])}</div>`:""}</div>`;
-  const manualFocus=P.current?.focus?.manual&&P.rows[P.current.focus.idx];
-  const focus=manualFocus||(id==="rl"?P.rows.find(r=>r.q.includes("长期项目为什么缺少即时吸引力")):null)||focusRowOf(P);
+  const focus=focusRowOf(P);
   const idx=P.rows.indexOf(focus),startArg=idx>=0?`${esc(focus.date)}|${idx}|${esc(id)}`:"";
   return `<div class="body today-new">
+    ${S.focusWarning?`<div class="banner bd">${esc(S.focusWarning)}</div>`:""}
     <section class="card" style="padding:24px 22px 20px;background:linear-gradient(130deg,#fbefd0 0%,#fffdf8 70%,#fff 100%);border:1px solid #e7d9b6;border-top:4px solid #d5ac54">
       <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
         <div class="h2" style="margin:0;color:var(--accent)">✧ 我的世界已经发生的变化</div>
@@ -555,7 +840,7 @@ function today(){
     </div>
     <section class="card" style="padding:22px 20px;background:linear-gradient(125deg,#fffefa 15%,#fbf3df 100%);border:1px solid #e7d9b6;border-top:3px solid #d5ac54">
       ${focus?.todayTitle?"":`<div class="h2" style="margin:0 0 12px;color:#8b6b15">⚒ 接下来我想创造什么？</div>`}
-      <p class="q" style="font-size:18px;line-height:1.65;margin:0 0 12px;overflow-wrap:anywhere;word-break:normal;white-space:pre-line">${manualFocus?esc(focus.q):id==="rl"?"让推进长期项目本身成为一件快乐、有收获、愿意继续的事。":esc(P.current?.q||"和 AI 讨论下一步想创造的东西")}</p>
+      <p class="q" style="font-size:18px;line-height:1.65;margin:0 0 12px;overflow-wrap:anywhere;word-break:normal;white-space:pre-line">${focus?esc(focus.q):"当前认知无法唯一定位，请重新选择今日焦点"}</p>
       ${focus?.todayTitle?"":`<div class="small" style="margin-bottom:16px">由你与 AI 讨论后确认</div>`}
       <button class="btn" style="display:block;width:100%;max-width:100%;padding:12px 16px;text-align:center;background:linear-gradient(100deg,#a88729,#80620f);color:#fff;border:0;border-radius:12px" data-go="${startArg?"row":"project"}" ${startArg?`data-arg="${startArg}"`:`data-arg="${esc(id)}"`}>开始 ›</button>
     </section>
@@ -577,7 +862,7 @@ function sheet(){
 }
 function nightBlock(P,row,ri){
   const n=row.night;
-  if(!n||!n.c) return `<div class="small" style="padding:10px 0">${row.date===P.current.rowDate?({wait:"等待 AI 分析",run:"AI 分析中…",fail:"夜间分析未完成"}[nightState(P.current)]||""):"这一行没有夜间分析"}</div>`;
+  if(!n||!n.c) return `<div class="small" style="padding:10px 0">${isFocusRow(P,row)?({wait:"等待 AI 分析",run:"AI 分析中…",fail:"夜间分析未完成",skip:"这一条没安排夜间分析"}[nightState(P.current)]||"这一条没安排夜间分析"):"这一行没有夜间分析"}</div>`;
   return `${n.note?`<div class="meta" style="padding-top:8px">${esc(n.note)}</div>`:""}
   <div class="line3 tap" data-go="detail" data-arg="c|${row.date}|${ri}"><span class="lbl">矛盾</span><span class="txt">${esc(n.cs)}</span><span class="chev">›</span></div>
   <div class="line3 tap" data-go="detail" data-arg="r|${row.date}|${ri}"><span class="lbl">结果</span><span class="txt">${esc(n.r)}</span><span class="chev">›</span></div>
@@ -603,7 +888,7 @@ function rowPage(){
   const isSt=(pj.labels?.f||"")==="状态";
   return `<div class="body">${topBar("",pj.name)}
     <div class="row" style="flex-wrap:wrap;gap:8px">
-      <span class="meta">${row.date}${row.date===P.current.rowDate?" · 当前问题来自这一条":""}</span>
+      <span class="meta">${row.date}${isFocusRow(P,row)?" · 当前问题来自这一条":""}</span>
       <span class="pw" style="margin-left:auto">优先 <input class="pin" value="${esc(row.cols?.[PRI]||"")}" placeholder="–" data-pri="${i}" inputmode="decimal"> / 10</span>
     </div>
     <div class="card">
@@ -630,7 +915,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-11-07b";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-25b";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -730,7 +1015,7 @@ function subTable(P,mid,pid){
       ||'<tr><td colspan="8" class="meta" style="padding:0 10px">这条主线下还没有记录</td></tr>'}
     <tr class="add" data-addrow><td colspan="8">＋ 今天这一条</td></tr></tbody></table></div>`;
 }
-function topRowIdx(P){const row=focusRow(P);return row?P.rows.indexOf(row):-1}
+function topRowIdx(P){const row=focusRowOf(P);return row?P.rows.indexOf(row):-1}
 function mainPage(){
   const [pid,mid]=String(S.arg).split("|");const P=D.p[pid];
   if(!P) return `<div class="center">加载中…</div>`;
@@ -1080,44 +1365,499 @@ function flowHTML(sop){
       <div class="t"><span>${esc(n.name)}</span>${n.kind==="plain"?"":"<span>›</span>"}</div>
       ${(n.q||n.sub)?`<div class="q">${esc(n.q||n.sub)}</div>`:""}</div>`).join("")}</div>`).join("");
 }
-/* ---- 方法库：一个库、一个入口、按「我要做什么」分类、可搜 ---- */
-function ML(){return D.meth?.methods||[]}
-function findM(id){return ML().find(m=>m.id===id)}
-function methPage(){
-  const all=ML(),projs=[...new Set(all.map(m=>m.proj))],PN={};
-  all.forEach(m=>PN[m.proj]=m.projName);
-  return `<div class="body">
-    <h1 class="h1">方法</h1>
-    <p class="small" style="margin:0 0 10px">${all.length} 条，从 6/27–9/22 的复盘里抽出来的。要做一件事之前，先来这儿看有没有做过类似的。</p>
-    <input class="srch" id="msrch" placeholder="搜一下，比如「卡住」「界面」「假设」" value="${esc(S.q||"")}" autocomplete="off" autocorrect="off">
-    <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:4px">
-      <button class="chip${S.mproj?"":" on"}" data-mproj="">全部</button>
-      ${projs.map(pid=>`<button class="chip${S.mproj===pid?" on":""}" data-mproj="${esc(pid)}">${esc(PN[pid])}</button>`).join("")}</div>
-    <div id="mbody">${methBody()}</div>
-  </div>${nav("meth")}`;
+/* ---- 方法：列表页已被认知树取代。方法本身与它的详情页保留，树上点开还是原来那一页 ---- */
+function ML(){return (D.meth?.methods||[]).filter(m=>!m.archived)}
+function findM(id){return (D.meth?.methods||[]).find(m=>m.id===id)}
+
+/* ============ 认知树 ============ */
+/* 树不另存一份。每次从已经载入的项目、方法、历史现算，所以不会和仓库里的数据脱节。
+   只有两样东西算不出来，放在 data/cogtree.json：
+   rl 的复盘挂在哪个 SOP 环下（内容判断），以及顶两层结构。
+
+   关系只有一个来源：rels.json 里 state=已确认 的那几条。链不另存一份关系，
+   相邻两条之间显示什么，一律回去查那张表里「这两个 UID」的那一条。
+   查不到就写「这一段没有确认过的关系」，不猜、不按时间倒推方向。 */
+
+// 已结案（够用了／已确认／不做：问题有了答案，不再推进）
+// 在研（待改／改了未验／待验）／推翻（已被推翻）。没有依据的一律不上色。
+const ST_ROW=f=>({"够用了":"done","已确认":"done","不做":"done",
+                  "待改":"active","改了未验":"active","待验":"active",
+                  "已被推翻":"failed"}[f]||"");
+const REL6=[["推翻","核心被否定"],["修正","部分判断改变"],["继承","有效部分明确保留"],
+            ["迁移","旧认知被用于新情境"],["支持","一方提供事实依据"],["关联","只是有意义的联系"]];
+const RELD=Object.fromEntries(REL6);
+const EVO_REL=["推翻","修正","继承"];            // 这三种才构成演化链
+const isEvo=r=>EVO_REL.includes(r);
+const STATES={done:"已结案",active:"研究中",failed:"验证失败",pending:"未开始"};
+let TREE=null;
+function treeDirty(){TREE=null}
+function relsOf(){return D.rels?.rels||[]}
+function chainsOf(){return D.rels?.chains||[]}
+function okRels(){return relsOf().filter(r=>r.state==="已确认")}
+// 这两个 UID 之间确认过的关系。可能不止一条，全给出来，不替人挑第一条。
+function relsBetween(a,b){return okRels().filter(r=>(r.from===a&&r.to===b)||(r.from===b&&r.to===a))}
+function relBetween(a,b){const r=relsBetween(a,b);return r.length===1?r[0]:null}
+function relsTouching(u){return okRels().filter(r=>r.from===u||r.to===u)}
+// 链 ID、层级 ID 与永久认知 UID 必须在数据层区分，不能仅凭树中存在来判断。
+function cogProject(u){
+  for(const [pid,P] of Object.entries(D.p||{})){
+    const pj=P.project||{},nodes=[...(pj.sop?.nodes||[])];
+    for(const tk of pj.tracks||[])for(const so of tk.sops||[])nodes.push(...(so.nodes||[]));
+    if((P.rows||[]).some(x=>x.uid===u)||nodes.some(x=>x.uid===u)||
+       (pj.sop?.cos||[]).some(x=>x.uid===u))return pid;
+  }
+  const m=(D.meth?.methods||[]).find(x=>x.uid===u);
+  if(m)return m.proj||"通用";
+  const h=(D.hist||[]).find(x=>x.uid===u);return h?.proj||null;
 }
-function methBody(){
-  const q=(S.q||"").trim().toLowerCase(),pf=S.mproj||"";
-  let hit=ML();
-  if(pf) hit=hit.filter(m=>m.proj===pf);
-  if(q) hit=hit.filter(m=>(m.name+" "+m.when+" "+m.what).toLowerCase().includes(q));
-  if(q) return `<div class="small">找到 ${hit.length} 条</div>`+
-    (hit.length?hit.map(m=>mRow(m,true)).join(""):'<div class="card small">没有找到。换个词试试，搜的是名字和「什么时候用得上」。</div>');
-  return (D.meth?.cats||[]).map(c=>{
-    const arr=hit.filter(m=>m.cat===c);if(!arr.length) return "";
-    const k="mc_"+c,on=!!S.open[k];
-    return `<div class="card"><div class="fold" data-toggle="${esc(k)}"><b>${esc(c)}</b><span class="meta" style="margin-left:auto">${arr.length} 条</span><span class="chev">${on?"⌄":"›"}</span></div>
-      ${on?arr.map(m=>mRow(m,false)).join(""):""}</div>`;
-  }).join("");
+function realCogUid(u){
+  if(typeof u!=="string"||!u)return false;
+  for(const P of Object.values(D.p||{})){
+    if((P.rows||[]).some(x=>x.uid===u))return true;
+    const pj=P.project||{};
+    if((pj.sop?.cos||[]).some(x=>x.uid===u))return true;
+    if((pj.sop?.nodes||[]).some(x=>x.uid===u))return true;
+    for(const tk of pj.tracks||[])for(const so of tk.sops||[])
+      if((so.nodes||[]).some(x=>x.uid===u))return true;
+  }
+  return (D.meth?.methods||[]).some(x=>x.uid===u)||(D.hist||[]).some(x=>x.uid===u);
 }
-function mRow(m,showCat){
-  return `<div class="line3 tap" data-go="method" data-arg="${esc(m.id)}">
-    <span class="txt"><b style="font-weight:600">${esc(m.name)}</b>
-      <div class="meta" style="margin-top:2px">${showCat?esc(m.cat)+"　":""}${esc(m.when)}</div></span><span class="chev">›</span></div>`;
+function dragTarget(id){return realCogUid(id)||chainsOf().some(c=>c.id===id)}
+function validateRels(next){
+  for(const r of next.rels||[]){
+    if(!realCogUid(r.from)||!realCogUid(r.to)||r.from===r.to)
+      throw new Error("关系端点不是两个不同的真实认知 UID："+r.from+" → "+r.to);
+    if(!RELD[r.rel])throw new Error("未知认知关系："+r.rel);
+  }
+  // 已确认的有向演化关系不可形成环；候选关系不影响正式结构。
+  const edges=new Map();
+  for(const r of next.rels||[])if(r.state==="已确认"&&isEvo(r.rel))
+    edges.set(r.from,(edges.get(r.from)||[]).concat(r.to));
+  const color=new Map();
+  function visit(u){
+    if(color.get(u)===1)throw new Error("已确认演化关系出现环："+u);
+    if(color.get(u)===2)return;
+    color.set(u,1);for(const v of edges.get(u)||[])visit(v);color.set(u,2);
+  }
+  for(const u of edges.keys())visit(u);
+  const used=new Set(),ids=new Set();
+  const tree=TREE||buildTree();
+  for(const c of next.chains||[]){
+    if(!tree.T[c.parent]||(next.chains||[]).some(x=>x.id===c.parent))
+      throw new Error("演化链归属节点不存在或指向其他链："+c.parent);
+    if(realCogUid(c.id))throw new Error("链 ID 与永久认知 UID 冲突："+c.id);
+    if(!/^chain-/.test(c.id))throw new Error("非法演化链 ID："+c.id);
+    if(!Array.isArray(c.members)||c.members.length<2)
+      throw new Error("演化链至少需要两条认知："+c.id);
+    if(!c.parent)throw new Error("演化链缺少原始归属："+c.id);
+    if(ids.has(c.id))throw new Error("演化链 ID 重复："+c.id);
+    ids.add(c.id);
+    for(const u of c.members||[]){
+      if(!realCogUid(u)||used.has(u))throw new Error("演化链成员不是唯一真实 UID："+u);
+      used.add(u);
+    }
+  }
 }
+
+function buildTree(){
+  const CT=D.cogtree||{up:{},struct:{roots:[],nodes:{}}},T={};
+  const add=(id,o)=>{T[id]=Object.assign({id:id,children:[]},o);return id};
+  (Object.entries(CT.struct?.nodes||{})).forEach(([k,v])=>add(k,{name:v.name,children:(v.children||[]).slice()}));
+  // 每日思考日志不是正式项目，不在树上单独占一枝（它的认知已经迁进各项目了）
+  const HIDE=new Set((CT.hideProjects)||["journal"]);
+  const PRJ=(D.index||[]).filter(x=>x.state!=="archived"&&!HIDE.has(x.id)).map(x=>x.id);
+  PRJ.forEach(pid=>{
+    const P=D.p[pid];if(!P)return;
+    const pj=P.project,kids=[],used={};
+    // 项目目标和奖励保留在项目详情，不伪装为无 UID 的独立认知。
+    const ringOf=(n,idFallback)=>{
+      const rk=[];
+      P.rows.forEach((r,i)=>{if(r.uid&&CT.up[r.uid]===n.id){used[r.uid]=1;rk.push(rowNode(T,add,r,i,pid))}});
+      // pains[] 仍保留在原 SOP 详情里，但没有永久 UID，不生成独立树叶。
+      // SOP 环本身没有验收记录，不编造状态
+      return add(n.uid||("sop:"+pid+":"+(n.id||idFallback)),{name:n.name,children:rk,
+        detail:[["这一步要回答什么",n.q||""],["整体是怎么跑的",n.whole||n.how||""],
+                ["目前的结论",n.concl||""],
+                ["原有痛点",(n.pains||[]).map(p=>p.text||"").filter(Boolean).join("；")]].filter(x=>x[1])});
+    };
+    // 认知树只展示拥有永久 UID 的认知；没有 UID 的「你／前台／AI 聊天／原始历史数据」等流程示意节点仅保留在原 SOP 画布。
+    // kind=plain 但有 UID 的真实认知仍需展示（例如财富、人与关系项目的公理节点）。
+    const isCog=n=>!!n.uid;
+    const sopNodes=(pj.sop?.nodes||[]).filter(isCog);
+    if(sopNodes.length)
+      kids.push(add(pid+":sop",{name:"SOP",children:sopNodes.map((n,i)=>ringOf(n,"n"+i))}));
+    // tracks 下面每一套 SOP 也要进树，之前整块漏掉了
+    (pj.tracks||[]).forEach((tk,ti)=>{
+      const sk=(tk.sops||[]).map((so,si)=>{
+        const nn=(so.nodes||[]).filter(isCog).map((n,ni)=>ringOf(n,"t"+ti+"s"+si+"n"+ni));
+        return add("track:"+pid+":"+ti+":"+si,{name:so.name,children:nn,
+          detail:[["什么时候用",so.when||""],["版本",so.version||""]].filter(x=>x[1])});
+      });
+      if(sk.length)kids.push(add("track:"+pid+":"+ti,{name:tk.name,children:sk}));
+    });
+    // 投资项目按已有的研究主线分组，不再平铺
+    const mains=(pj.mains||[]),byMain={};
+    const rest=[];
+    P.rows.forEach((r,i)=>{
+      if(!r.uid||used[r.uid])return;
+      const n=rowNode(T,add,r,i,pid);
+      if(r.main&&mains.some(m=>m.id===r.main))(byMain[r.main]=byMain[r.main]||[]).push(n);
+      else rest.push(n);
+    });
+    mains.forEach(m=>{
+      const k=byMain[m.id];if(!k||!k.length)return;
+      kids.push(add("main:"+pid+":"+m.id,{name:m.name,
+        status:{"已闭环":"done","在验":"active","已被推翻":"failed"}[m.st]||"",
+        children:k,detail:[["这条主线现在怎么样",m.judge||""],["状态",m.st||""]].filter(x=>x[1])}));
+    });
+    if(rest.length)kids.push(add(pid+":rows",{name:"复盘与研究 "+rest.length+" 条",children:rest}));
+    // 公司档案用它自己的永久 UID 当身份
+    (pj.sop?.cos||[]).forEach(c=>{
+      if(!c.uid)return;
+      const det=[["为什么看它",c.why||""],["读完的结论",c.sum||""],["发现",c.find||""],
+                 ["判断",c.verdict||""],["反馈",c.fb||""]].filter(x=>x[1]);
+      const md=/^(\d{4}-\d{2}-\d{2})/.exec(String(c.at||""));
+      // 研究完成就是完成，结论是不投资也一样；没完成的还在研究中
+      kids.push(add(c.uid,{name:c.name,d:md?md[1]:"",detail:det,
+        status:c.state==="已完成"?"done":c.state==="待研究"?"pending":"active",
+        go:"co",arg:pid+"|"+c.id}));
+    });
+    add("proj:"+pid,{name:pj.name,children:kids,
+      detail:[["目标",trF(pj,"goal")],["奖励",trF(pj,"reward")]].filter(x=>x[1])});
+  });
+  const cats={};
+  (D.meth?.methods||[]).filter(m=>!!m.uid&&!m.archived&&!m._draft).forEach(m=>{
+    // 方法库里没有逐条验收记录，不默认标成已完成
+    add(m.uid||("m:"+m.id),{name:m.name,d:(m.refs||[])[0]||"",go:"method",arg:m.id,
+      detail:[["这是什么",m.what||""],["什么时候用得上",m.when||""],["出处",m.src||""]].filter(x=>x[1])});
+    (cats[m.cat||"未分类"]=cats[m.cat||"未分类"]||[]).push(m.uid||("m:"+m.id));
+  });
+  add("methods",{name:"方法 "+(D.meth?.methods||[]).length+" 条",
+    children:Object.entries(cats).map(([c,ids])=>add("mcat:"+c,{name:c+" "+ids.length+" 条",children:ids}))});
+  const hk=[];
+  (D.hist||[]).forEach(h=>{if(!h.uid)return;
+    // 历史记录只是「当时记下的」，没有验收结论，不默认标成已完成
+    hk.push(add(h.uid,{name:(h.text||"").slice(0,40),d:h.date||"",
+      detail:[["当时记下的",h.text||""]]}))});
+  add("history",{name:"历史认知 "+hk.length+" 条",children:hk});
+  // 结构里写了但没建出来的项目入口，不要静默丢掉
+  Object.entries(CT.struct?.nodes||{}).forEach(([k,v])=>{
+    (v.children||[]).forEach(c=>{if(!T[c]&&c.indexOf("proj:")===0)
+      add(c,{name:c.slice(5)+"（这个项目还没有数据）"})})});
+  let roots=(CT.struct?.roots||[]).filter(k=>T[k]);
+  const missing=[];
+  Object.values(T).forEach(n=>{n.children=(n.children||[]).filter(c=>{
+    if(T[c])return true;missing.push(n.id+" → "+c);return false})});
+  // 演化链：占住它接管的那条认知在树上的位置
+  const inChain={};
+  chainsOf().forEach(c=>{
+    const mem=(c.members||[]).filter(u=>T[u]);
+    const st=mem.map(u=>T[u].status).filter(Boolean);
+    const s=!st.length?"":st.every(x=>x==="done")?"done":st.includes("active")?"active"
+            :st.includes("failed")?"failed":st.includes("done")?"active":"pending";
+    add(c.id,{name:c.name,status:s,chain:c,
+      d:mem.map(u=>T[u].d||"").filter(Boolean).sort()[0]||""});
+    mem.forEach(u=>inChain[u]=c.id);
+    const p=T[c.parent];if(p&&!p.children.includes(c.id))p.children.push(c.id);
+  });
+  if(Object.keys(inChain).length)Object.values(T).forEach(n=>{
+    if(n.chain)return;n.children=n.children.filter(c=>!inChain[c])});
+  TREE={T:T,roots:roots,inChain:inChain,missing:missing};
+  return TREE;
+}
+function rowNode(T,add,r,i,pid){
+  const cols=r.cols||{},det=[];
+  if(!cols["哪里不够用"]&&r.q)det.push(["哪里不够用",r.q]);
+  ["哪里不够用","碰现实了吗","为什么要改动","改了什么（第几版）","改后验证","假设","实验",
+   "做了什么","下一步","详细","对方","原预测","实际反应","假设更新"]
+    .forEach(k=>{if(cols[k])det.push([k,String(cols[k])])});
+  return add(r.uid,{name:(r.q||"").slice(0,40),status:ST_ROW(r.f),fs:r.f||"",d:r.date||"",
+    detail:det,go:"row",arg:[r.date||"",i,pid].join("|")});
+}
+function chainOfUid(u){return chainsOf().find(c=>(c.members||[]).includes(u))}
+function treeMark(s){const M={done:'<circle cx="8" cy="8" r="6.3"/><path d="m5 8 2 2 4-4"/>',
+  active:'<circle cx="8" cy="8" r="5.8"/><circle cx="8" cy="8" r="3" fill="currentColor" stroke="none"/>',
+  failed:'<path d="m4.5 4.5 7 7m0-7-7 7"/>',pending:'<circle cx="8" cy="8" r="6"/>'};
+  return s?`<span class="tmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${M[s]}</svg></span>`:""}
+// 树和 Today 使用同一个已验证的永久焦点，不能各自猜测旧指针。
+function curUid(){
+  const P=D.p[cur()];return P?focusRowOf(P)?.uid||"":"";
+}
+function openPath(){
+  const t=TREE||buildTree(),u=t.inChain[curUid()]||curUid();if(!u)return[];
+  let hit=null;(function w(ids,pre,anc){for(const id of ids){if(hit||anc.includes(id))continue;
+    const key=pre?pre+"/"+id:id;if(id===u){hit=key;return}
+    w((t.T[id]||{}).children||[],key,anc.concat([id]))}})(t.roots,"",[]);
+  if(!hit)return[];const seg=hit.split("/"),out=[];
+  for(let i=1;i<seg.length;i++)out.push(seg.slice(0,i).join("/"));
+  return out;
+}
+// 以下四个页面的结构、类名和 SVG 全部照搬已验收的「认知树.html」，只把数据换成仓库实时数据。
+const CHEV='<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const BACKSVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+function treeNode(id,path,anc){
+  const t=TREE,d=t.T[id];if(!d||anc.includes(id))return"";
+  const key=path?path+"/"+id:id,has=!!d.children?.length,shown=!!S.topen?.[key],
+        isCur=(id===curUid()||id===t.inChain[curUid()]);
+  return `<div draggable="${dragTarget(id)}" class="item ${d.status||'struct'} ${isCur?'current':''} ${!path?'topbranch':''}" data-id="${esc(id)}" data-path="${esc(key)}"><div class="line"><button class="toggle" data-ttoggle="${esc(key)}" aria-label="${shown?'折叠':'展开'}${esc(d.name)}" aria-expanded="${shown}" ${has?'':'disabled'}>${CHEV}</button><button class="name" data-topen="${esc(key)}" aria-label="查看${esc(d.name)}详情">${isCur?`<span class="current-heading">当前研究位置</span><span class="current-title">${treeMark(d.status)}<span class="node-label">${esc(d.name)}</span></span>${d.question?`<span class="current-question">${esc(d.question)}</span>`:""}`:`${treeMark(d.status)}<span class="node-label">${esc(d.name)}</span>`}</button>${d.chain?'<span class="alias" title="认知演化链">'+treeMark("")+'</span>':''}</div>${has?`<div class="branch children" ${shown?'':'hidden'}>${d.children.map(c=>treeNode(c,key,anc.concat([id]))).join('')}</div>`:''}</div>`;
+}
+function treePage(){
+  const t=buildTree();
+  if(!S.topen){S.topen={};openPath().forEach(k=>S.topen[k]=1)}
+  const n=Object.keys(t.T).length,cand=relsOf().filter(r=>r.state!=="已确认").length;
+  const legend=[["done","已完成"],["active","研究中"],["failed","验证失败"],["pending","未开始"]]
+    .map(([k,l])=>`<span>${treeMark(k)}${l}</span>`).join("")
+    +'<span class="empty"><i></i>没有依据判断状态的不上色</span>';
+  return `<div class="cog"><div id="tree-page">
+    <header><div><h1>认知树</h1><div class="sub">${t.roots.length?n+" 个节点":"结构表缺失，暂时显示不出树"} · 来自 ${esc(cfg.owner||"")}/${esc(cfg.repo||"")} 分支 ${esc(branch()||"默认分支")} · 拖两条认知相叠 → 生成一条演化链</div></div>
+    <div class="tools"><button class="tool" data-rpick="1">${S.relPick!==null?(S.relPick?"选择第二条":"选择第一条"):"点选建立关系"}</button><button class="tool" data-tcollapse="1">折叠全部</button><button class="tool" data-tfocus="1">定位当前</button><button class="tool" data-go="rels">认知关系 ${cand}</button></div></header>
+    <section class="canvas"><h2 class="root">我要杰出，我要做出伟大的公司</h2>
+      ${t.roots.length?`<div id="tree">${t.roots.map(r=>treeNode(r,"",[])).join("")}</div>`
+        :`<div class="note" style="margin:0">这个分支上还没有 data/cogtree.json，所以树的结构长不出来。
+          ${n} 条认知本身都在，等这份结构表合进来就会显示。其它页面不受影响。</div>`}</section>
+    <div class="legend">${legend}</div>
+    ${t.missing.length?`<div class="note">有 ${t.missing.length} 处指向了不存在的节点：${esc(t.missing.slice(0,5).join("、"))}</div>`:""}
+    <div class="note">节点来自仓库现有数据，每次打开现算，不另存一份。关系只认 rels.json 里确认过的那几条。</div>
+  </div></div>${nav("tree")}`;
+}
+function relsPage(){
+  buildTree();const rs=relsOf(),by={};
+  rs.forEach((r,i)=>(by[r.rel]=by[r.rel]||[]).push([r,i]));
+  const nm=u=>esc((TREE.T[u]||{}).name||u),dt=u=>(TREE.T[u]||{}).d||"";
+  return `<div class="cog"><section id="rel-page">
+    <button class="back" data-back>${BACKSVG}返回认知树</button>
+    <h1 class="page-title">认知关系</h1>
+    <div class="relnote">从真实数据里找出来的<b>候选</b>认知对，每一对都带原文依据。<b>推翻／修正／继承</b>确认后会合成一条演化链，接在原来的树干上；<b>迁移／支持／关联</b>只连线，两条都留在树上原来的位置。</div>
+    ${REL6.map(([k,desc])=>{const g=by[k]||[];if(!g.length)return"";
+      return `<div class="relgrp"><h3>${k}<span class="reltag">${g.length} 对</span></h3><p>${desc}　${isEvo(k)?"确认后合成演化链":"确认后只连线，不动树上的位置"}</p>
+      ${g.map(([r,i])=>`<div class="relrow${r.state==="已确认"?" ok":""}">
+        <div class="relends"><div><i>${isEvo(r.rel)?"旧":r.rel==="支持"?"证据":"一端"}</i>${nm(r.from)}${dt(r.from)?"　"+dt(r.from):""}</div>
+        <div class="relarrow"><span>└</span><b>${k}</b><span>${esc(r.dir||desc)}</span></div>
+        <div><i>${isEvo(r.rel)?"新":r.rel==="支持"?"被支持":"另一端"}</i>${nm(r.to)}${dt(r.to)?"　"+dt(r.to):""}</div></div>
+        <div class="relwhy">${esc(r.why||"")}${r.src?`<br>${esc(r.src)}`:""}</div>
+        ${r.note?`<div class="relamb">⚠ ${esc(r.note)}</div>`:""}
+        <div class="relact">${r.state==="已确认"?'<span class="done">已确认</span>':""}
+          <button class="yes" data-relok="${i}" ${r.state==="已确认"?"disabled":""}>${isEvo(k)?"确认，生成演化链":"确认这条关系"}</button></div>
+      </div>`).join("")}</div>`}).join("")}
+  </section></div>${nav("tree")}`;
+}
+function chainPage(){
+  buildTree();const c=chainsOf().find(x=>x.id===S.arg);
+  if(!c)return `<div class="cog"><section id="node-page"><button class="back" data-back>${BACKSVG}返回认知树</button><h1 class="page-title">找不到这条链</h1></section></div>${nav("tree")}`;
+  const ms=(c.members||[]).filter(u=>TREE.T[u]).slice().sort((a,b)=>{
+    const x=TREE.T[a].d||"",y=TREE.T[b].d||"";return x&&y?(x<y?-1:x>y?1:0):x?-1:y?1:0});
+  let h="";
+  ms.forEach((u,i)=>{
+    if(i){const rr=relsBetween(ms[i-1],u);
+      h+=rr.length?rr.map(r=>`<div class="chainmid"><span class="bar"></span><b>${esc(r.rel)}</b><em>${esc(r.from===ms[i-1]?"前面那条被后面这条"+r.rel:"后面那条被前面这条"+r.rel)}</em></div>`).join("")
+        :`<div class="chainmid"><span class="bar"></span><em>这一段没有确认过的关系</em></div>`}
+    const n=TREE.T[u];
+    h+=`<button class="chainend ${n.status||""}" data-chaingo="${esc(u)}"><i>${treeMark(n.status)}认知 ${i+1}${n.d?" · "+n.d:" · 没有记录时间"}</i>${esc(n.name||u)}</button>`});
+  const ex=[];
+  for(let i=0;i<ms.length;i++)for(let j=i+2;j<ms.length;j++)
+    relsBetween(ms[i],ms[j]).forEach(r=>ex.push(`<li><b>${esc(r.rel)}</b>　${esc(TREE.T[r.from].name)} → ${esc(TREE.T[r.to].name)}</li>`));
+  return `<div class="cog"><section id="node-page">
+    <button class="back" data-back>${BACKSVG}返回认知树</button>
+    <div class="detail-path">认知演化链 · ${ms.length} 条认知 · 按记录时间排，没有时间的排在最后</div>
+    <h1 class="page-title" id="ctitle" contenteditable>${esc(c.name)}</h1>
+    <div class="chainbox">${h}</div>
+    ${ex.length?`<div class="offchain"><h4>这条链上还确认过这些关系（现在不相邻）</h4><ul>${ex.join("")}</ul></div>`:""}
+    <div class="page-note">每段关系都来自 rels.json 里确认过的那一条，不按时间倒推。点任一条进它原本的页面。改标题后点页面别处即保存。</div>
+  </section></div>${nav("tree")}`;
+}
+function cogPage(){
+  buildTree();const n=TREE.T[S.arg];
+  if(!n)return `<div class="cog"><section id="node-page"><button class="back" data-back>${BACKSVG}返回认知树</button><h1 class="page-title">找不到这一条</h1></section></div>${nav("tree")}`;
+  const c=chainOfUid(S.arg),FS=["待改","改了未验","够用了","不做"];
+  const side=relsTouching(S.arg).filter(r=>!isEvo(r.rel));
+  const flds=(n.detail||[]).filter(p=>p[0]&&p[1]);
+  const body=flds.length?flds.map(p=>p[0]==="碰现实了吗"
+    ?`<div class="fld"><h4>碰现实了吗</h4><div class="chips">${["有","无"].map(v=>`<span class="chip${v===p[1]?" on":""}">${v}</span>`).join("")}<em>有＝这次改动是现实逼出来的</em></div></div>`
+    :`<div class="fld"><h4>${esc(p[0])}</h4><p>${esc(p[1])}</p></div>`).join("")
+    :'<div class="fld"><p class="muted">这一条还没有记录内容。</p></div>';
+  return `<div class="cog"><section id="node-page">
+    <button class="back" data-back>${BACKSVG}返回认知树</button>
+    <div class="detail-path">${c?`在演化链里：<button class="crumblink" data-go="chain" data-arg="${esc(c.id)}">${esc(c.name)}</button>`:""}${n.d?(c?" · ":"")+esc(n.d):""}</div>
+    <h1 class="page-title">${esc(n.name)}</h1>
+    ${n.status?`<div class="page-status ${n.status}">${treeMark(n.status)}${STATES[n.status]}</div>`:""}
+    <div class="fldcard">
+      ${n.fs?`<div class="fld"><h4>状态</h4><div class="chips">${FS.map(v=>`<span class="chip${v===n.fs?" on":""}">${esc(v)}</span>`).join("")}</div></div>`:""}
+      ${body}
+    </div>
+    ${side.length?`<div class="offchain"><h4>和别的认知的横向关系</h4><ul>${side.map(r=>{
+      const o=r.from===S.arg?r.to:r.from,on=TREE.T[o];
+      return `<li><b>${esc(r.rel)}</b>　<button class="crumblink" data-cogjump="${esc(o)}">${esc(on?on.name:o)}</button>　${esc(r.dir||RELD[r.rel])}</li>`}).join("")}</ul></div>`:""}
+    <div class="detail-card"><div class="small">补充认知 · 正式内容保存到 RL-data，未提交草稿只留本机</div>
+      <textarea class="record-editor" aria-label="补充记录" placeholder="要补充什么，写在这里…"></textarea>
+      <div class="record-actions"><span class="save-note" role="status"></span><button class="save-record" disabled>保存</button></div></div>
+    <div class="page-note">原始认知只读；补充内容以永久 UID 单独存于 RL-data/cognotes.json，不复制原文。旧本机草稿不会自动上传。</div>
+  </section></div>${nav("tree")}`;
+}
+async function saveRels(next,msg){
+  // 保存前完整检查，写成功后才替换正式内存；失败保留所有已确认状态。
+  try{validateRels(next);await put("rels.json",next,msg||"认知关系");
+    D.rels=next;treeDirty();return true}
+  catch(e){toast("没能写回仓库，这次确认没算数："+e.message);return false}
+}
+/* 合并成链：只用用户实际确认的那两个 UID，关系本身不存在链里。
+   链里只有成员和名字；相邻两条之间显示什么，回 rels.json 查。 */
+function mergeChain(from,to,name){
+  const t=TREE||buildTree();
+  const asChain=u=>chainsOf().find(c=>c.id===u)||chainOfUid(u);
+  const cf=asChain(from),ct=asChain(to);
+  if(cf&&ct&&cf.id===ct.id)return cf.id; // 同一条链内部增加关系，不要重复建链
+  const mem=(u,c)=>c?c.members.slice():[u];
+  const all=[...new Set(mem(from,cf).concat(mem(to,ct)))];
+  const par=(ct||{}).parent||parentIn(t,to)||(cf||{}).parent||parentIn(t,from)||"history";
+  // 旧链按它自己的 id 删掉，不管传进来的是链 id 还是链里的某个成员
+  const drop=[cf&&cf.id,ct&&ct.id].filter(Boolean);
+  D.rels.chains=(D.rels.chains||[]).filter(c=>!drop.includes(c.id));
+  // 同一毫秒内连建两条会撞 id；刚被取代的旧链 id 也不能马上再用
+  const taken=D.rels.chains.map(c=>c.id).concat(drop);
+  let id="chain-"+Date.now().toString(36),k=0;
+  while(taken.includes(id))id="chain-"+Date.now().toString(36)+"-"+(++k);
+  D.rels.chains.push({id:id,name:name,parent:par,members:all});
+  return id;
+}
+// 拖两条认知相叠 → 选关系 → 取名 → 生成演化链。交互和已验收的 HTML 一致。
+let dragId=null;
+function bindCog(){
+  const host=document.querySelector(".cog");if(!host)return;
+  const tree=host.querySelector("#tree");
+  if(tree){
+    tree.addEventListener("dragstart",e=>{const it=e.target.closest(".item");if(!it||!dragTarget(it.dataset.id)){e.preventDefault();return}
+      dragId=it.dataset.id;e.dataTransfer.effectAllowed="link";it.classList.add("dragging")});
+    tree.addEventListener("dragend",()=>{dragId=null;
+      tree.querySelectorAll(".dragging,.dropok").forEach(n=>n.classList.remove("dragging","dropok"))});
+    tree.addEventListener("dragover",e=>{const it=e.target.closest(".item");
+      if(!it||!dragId||!dragTarget(it.dataset.id)||it.dataset.id===dragId)return;e.preventDefault();e.dataTransfer.dropEffect="link";
+      tree.querySelectorAll(".dropok").forEach(n=>n.classList.remove("dropok"));it.classList.add("dropok")});
+    tree.addEventListener("drop",e=>{const it=e.target.closest(".item");
+      if(!it||!dragId||!dragTarget(it.dataset.id)||it.dataset.id===dragId)return;e.preventDefault();
+      const from=dragId;dragId=null;askDragRel(from,it.dataset.id)});
+  }
+  const ct=host.querySelector("#ctitle");
+  if(ct)ct.addEventListener("blur",async()=>{
+    const v=ct.textContent.trim(),c=chainsOf().find(x=>x.id===S.arg);
+    if(!c||!v||v===c.name)return;
+    const next=JSON.parse(JSON.stringify(D.rels));
+    (next.chains.find(x=>x.id===c.id)||{}).name=v;
+    if(await saveRels(next,"演化链改名："+v)){toast("已写回仓库");render()}else render();
+  });
+  const ed=host.querySelector(".record-editor");
+  if(ed){
+    const id=S.arg,btn=host.querySelector(".save-record"),msg=host.querySelector(".save-note");
+    const original=String(D.notes?.[id]||"");let draft=null;
+    try{draft=localStorage.getItem("rl.cognote:"+id)}catch(e){}
+    ed.value=draft!==null?draft:original;
+    btn.disabled=ed.value===original;
+    msg.textContent=draft!==null?"本机未提交草稿（不会自动上传）":"正式记录来自 RL-data";
+    ed.addEventListener("input",()=>{
+      btn.disabled=ed.value===String(D.notes?.[id]||"");
+      try{localStorage.setItem("rl.cognote:"+id,ed.value)}catch(e){}
+      msg.textContent=btn.disabled?"与仓库一致":"未提交草稿";
+    });
+    btn.addEventListener("click",async()=>{
+      if(!realCogUid(id))return msg.textContent="不是永久认知 UID，禁止保存";
+      btn.disabled=true;msg.textContent="正在写入 RL-data";
+      const next=copyJSON(D.notes||{});
+      if(ed.value.trim())next[id]=ed.value;else delete next[id];
+      try{
+        await put("cognotes.json",next,"补充认知："+id,{create:true});
+        D.notes=next;try{localStorage.removeItem("rl.cognote:"+id)}catch(e){}
+        msg.textContent="已写入 RL-data，其他设备和 AI 可从仓库读取";
+      }catch(e){
+        try{localStorage.setItem("rl.cognote:"+id,ed.value)}catch(e2){}
+        btn.disabled=false;msg.textContent="保存失败，草稿仍在："+e.message;
+      }
+    });
+  }
+}
+function cogSheet(html,onclick){
+  const m=document.createElement("div");m.className="cog";
+  m.innerHTML='<div class="relsheet"><div class="relcard">'+html+'</div></div>';
+  document.body.appendChild(m);
+  m.addEventListener("click",ev=>{if(ev.target===m.firstChild){m.remove();return}onclick(ev,m)});
+  return m;
+}
+// 先消解演化链容器：必须由用户选出真正发生关系的成员。
+function pickCog(id,done){
+  const chain=chainsOf().find(c=>c.id===id);
+  if(!chain){if(realCogUid(id))done(id);return}
+  const t=TREE||buildTree(),members=(chain.members||[]).filter(realCogUid);
+  cogSheet('<div class="relq">请选择「'+esc(chain.name)+'」中具体发生关系的认知</div>'+
+    members.map((u,i)=>'<button class="relbtn" data-member="'+i+'">'+esc(t.T[u]?.name||u)+'</button>').join("")+
+    '<button class="relbtn cancel">取消</button>',(ev,m)=>{
+      const btn=ev.target.closest(".relbtn");if(!btn)return;
+      m.remove();if(!btn.classList.contains("cancel"))done(members[+btn.dataset.member]);
+    });
+}
+function askDragRel(from,to){
+  if(!dragTarget(from)||!dragTarget(to))return;
+  pickCog(from,a=>pickCog(to,b=>{if(a!==b)askRel(a,b)}));
+}
+function askDirection(from,to,rel){
+  if(!realCogUid(from)||!realCogUid(to)||from===to)return;
+  const t=TREE||buildTree(),name=u=>esc(t.T[u]?.name||u);
+  cogSheet('<div class="relq">确认关系方向：'+esc(rel)+'</div>'+
+    '<button class="relbtn" data-dir="0">'+name(from)+' → '+name(to)+'</button>'+
+    '<button class="relbtn" data-dir="1">'+name(to)+' → '+name(from)+'</button>'+
+    '<button class="relbtn cancel">取消</button>',(ev,m)=>{
+      const btn=ev.target.closest(".relbtn");if(!btn)return;m.remove();
+      if(btn.classList.contains("cancel"))return;
+      const reverse=btn.dataset.dir==="1";confirmRel(reverse?to:from,reverse?from:to,rel);
+    });
+}
+function askRel(from,to){
+  if(!realCogUid(from)||!realCogUid(to)||from===to)return;
+  const t=TREE||buildTree(),an=esc((t.T[from]||{}).name||from),bn=esc((t.T[to]||{}).name||to);
+  cogSheet('<div class="relpair"><b>'+an+'</b><span>→</span><b>'+bn+'</b></div>'+
+    '<div class="relq">新认知改变了旧认知吗？</div>'+
+    REL6.slice(0,3).map((r,i)=>'<button class="relbtn" data-i="'+i+'">'+r[0]+'<em>'+r[1]+'</em></button>').join("")+
+    '<div class="relq" style="margin-top:9px">没改变。那是别的什么联系？</div>'+
+    REL6.slice(3).map((r,i)=>'<button class="relbtn" data-i="'+(i+3)+'">'+r[0]+'<em>'+r[1]+'</em></button>').join("")+
+    '<button class="relbtn cancel">取消</button>',
+   (ev,m)=>{const b=ev.target.closest(".relbtn");if(!b)return;m.remove();
+     if(!b.classList.contains("cancel")){
+       const rel=REL6[+b.dataset.i][0];
+       if(rel==="关联")confirmRel(from,to,rel);else askDirection(from,to,rel);
+     }});
+}
+async function confirmRel(from,to,rel){
+  if(!realCogUid(from)||!realCogUid(to)||from===to||!RELD[rel]){
+    toast("非法关系端点或关系类型，未保存");return false;
+  }
+  const t=TREE||buildTree(),an=t.T[from]?.name||from,bn=t.T[to]?.name||to;
+  const cf=chainOfUid(from),ct=chainOfUid(to),cross=cf&&ct&&cf.id!==ct.id,
+    crossProject=cogProject(from)!==cogProject(to);
+  if(!confirm(an+"\n  └ "+rel+(rel==="关联"?" ↔ ":" → ")+bn+
+    ((cross||crossProject)&&isEvo(rel)?"\n不同演化链或项目仍保持原有归属，不会自动合并。":"")+
+    "\n\n"+(rel==="关联"?"确认保存这条无向关联吗？":"确认保存这个方向的关系吗？")))return false;
+  let next=copyJSON(D.rels);next.chains=next.chains||[];next.rels=next.rels||[];
+  const hit=next.rels.find(r=>r.rel===rel&&((r.from===from&&r.to===to)||
+    (rel==="关联"&&r.from===to&&r.to===from)));
+  if(hit?.state==="已确认")return true;
+  if(isEvo(rel)&&!cross&&!crossProject&&!(cf&&ct&&cf.id===ct.id)){
+    const nm=(prompt("这条演化链叫什么？\n\n"+an+"\n  └ "+rel+"\n"+bn,cf?.name||ct?.name||"")||"").trim();
+    if(!nm)return false;
+    const keep=D.rels;D.rels=next;
+    try{mergeChain(from,to,nm)}finally{next=D.rels;D.rels=keep}
+  }
+  if(hit){hit.state="已确认";hit.at=new Date().toISOString().slice(0,10)}
+  else next.rels.push({from,to,rel,dir:rel==="关联"?"无方向":RELD[rel],why:"在认知树上选择端点后确认",
+    src:"手动确认（"+new Date().toISOString().slice(0,10)+"）",state:"已确认",
+    at:new Date().toISOString().slice(0,10)});
+  const saved=await saveRels(next,"确认关系："+from+" "+rel+" "+to);
+  if(saved)toast("已写回仓库");
+  render();return saved;
+}
+function parentIn(t,id){for(const k in t.T)if((t.T[k].children||[]).includes(id))return k;return null}
+
+
+
 function methodPage(){
   const m=findM(S.arg);
-  if(!m) return `<div class="body">${topBar("找不到这条方法","")}<p class="small">它可能已经被删掉了。</p>${nav("meth")}</div>`;
+  if(!m) return `<div class="body">${topBar("找不到这条方法","")}<p class="small">它可能已经被删掉了。</p>${nav("tree")}</div>`;
   const cats=D.meth?.cats||[];
   if(S.edit) return `<div class="body">${topBar(m.name,"编辑")}
     <div class="card" style="display:flex;flex-direction:column;gap:8px">
@@ -1126,14 +1866,14 @@ function methodPage(){
       <label class="small" for="m_what">它说的是什么</label><textarea id="m_what" style="min-height:160px">${esc(m.what||"")}</textarea>
       <label class="small" for="m_src">来源（几月几号）</label><textarea id="m_src" style="min-height:52px">${esc(m.src||"")}</textarea>
       <div class="small">放在哪一类</div><div class="row" style="gap:6px;flex-wrap:wrap">
-        ${cats.map(c=>`<button class="chip${m.cat===c?" on":""}" data-setcat="${esc(m.id)}|${esc(c)}">${esc(c)}</button>`).join("")}</div>
-      <button class="btn" data-savem="${esc(m.id)}">保存</button>
+        ${cats.map(c=>`<button class="chip${(S.methodCat||m.cat)===c?" on":""}" data-setcat="${esc(m.id)}|${esc(c)}">${esc(c)}</button>`).join("")}</div>
+      <button class="btn" data-savem="${esc(m.id)}">保存</button><span class="save-method-note" role="status"></span>
       <button class="btn ghost" data-canceledit>取消</button>
       <button class="btn ghost bd" data-delm="${esc(m.id)}">删除这条方法</button></div>
   </div>`;
   return `<div class="body">${topBar(m.name,m.cat)}
     <div class="row"><span class="meta">${esc(m.projName||"")}</span>
-      <button class="back" style="margin-left:auto" data-edit>编辑</button></div>
+      <button class="back" data-addm="1">新增方法</button><button class="back" style="margin-left:auto" data-edit>编辑</button></div>
     <div class="card"><b>什么时候用得上</b><div class="kv"><span class="v">${esc(m.when)}</span></div></div>
     ${m.id==="m-184"?'<button class="btn" data-copyfive="1" style="background:linear-gradient(100deg,#a88729,#80620f);color:white">复制当前项目的五步聊天提示词</button>':""}
     <div class="card"><b>它说的是什么</b><div class="kv"><span class="v">${esc(m.what)}</span></div></div>
@@ -1315,20 +2055,28 @@ function nodePage(){
   </div>`;
 }
 async function reanalyze(id){
-  const P=D.p[id];
-  // 锁定今天页这一刻显示的就是哪一行。同一天可能有好几行，所以必须带下标。
-  const row=focusRow(P),idx=P.rows.indexOf(row);
-  P.current.focus={date:row?.date||null,idx,q:row?.q||""};
-  P.current.rowDate=row?.date||P.current.rowDate;
-  P.current.q=row?.q||P.current.q;
-  P.current.night={status:"wait",deadline:next8(),retries:0,error:null,
-                   requestedAt:new Date().toISOString(),requestedBy:"在网页上点了重新分析"};
+  const P=D.p[id],row=P&&focusRowOf(P);
+  if(!row?.uid){toast("当前研究焦点 UID 无效，请重新选择；没有重新排队");return false}
+  // 只更新已经确认的研究对象的分析状态，不按优先级重新挑选认知。
+  const next=copyJSON(P.current);
+  if(!next.focus?.focusUid)next.focus={...(next.focus||{}),focusUid:row.uid};
+  next.night={status:"wait",deadline:next8(),retries:0,error:null,
+              requestedAt:new Date().toISOString(),requestedBy:"在网页上点了重新分析"};
+  if(id===cur()){
+    next.focus.syncPending=true;
+    next.focus.syncLocal=true;
+  }
   try{
-    await put(`projects/${id}/current.json`,P.current,"标为待分析（用户点了重新分析）");
-    if(id===cur()) await put("widget.json",widgetFrom(id,P),"小组件：等待分析");
-    toast("已排队。下一个整点前会跑");
-  }catch(e){toast("排队失败："+e.message)}
+    await put(`projects/${id}/current.json`,next,"标为待分析（用户点了重新分析）");
+    P.current=next;
+    if(id===cur())await finishFocusSync(id);
+    toast("已排队。下一个整点前会跑");return true;
+  }catch(e){
+    S.focusWarning=P.current.focus?.syncPending?"分析状态已保存，焦点小组件同步未完成，刷新可恢复":"分析状态未保存";
+    toast(S.focusWarning+"："+e.message);return false;
+  }
 }
+
 function iter(){
   const id=S.arg||cur(),P=D.p[id];if(!P) return `<div class="center">加载中…</div>`;
   const it=P.iteration,cmp=it.compare;
@@ -1405,7 +2153,7 @@ function gate(){
 function system(){
   const q=D.status?.nightQueue;
   return `<div class="body"><h1 class="h1">系统</h1>
-    <div class="card row"><b>数据仓库</b><span class="meta">${esc(cfg.owner)}/${esc(cfg.repo)}</span><button class="back" style="margin-left:auto" data-tab="settings">修改</button></div>
+    <div class="card row"><b>数据仓库</b><span class="meta">${esc(cfg.owner)}/${esc(cfg.repo)} · 分支 ${esc(cfg.branch||"默认分支")}</span><button class="back" style="margin-left:auto" data-tab="settings">修改</button></div>
     <div class="card"><div class="row"><b>夜间分析队列</b><span class="meta" style="margin-left:auto">${esc(q?.date||"还没有运行过")}</span></div>
       ${Object.entries(q?.projects||{}).map(([k,v])=>`<div class="line3"><span class="txt">${esc(D.index.find(x=>x.id===k)?.name||k)}</span><span class="meta">${esc(v.status)}${v.finishedAt?" · "+esc(String(v.finishedAt).slice(0,10)):""}${v.retries?" · 重试 "+v.retries:""}${v.error?" · "+esc(v.error):""}</span></div>`).join("")||'<div class="small" style="margin-top:6px">今晚没有项目要分析——队列只放在网页上点过「重新分析」的项目。</div>'}</div>
     <div class="card"><div class="row"><b>外观</b></div>
@@ -1422,10 +2170,11 @@ function render(){
   if(!cfg.token||S.screen==="settings") h=settings();
   else if(S.loading&&!D.global) h=`<div class="center">读取数据中…</div>`;
   else if(S.err&&!D.global) h=`<div class="body"><h1 class="h1">读取失败</h1><div class="banner bd">${esc(S.err)}</div><p class="small">检查令牌是否过期、仓库名是否正确，或网络是否正常。</p><button class="btn" data-reload>重试</button><button class="btn ghost" data-tab="settings">修改连接</button></div>`;
-  else h=({today,row:rowPage,detail,project,node:nodePage,res:resPage,meth:methPage,method:methodPage,list:listPage,main:mainPage,iter,gate,system,ppl:pplPage,person:personPage,co:coPage,analysis:analysisPage,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
+  else h=({today,row:rowPage,detail,project,node:nodePage,res:resPage,tree:treePage,rels:relsPage,chain:chainPage,cog:cogPage,method:methodPage,list:listPage,main:mainPage,iter,gate,system,ppl:pplPage,person:personPage,co:coPage,analysis:analysisPage,plist:()=>plist("p"),ilist:()=>plist("i")}[S.screen]||today)();
   const vb=S.newver?`<div class="banner ok tap" data-newver="1" style="margin:0 0 8px">有新版本 ${esc(S.newver)}（你现在是 ${APPVER}）· 点这里刷新</div>`:"";
   a.innerHTML=vb+h+(S.sheet?sheet():"")+(S.toast?`<div class="toast">${esc(S.toast)}</div>`:"");
   if(S.screen==="today"&&S.exploreOpen){const d=a.querySelector("#explore-details");if(d)d.open=true}
+  if(["tree","rels","chain","cog"].includes(S.screen))bindCog();
   if(S.screen==="project"&&!S.edit){drawEdges();fitBoard()}
 }
 // GitHub Pages 的 index.html 会被浏览器缓存很久，在手机上尤其顽固。
@@ -1506,36 +2255,66 @@ document.addEventListener("pointerup",()=>{
 
 /* ============ 操作 ============ */
 async function pick(id){
-  S.sheet=false;render();
+  return queueFocusWrite(()=>writePickedProject(id));
+}
+async function writePickedProject(id){
+  S.sheet=false;
   try{
-    const P=await loadProject(id,true);
-    D.global.current=id;
-    await put("global.json",D.global,`切换当前项目：${P.project.name}`);
-    await put("widget.json",widgetFrom(id,P),`小组件：${P.project.name}`);
-    toast("已切换，小组件下次刷新时显示「"+P.project.name+"」");
-  }catch(e){toast("切换失败："+e.message)}
+    const P=await loadProject(id,true,true);
+    const row=focusRowOf(P);
+    if(!row?.uid)throw new Error("目标项目焦点 UID 无效，请先重新选择");
+    // 先将切换意图写入目标 current.json；多文件后续失败由 syncPending 恢复。
+    const next=copyJSON(P.current);
+    next.focus={...(next.focus||{}),focusUid:row.uid,syncPending:true,syncIntent:newFocusIntent()};
+    delete next.focus.syncLocal;
+    await put(`projects/${id}/current.json`,next,`准备切换当前项目：${P.project.name}`);
+    P.current=next;
+    if(!(await finishFocusSync(id)))throw new Error("已有较新的焦点选择");
+    S.screen="today";S.arg=null;
+    toast("已切换，小组件同步为「"+P.project.name+"」");return true;
+  }catch(e){
+    S.focusWarning=D.p[id]?.current?.focus?.syncPending
+      ?"项目切换部分成功，刷新后自动完成同步":"项目切换未提交";
+    toast(S.focusWarning+"："+e.message);return false;
+  }
 }
+
 async function setStatus(i,st){
-  const id=projId(),P=D.p[id],r=P.rows[i];
+  const id=projId(),P=D.p[id],r=P?.rows[i];if(!r)return false;
   r.f=st;
-  if(st==="够用了"&&!r.closedAt) r.closedAt=new Date().toISOString();  // 记闭环时刻，用来算耗时
-  if(st!=="够用了") delete r.closedAt;
+  if(st==="够用了"&&!r.closedAt)r.closedAt=new Date().toISOString();
+  if(st!=="够用了")delete r.closedAt;
   render();
-  await saveRows(id,`改状态：${st}`);
-  await syncFocus(id);          // 标成够用了/不做之后，今天页要换下一条
+  if(!(await saveRows(id,`改状态：${st}`)))return false;
+  await syncFocus(id);return true;
 }
+
 async function delRow(i){
-  const id=projId(),P=D.p[id];const r=P.rows[i];
-  if(!confirmDel){confirmDel=true;toast("再点一次「删除这一条」才真的删");setTimeout(()=>confirmDel=false,4000);return}
-  confirmDel=false;P.rows.splice(i,1);
+  const id=projId(),P=D.p[id],r=P?.rows[i];
+  if(!r)return false;
+  const uid=r.uid;
+  if(uid&&(relsOf().some(x=>x.from===uid||x.to===uid)||
+      chainsOf().some(x=>x.members?.includes(uid))||
+      Object.hasOwn(D.cogtree?.up||{},uid))){
+    toast("这条认知仍被关系或认知树引用，未删除原记录");
+    return false;
+  }
+  if(!confirmDeletion(r,"再点一次同一条记录的删除按钮才真的删"))return;
+  P.rows.splice(i,1);
   try{await put(`projects/${id}/rows.json`,P.rows,`删除一条：${(r.q||"").slice(0,20)}`);toast("已删除");go("list",id)}
   catch(e){toast("删除失败："+e.message);P.rows.splice(i,0,r)}
 }
-let confirmDel=false,IME=false;
+let pendingDeletion=null,IME=false;
+function confirmDeletion(key,message){
+  if(pendingDeletion?.key===key){pendingDeletion=null;return true}
+  const request={key};pendingDeletion=request;
+  toast(message);setTimeout(()=>{if(pendingDeletion===request)pendingDeletion=null},4000);
+  return false;
+}
 document.addEventListener("compositionstart",e=>{if(e.target.id==="msrch")IME=true});
 document.addEventListener("compositionend",e=>{
   if(e.target.id!=="msrch") return;
-  IME=false;S.q=e.target.value;const b=$("#mbody");if(b)b.innerHTML=methBody();
+  IME=false;S.q=e.target.value;
 });
 document.addEventListener("blur",e=>{
   const t=e.target,k=t?.dataset?.rk;if(!k) return;
@@ -1564,11 +2343,22 @@ document.addEventListener("blur",e=>{
   saveRows(id,`修改 ${key}`);
 },true);
 async function saveRows(id,msg,loud){
-  const P=D.p[id];
-  try{await put(`projects/${id}/rows.json`,P.rows,msg);
-      if(loud){toast("已保存");render()}else{S.toast="已保存";render();setTimeout(()=>{S.toast="";render()},1500)}}
-  catch(e){toast("保存失败："+e.message)}
+  const P=D.p[id],path=`projects/${id}/rows.json`;
+  try{
+    await put(path,P.rows,msg);
+    if(loud){toast("已保存");render()}
+    else{S.toast="已保存";render();setTimeout(()=>{S.toast="";render()},1500)}
+    return true;
+  }catch(e){
+    // 未提交状态必须回滚，避免其他调用路径将临时优先级用于焦点同步。
+    const restored=!!BASE[path]&&READ[path]?.source===sourceKey();
+    if(restored)P.rows=copyJSON(BASE[path]);
+    S.priDirty=false;render();
+    toast((restored?"保存失败，已恢复上次读取版本：":"保存失败，数据不可确认，请重新读取：")+e.message);
+    return false;
+  }
 }
+
 document.addEventListener("input",e=>{
   if(!e.target?.dataset||!("cosrch" in e.target.dataset)) return;
   const q=e.target.value.trim().toLowerCase();
@@ -1578,7 +2368,7 @@ document.addEventListener("input",e=>{
 document.addEventListener("input",e=>{
   if(e.target.id==="msrch"){
     if(IME) return;                      // 中文拼音还在拼，先别动
-    S.q=e.target.value;const b=$("#mbody");if(b)b.innerHTML=methBody();return}
+    S.q=e.target.value;return}
   const i=e.target.dataset?.pri;if(i==null) return;
   // S.arg 在行详情页是「日期|下标」，不是项目 id。直接拿它当 key 会取到 undefined，
   // 于是整个处理提前 return——改了优先分只留在输入框里，刷新就没了。
@@ -1597,8 +2387,7 @@ document.addEventListener("change",async e=>{
   const id=projId(),P=D.p[id];if(!P) return;
   S.priDirty=false;
   const b=document.querySelector("[data-savepri]");if(b)b.style.display="none";
-  await saveRows(id,"更新优先程度");
-  await syncFocus(id);
+  if(await saveRows(id,"更新优先程度"))await syncFocus(id);
   render();
 });
 document.addEventListener("keydown",e=>{
@@ -1644,32 +2433,55 @@ function saveNode(pid,nid){
   return saveProject(pid,`修改 SOP 节点：${n.name}`);
 }
 function addMethod(){
-  const arr=D.meth.methods=D.meth.methods||[];
-  let n=1;while(arr.some(m=>m.id==="m-"+String(n).padStart(3,"0"))) n++;
+  if(!READ["methods.json"]?.exists)return toast("方法库尚未成功加载，不能新增");
+  const arr=D.meth.methods||[];
+  let n=1;while(arr.some(m=>m.id==="m-"+String(n).padStart(3,"0")))n++;
   const t=new Date(Date.now()+9*36e5).toISOString().slice(0,10);
   const m={id:"m-"+String(n).padStart(3,"0"),cat:(D.meth.cats||[])[0]||"每天怎么跑",
-           proj:cur(),projName:D.p[cur()]?.project?.name||"",
-           name:"新方法",when:"",what:"",src:(+t.slice(5,7))+"/"+(+t.slice(8,10)),refs:[t]};
-  arr.push(m);S.edit=true;go("method",m.id);
+    proj:cur(),projName:D.p[cur()]?.project?.name||"",name:"新方法",when:"",what:"",
+    src:(+t.slice(5,7))+"/"+(+t.slice(8,10)),refs:[t],_draft:true};
+  arr.push(m);S.newMethodId=m.id;S.methodCat=m.cat;go("method",m.id);S.edit=true;render();
 }
-function saveMethod(id){
-  const m=findM(id);if(!m) return;
+function cancelMethodEdit(){
+  if(S.newMethodId){D.meth.methods=D.meth.methods.filter(m=>m.id!==S.newMethodId);S.newMethodId=null}
+  S.edit=false;S.methodCat=null;return back();
+}
+async function saveMethod(id){
+  const original=findM(id);if(!original)return false;
+  const next=copyJSON(D.meth),m=next.methods.find(x=>x.id===id);
+  if(!m)return false;
   m.name=$("#m_name").value.trim()||"未命名";
-  m.what=$("#m_what").value.trim();
-  m.when=$("#m_when").value.trim();
-  m.src=$("#m_src").value.trim();
-  m.refs=[...new Set((m.src.match(/(\d{1,2})\/(\d{1,2})/g)||[]).map(t=>{
-    const [a,b]=t.split("/");return `2026-${String(+a).padStart(2,"0")}-${String(+b).padStart(2,"0")}`}))];
-  S.edit=false;
-  return saveMethods(`方法：${m.name}`);
+  m.what=$("#m_what").value.trim();m.when=$("#m_when").value.trim();
+  m.src=$("#m_src").value.trim();m.cat=S.methodCat||m.cat;
+  // 未更改来源时不重算 refs，避免把历史跨年引用误改成 2026 或清空。
+  if(m.src!==original.src){
+    const found=(m.src.match(/(\d{1,2})\/(\d{1,2})/g)||[]).map(t=>{
+      const [a,b]=t.split("/");return `2026-${String(+a).padStart(2,"0")}-${String(+b).padStart(2,"0")}`});
+    if(found.length)m.refs=[...new Set(found)];
+  }
+  delete m._draft; // 永久 UID 不由浏览器猜号：rl-data Actions 调用 tools/ids.py migrate
+  try{
+    await put("methods.json",next,"方法："+m.name);
+    D.meth=next;S.newMethodId=null;S.edit=false;S.methodCat=null;
+    toast(m.uid?"方法已保存":"已保存到 RL-data，等待 ids.py 发放永久 UID");
+    render();return true;
+  }catch(e){
+    // 不重绘编辑页：输入框中的未提交内容必须留在原处，正式数据不变。
+    const note=document.querySelector(".save-method-note");
+    if(note)note.textContent="保存失败，输入仍保留："+e.message;
+    return false;
+  }
 }
 async function delMethod(id){
-  if(!confirmDel){confirmDel=true;toast("再点一次「删除这条方法」才真的删");setTimeout(()=>confirmDel=false,4000);return}
-  confirmDel=false;
-  const arr=D.meth.methods,i=arr.findIndex(m=>m.id===id);if(i<0) return;
-  const [m]=arr.splice(i,1);
-  try{await put("methods.json",D.meth,`删除方法：${m.name}`);S.edit=false;toast("已删除");tab("meth")}
-  catch(e){arr.splice(i,0,m);toast("删除失败："+e.message)}
+  if(!confirmDeletion("method:"+id,"再点一次同一条方法的删除按钮才会归档"))return;
+  if(S.newMethodId===id){D.meth.methods=D.meth.methods.filter(x=>x.id!==id);
+    S.newMethodId=null;S.edit=false;return tab("tree")}
+  const next=copyJSON(D.meth),m=next.methods.find(x=>x.id===id);if(!m)return;
+  // 归档而不是物理删除：原文和 UID 永久留在 RL-data，避免关联悬空或编号复用。
+  m.archived=true;
+  try{await put("methods.json",next,"归档方法："+m.name);
+    D.meth=next;S.edit=false;S.methodCat=null;toast("已归档，原记录与 UID 保留");tab("tree")}
+  catch(e){toast("删除失败（未改变原记录）："+e.message)}
 }
 async function decide(id,i,opt){
   const P=D.p[id];const g=P.iteration.gates[i];
@@ -1679,7 +2491,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-mproj],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-rpick],[data-relok],[data-chaingo],[data-cogjump],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
   if(d.copysop){
     const id=S.arg||cur(),so=curSop(D.p[id]?.project);
@@ -1725,15 +2537,15 @@ document.addEventListener("click",async e=>{
   if("addm" in d) return addMethod();
   if(d.savem) return saveMethod(d.savem);
   if(d.delm) return delMethod(d.delm);
-  if(d.setcat){const [id,c]=d.setcat.split("|");const m=findM(id);if(m){m.cat=c;render()}return}
-  if(d.mproj!=null){S.mproj=d.mproj||"";return render()}
+  if(d.setcat){const [id,c]=d.setcat.split("|");if(findM(id)){S.methodCat=c;render()}return}
   if(d.zoom){ZOOM=d.zoom==="fit"?1:(d.zoom==="+"?Math.min(3,ZOOM*1.3):Math.max(.6,ZOOM/1.3));return fitBoard()}
   if(d.node) return go("node",(S.arg||cur())+"|"+d.node);
   if(d.filter!=null){S.filter=S.filter===d.filter?null:d.filter;return render()}
   if(d.rfilter!=null){S.rfilter=S.rfilter===d.rfilter?"":d.rfilter;return render()}
   if(d.tofilter){const [pid,k]=d.tofilter.split("|");S.filter=k;return go("list",pid)}
   if(d.newver){location.replace(location.pathname+"?v="+encodeURIComponent(S.newver||Date.now()));return}
-  if(d.savepri){S.priDirty=false;return saveRows(d.savepri,"更新优先程度",true).then(()=>syncFocus(d.savepri)).then(render)}
+  if(d.savepri){S.priDirty=false;const saved=await saveRows(d.savepri,"更新优先程度",true);
+    if(saved)await syncFocus(d.savepri);return render()}
   if(d.setst){const [i,st]=d.setst.split("|");return setStatus(+i,st)}
   if(d.setreal){const [i,v]=d.setreal.split("|");const P=D.p[cur()],r=P.rows[+i];
     r.cols=r.cols||{};r.cols[REALC]=r.cols[REALC]===v?"":v;render();
@@ -1748,6 +2560,37 @@ document.addEventListener("click",async e=>{
     catch(err){P.rows.pop();return toast("新增失败："+err.message)}
     return go("row",date+"|"+i+"|"+id);
   }
+  if(d.rpick){S.relPick=S.relPick===null?"":null;return render()}
+  if(d.ttoggle){S.topen=S.topen||{};S.topen[d.ttoggle]?delete S.topen[d.ttoggle]:S.topen[d.ttoggle]=1;return render()}
+  if(d.tcollapse){S.topen={};return render()}
+  if(d.tfocus){S.topen={};openPath().forEach(k=>S.topen[k]=1);render();
+    setTimeout(()=>{const t=TREE||buildTree(),id=t.inChain[curUid()]||curUid();
+      Array.from(document.querySelectorAll("#tree .item.current")).find(el=>el.dataset.id===id)?.scrollIntoView({block:"center",behavior:"smooth"});},30);return}
+  if(d.chaingo||d.cogjump){
+    const u=d.chaingo||d.cogjump,n=(TREE||buildTree()).T[u];
+    if(!n)return;
+    if(n.go)return go(n.go,n.arg);
+    return go("cog",u);
+  }
+  if(d.topen){
+    const id=d.topen.split("/").pop(),n=(TREE||buildTree()).T[id];if(!n)return;
+    // 触摸屏无 HTML5 拖放也可点选两端。结构节点不参与。
+    if(S.relPick!==null){
+      if(!dragTarget(id))return toast("请点选有 UID 的认知或演化链");
+      if(!S.relPick){S.relPick=id;toast("请选择第二条认知");return}
+      const first=S.relPick;S.relPick=null;render();
+      if(first!==id)return askDragRel(first,id);
+      return;
+    }
+    if(n.chain)return go("chain",id);
+    if(n.go)return go(n.go,n.arg);
+    return go("cog",id);
+  }
+  if(d.relok!==undefined){
+    const r=relsOf()[+d.relok];if(!r||r.state==="已确认")return;
+    // 候选列表与拖动走完全相同的端点、方向、演化环和链合并安全校验。
+    return confirmRel(r.from,r.to,r.rel);
+  }
   if(d.go){if((d.go==="project"||d.go==="iter")&&!d.arg){go(d.go,cur())}else go(d.go,d.arg);return}
   if("back" in d) return back();
   if(d.tab) return tab(d.tab);
@@ -1756,8 +2599,9 @@ document.addEventListener("click",async e=>{
   if(d.pick) return pick(d.pick);
   if(d.open){try{await loadProject(d.open)}catch(err){return toast(err.message)}return go(d.target,d.open)}
   if(d.toggle){S.open[d.toggle]=!S.open[d.toggle];return render()}
-  if("edit" in d){S.edit=true;return render()}
+  if("edit" in d){S.edit=true;if(S.screen==="method")S.methodCat=findM(S.arg)?.cat;return render()}
   if("canceledit" in d){
+    if(S.screen==="method")return cancelMethodEdit();
     if(S.screen==="res"){const [cp,cn,ci]=String(S.arg).split("|"),cnd=findNode(D.p[cp]?.project,cn);
       const cr=((cnd&&cnd.res)||[])[+ci];
       if(cr&&cr._new){cnd.res.splice(+ci,1);S.edit=false;return back()}}
@@ -1767,7 +2611,10 @@ document.addEventListener("click",async e=>{
   if(d.savenode){const [pid,nid]=d.savenode.split("|");return saveNode(pid,nid)}
   if("saveboard" in d) return saveProject(S.arg||cur(),"调整 SOP 图的节点位置");
   if(d.decide){const [id,i,o]=d.decide.split("|");return decide(id,+i,o)}
-  if("savecfg" in d){cfg.owner=$("#owner").value.trim();cfg.repo=$("#repo").value.trim();cfg.token=$("#token").value.trim();saveCfg();S.screen="today";return loadAll()}
+  if("savecfg" in d){cfg.owner=$("#owner").value.trim();cfg.repo=$("#repo").value.trim();cfg.branch=$("#dbranch").value.trim();cfg.token=$("#token").value.trim();branchOK=null;checkedSource=null;
+    for(const bag of [SHA,BASE,READ])Object.keys(bag).forEach(k=>delete bag[k]);
+    cacheSource=null;D.p={};D.global=null;D.index=[];D.meth=null;D.rels=null;D.cogtree=null;D.hist=[];D.notes=null;S.topen=null;treeDirty();
+    saveCfg();S.screen="today";return loadAll()}
   if("reload" in d){D.p={};return loadAll()}
 });
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches(".tap")) e.target.click()});

@@ -5,26 +5,33 @@ const vm = require("node:vm");
 const assert = require("node:assert/strict");
 
 const html = fs.readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
-const start = html.indexOf("const SHA={},BASE={};");
+const start = html.indexOf("const SHA={},BASE={},READ={};");
 const end = html.indexOf("/* ============ 状态 ============ */", start);
 assert(start >= 0 && end > start, "未找到 RL-app GitHub 存取代码");
 const source = [
-  'const cfg={owner:"test",repo:"test",token:"fake"};',
+  'const cfg={owner:"test",repo:"test",branch:"dev",token:"fake"};',
   "const b64e=s=>Buffer.from(s,'utf8').toString('base64');",
   "const b64d=s=>Buffer.from(s,'base64').toString('utf8');",
   html.slice(start, end),
-  "this.io={get,put};",
+  "this.io={get,getOptional,put,cfg,SHA,BASE,READ};",
 ].join("\n");
 
 const path="projects/rl/rows.json";
 let assertions=0;
-function make(initial) {
+function make(initial,production=false,file=path) {
   const server={data:initial===undefined?undefined:JSON.parse(JSON.stringify(initial)),
-                rev:1,exists:initial!==undefined,putErrors:[]};
+                rev:1,exists:initial!==undefined,putErrors:[],readStatus:0,branchExists:true,requests:[],expectedBranch:production?"main":"dev"};
   const fetch=async(url,options={})=>{
-    if(!url.endsWith("/data/"+path))throw Error("unexpected path "+url);
+    server.requests.push({url,method:options.method||"GET"});
+    if(url.endsWith("/branches/"+server.expectedBranch))
+      return server.branchExists?{ok:true,json:async()=>({name:"dev"})}:{ok:false,status:404};
+    if(!url.startsWith("https://api.github.com/repos/test/test/contents/data/"+file))
+      throw Error("unexpected path "+url);
+    if(options.method!=="PUT"&&!url.endsWith("?ref="+server.expectedBranch))
+      throw Error("读取未显式指定开发分支："+url);
     if(options.method==="PUT"){
       const input=JSON.parse(options.body);
+      assert.equal(input.branch,server.expectedBranch,"写入必须显式绑定对应真实分支");
       if(server.putErrors.length){const code=server.putErrors.shift();
         return {ok:false,text:async()=>"simulated failure",status:code};}
       if(server.exists&&input.sha!=="rev"+server.rev)
@@ -34,15 +41,19 @@ function make(initial) {
       server.exists=true;
       server.data=JSON.parse(Buffer.from(input.content,"base64").toString("utf8"));
       server.rev++;
-      return {ok:true,json:async()=>({content:{sha:"rev"+server.rev}})};
+      const sha="rev"+server.rev;
+      if(server.afterWrite) await server.afterWrite();
+      return {ok:true,json:async()=>({content:{sha}})};
     }
+    if(server.readStatus)return {ok:false,text:async()=>"simulated read error",status:server.readStatus};
     if(!server.exists)return {ok:false,text:async()=>"not found",status:404};
     return {ok:true,json:async()=>({
       sha:"rev"+server.rev,
       content:Buffer.from(JSON.stringify(server.data),"utf8").toString("base64")
     })};
   };
-  const ctx=vm.createContext({fetch,Buffer,JSON,Error,Array,Object});
+  const ctx=vm.createContext({fetch,Buffer,JSON,Error,Array,Object,
+    location:{hostname:production?"vicki257.github.io":"dev-preview.example",pathname:production?"/rl-app/":"/dev"}});
   vm.runInContext(source,ctx);
   return {server,io:ctx.io};
 }
@@ -155,7 +166,7 @@ async function expectReject(action,label){
   // 原本允许不存在的 JSON 文件首次创建（不带 sha）。
   {
     const {server,io}=make(undefined);
-    await io.put(path,[{date:"2026-11-21",q:"首条记录"}],"首次创建");
+    await io.put(path,[{date:"2026-11-21",q:"首条记录"}],"首次创建",{create:true});
     assert.equal(server.data[0].q,"首条记录");
     assert.equal(server.exists,true);
     assertions+=2;
@@ -178,6 +189,152 @@ async function expectReject(action,label){
     rows[1].uid="A000000999";
     await expectReject(()=>io.put(path,rows,"身份错误"),"身份不符应安全拒绝");
     assert.equal(rows[0].uid,undefined);assertions++;
+  }
+  // 反例：省略分支、目标分支不存在，以及换分支后继续使用旧 SHA。
+  {
+    const {server,io}=make([{id:"r1",q:"原始"}]);
+    io.cfg.branch="";
+    await expectReject(()=>io.put(path,[{id:"r1",q:"改变"}]),"未配置分支必须禁止写入");
+    assert.equal(server.rev,1);
+    assert.equal(server.requests.some(r=>r.method==="PUT"),false);
+    assertions+=2;
+  }
+  {
+    const {server,io}=make([{id:"r1",q:"原始"}]);
+    server.branchExists=false;
+    await expectReject(()=>io.put(path,[{id:"r1",q:"改变"}]),"不存在分支必须禁止写入");
+    assert.equal(server.requests.some(r=>r.method==="PUT"),false);
+    assertions++;
+  }
+  {
+    const {server,io}=make([{id:"r1",q:"旧分支"}]);
+    const rows=await io.get(path);
+    io.cfg.branch="other";rows[0].q="新分支";
+    await expectReject(()=>io.put(path,rows),"换分支后不能沿用旧缓存");
+    assert.equal(server.requests.some(r=>r.method==="PUT"),false);
+    assertions++;
+  }
+  // 正式站点历史用户未填写分支，仍明确读写 main；开发预览不允许这种回退。
+  {
+    const {server,io}=make([{id:"r1",q:"正式版旧记录"}],true);
+    io.cfg.branch="";
+    const rows=await io.get(path);rows[0].q="正式版更新";
+    await io.put(path,rows);
+    assert.equal(server.data[0].q,"正式版更新");
+    assert(server.requests.some(x=>x.url.endsWith("?ref=main")));
+    assert(server.requests.some(x=>x.url.endsWith("/branches/main")));
+    assertions+=3;
+  }
+  // 不可把 401/403/网络错误当成空文件覆盖真实 29 条关系或 183 条方法。
+  for(const [file,expected] of [["rels.json",29],["methods.json",183]]){
+    const source=JSON.parse(fs.readFileSync(require("node:path").join(__dirname,"..","..","rl-data","data",file),"utf8"));
+    const list=file==="rels.json"?"rels":"methods";
+    assert.equal(source[list].length,expected);
+    for(const code of [401,403,500]){
+      const {server,io}=make(source,false,file);
+      server.readStatus=code;
+      await expectReject(()=>io.get(file),"读取失败必须抛错："+file);
+      server.readStatus=0;
+      const empty={...source,[list]:[]};
+      await expectReject(()=>io.put(file,empty,"危险覆盖"),"读失败后不得写空："+file);
+      assert.equal(server.data[list].length,expected);
+      assert.equal(server.requests.some(x=>x.method==="PUT"),false);
+      assertions+=2;
+    }
+  }
+  // 预览允许明确指定开发分支，但不能使用遗留设置写入正式 main。
+  {
+    const {server,io}=make([{id:"r1",q:"正式数据"}]);
+    io.cfg.branch="main";server.expectedBranch="main";
+    const rows=await io.get(path);rows[0].q="预览编辑";
+    await expectReject(()=>io.put(path,rows),"开发预览不得写入正式 main");
+    assert.equal(server.data[0].q,"正式数据");
+    assert.equal(server.requests.some(x=>x.method==="PUT"),false);
+    assertions+=2;
+  }
+  // 已经成功加载后再次读失败，旧 SHA 也必须失去写入资格。
+  {
+    const {server,io}=make([{id:"r1",q:"原始"}]);
+    const original=await io.get(path);
+    server.readStatus=403;
+    await expectReject(()=>io.get(path),"再次读取失败应失效");
+    server.readStatus=0;
+    await expectReject(()=>io.put(path,[{id:"r1",q:"危险覆盖"}]),"旧 SHA 不能写");
+    assert.equal(server.data[0].q,original[0].q);assertions++;
+  }
+  // 输入框可以在 API 已接收第一笔请求、但响应尚未抵达时继续修改。
+  {
+    const {server,io}=make([{id:"r1",q:"原始"}]);
+    const rows=await io.get(path);
+    let sent, release;
+    const dispatched=new Promise(r=>sent=r),holdResponse=new Promise(r=>release=r);
+    server.afterWrite=()=>{sent();return holdResponse};
+    rows[0].q="第一笔保存";
+    const saved=io.put(path,rows,"第一笔保存");
+    await dispatched;
+    rows[0].q="还在输入，尚未保存";
+    release();
+    await saved;
+    assert.equal(server.data[0].q,"第一笔保存");
+    assert.equal(io.BASE[path][0].q,server.data[0].q,
+      "响应期间的编辑不能被记成同一 SHA 已提交的内容");
+    assertions+=2;
+  }
+  // 同一页面的第二份整文件草稿尚未看到正在提交的第一笔操作。
+  {
+    const {server,io}=make([{id:"r1",q:"原始"},{id:"r2",q:"原始"}]);
+    const before=await io.get(path);
+    let sent, release;
+    const dispatched=new Promise(r=>sent=r),holdResponse=new Promise(r=>release=r);
+    server.afterWrite=()=>{sent();return holdResponse};
+    const first=io.put(path,[{...before[0],q:"第一处修改"},before[1]],"第一笔保存");
+    await dispatched;
+    const second=io.put(path,[before[0],{...before[1],q:"第二处修改"}],"第二笔保存")
+      .then(()=>false,()=>true);
+    release();
+    await first;
+    assert(await second,"并行整文件草稿不得用另一笔保存后的 SHA 覆盖");
+    assert.equal(server.data[0].q,"第一处修改");
+    assertions+=2;
+  }
+  // cognotes.json 还不存在于任何分支：两台设备同时第一次保存补充记录。
+  // 后到的那一笔必须明确报错，先保存的内容一个字都不能被盖掉。
+  {
+    const NOTES="cognotes.json";
+    const A=make(undefined,false,NOTES);          // 设备 A：文件不存在
+    const B=make(undefined,false,NOTES);          // 设备 B：同样看到不存在
+    // 两台设备各自确认过「确实是 404」
+    assert.deepEqual(await A.io.getOptional(NOTES,{}),{},"首次读取应确认为空而不是报错");
+    assert.deepEqual(await B.io.getOptional(NOTES,{}),{},"另一台设备也应确认为空");
+    // A 先写成功
+    await A.io.put(NOTES,{A000000075:"设备 A 写的补充"},"补充认知",{create:true});
+    assert.equal(A.server.data.A000000075,"设备 A 写的补充","设备 A 应写入成功");
+    // B 的服务器此刻也已经有了 A 的内容（同一个远端文件）
+    B.server.exists=true;B.server.data={A000000075:"设备 A 写的补充"};B.server.rev=A.server.rev;
+    // B 仍以为文件不存在，照样发不带 sha 的创建请求 → GitHub 返回 409
+    await expectReject(()=>B.io.put(NOTES,{A000000075:"设备 B 写的补充"},"补充认知",{create:true}),
+      "后到的首次创建必须被拒绝，不能覆盖先写成功的内容");
+    assert.equal(B.server.data.A000000075,"设备 A 写的补充",
+      "被拒绝之后远端必须还是设备 A 的内容");
+    // 报错话术要说清「没覆盖」，否则用户不知道自己的字还在不在
+    let msg="";
+    try{await B.io.put(NOTES,{A000000075:"再试一次"},"补充认知",{create:true})}catch(e){msg=String(e.message)}
+    assert(/已被其他会话创建|未覆盖/.test(msg),"报错要说明没有覆盖远端，实际："+msg);
+    // B 重新读一次之后才允许继续写，而且是在 A 的内容之上追加
+    const latest=await B.io.get(NOTES);
+    latest.A000000076="设备 B 重读后补的";
+    await B.io.put(NOTES,latest,"补充认知");
+    assert.equal(B.server.data.A000000075,"设备 A 写的补充","重读后保存不能丢掉 A 的内容");
+    assert.equal(B.server.data.A000000076,"设备 B 重读后补的","B 的新内容应写入成功");
+    assertions+=7;
+  }
+  // 没有 create 授权时，绝不凭空创建新文件
+  {
+    const {server,io}=make(undefined,false,"cognotes.json");
+    await io.getOptional("cognotes.json",{});
+    await expectReject(()=>io.put("cognotes.json",{x:1},"没授权"),"未授权创建必须拒绝");
+    assert.equal(server.exists,false,"被拒绝时远端不该出现这个文件");
+    assertions++;
   }
   console.log("RL-app 安全保存模拟测试通过：",assertions,"项断言");
 })().catch(e=>{console.error(e);process.exitCode=1});
