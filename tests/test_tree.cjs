@@ -8,7 +8,9 @@ const a=html.indexOf("/* ============ 认知树 ============ */");
 const b=html.indexOf("function parentIn(");
 const b2=html.indexOf("\n",html.indexOf("return null}",b));
 assert(a>=0&&b>a&&b2>b,"未找到认知树代码");
-const CODE=html.slice(a,b2).replace(/async function saveRels\(\)?[\s\S]*?\n\}\n/,"");
+const fa=html.indexOf("function focusRowOf("),fb=html.indexOf("const PendingFocus",fa);
+assert(fa>=0&&fb>fa,"未找到真实焦点定位");
+const CODE=html.slice(fa,fb)+html.slice(a,b2).replace(/async function saveRels\(\)?[\s\S]*?\n\}\n/,"");
 
 const DD=path.join(__dirname,"..","..","rl-data","data");
 const has=fs.existsSync(DD);
@@ -54,7 +56,6 @@ D.rels.chains=D.rels.chains||[];
 const ctx={D,S:{},console,Date,Object,Array,JSON,Math,String,Number,Boolean,RegExp,Set,
   esc:s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])),
   cur:()=>D.global.current, trF:(o,k)=>o[k]||"",
-  focusRowOf:P=>P.rows.find(r=>r.date===P.current.rowDate)||P.rows[P.rows.length-1],
   curRow:P=>P.rows.find(r=>r.date===P.current.rowDate)||P.rows[P.rows.length-1],
   topBar:()=>"",nav:()=>"",put:async()=>{},toast:()=>{},go:()=>{},render:()=>{},
 };

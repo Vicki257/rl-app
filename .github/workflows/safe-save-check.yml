@@ -27,12 +27,14 @@ jobs:
           repository: Vicki257/rl-data
           ref: ${{ github.head_ref || github.ref_name }}
           path: rl-data
+          fetch-depth: 0
           token: ${{ secrets.RL_DATA_TOKEN }}
           persist-credentials: false
       - name: 打印并核对真实数据来源
         env:
           DATA_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
+          test "$(git -C rl-data rev-parse --is-shallow-repository)" = false
           test -f rl-data/data/rels.json || { echo "::error::缺少真实 rels.json"; exit 1; }
           echo "RL-data repository: Vicki257/rl-data"
           echo "RL-data branch: $DATA_BRANCH"
@@ -52,6 +54,8 @@ jobs:
         run: |
           test -f ../rl-data/data/rels.json
           node tests/test_tree.cjs --require-real-data
+      - name: 焦点显示和中断切换回放
+        run: node tests/test_focus_integrity.cjs
       - name: 拖动关系和端点反例
         run: node tests/test_rel_drag.cjs --require-real-data
       - name: 校验整份 index.html 的 JavaScript 语法

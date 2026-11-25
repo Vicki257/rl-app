@@ -445,12 +445,12 @@ function applyRemoteUid(before,local,remote){
 }
 // 开发版未指定数据分支只读；部署在 main 的正式版保持原实现不受影响。
 // 旧正式版在官方 GitHub Pages 留空分支时仍读取 main；其他预览/开发页面禁止默认写入。
-function branch(){
-  const explicit=(cfg.branch||"").trim();
-  if(explicit)return explicit;
-  const official=typeof location!=="undefined"&&location.hostname.toLowerCase()==="vicki257.github.io"&&
+function officialApp(){
+  return typeof location!=="undefined"&&location.hostname.toLowerCase()==="vicki257.github.io"&&
     /^\/rl-app\/?(?:index\.html)?$/.test(location.pathname);
-  return official?"main":"";
+}
+function branch(){
+  return (cfg.branch||"").trim()||(officialApp()?"main":"");
 }
 const sourceKey=()=>[cfg.owner||"",cfg.repo||"",branch()].join("|");
 let cacheSource=null;
@@ -458,6 +458,7 @@ let branchOK=null,checkedSource=null;    // 每个数据源分别验证，旧请
 async function ensureBranch(){
   const b=branch(),origin=sourceKey();
   if(!b) throw new Error("开发版未指定数据分支，禁止写入默认分支");
+  if(b==="main"&&!officialApp())throw new Error("开发预览只可读取 main，不能写入正式分支");
   if(checkedSource===origin&&branchOK===true)return true;
   if(checkedSource===origin&&typeof branchOK==="string")throw new Error(branchOK);
   const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/branches/${encodeURIComponent(b)}`,
@@ -497,20 +498,33 @@ async function getOptional(path,missingValue){
     return copyJSON(missingValue);
   }
 }
+const writing=new Set();
 async function put(path,obj,msg,options={}){
-  const source=sourceKey();
+  const key=JSON.stringify([sourceKey(),path]);
+  if(writing.has(key))throw new Error("上一笔保存尚未完成，请重试："+path);
+  writing.add(key);
+  try{return await putOnce(path,obj,msg,options)}
+  finally{writing.delete(key)}
+}
+async function putOnce(path,obj,msg,options){
+  const source=sourceKey(),readBefore=READ[path];
   if(cacheSource!==null&&cacheSource!==source)throw new Error("数据源已切换，请先重新读取新分支");
   cacheSource=source;
   const guard=()=>{if(source!==sourceKey())throw new Error("数据源已切换，禁止使用旧文件 SHA")};
   const message=msg||`更新 ${path}`;
-  const payload=sha=>{
-    const body={message,content:b64e(JSON.stringify(obj,null,2)+"\n")};
+  async function send(sha){
+    guard();
+    // 缓存必须记录实际发送的快照，而不是等待响应时仍可被界面修改的对象。
+    const content=JSON.stringify(obj,null,2)+"\n";
+    const body={message,content:b64e(content),branch:branch()};
     if(sha)body.sha=sha;
-    body.branch=branch();                       // 绝不隐式写入默认分支
-    return body;
-  };
+    const j=await gh(path,{method:"PUT",body:JSON.stringify(body)});guard();
+    SHA[path]=j.content.sha;BASE[path]=JSON.parse(content);
+    READ[path]={source,sha:j.content.sha,exists:true};
+  }
   await ensureBranch();guard();
-  let read=READ[path];
+  if(READ[path]!==readBefore)throw new Error("保存期间文件已重新读取，请重试："+path);
+  let read=readBefore;
   // 首次创建必须有调用方明确授权，并再次确认文件确实不存在。
   if(!read&&options.create){
     try{await get(path);read=READ[path]}
@@ -522,9 +536,7 @@ async function put(path,obj,msg,options={}){
     if(!options.create)throw new Error("未确认创建新文件，禁止写入："+path);
     // 精确 404 已确认；不带 sha 的首次创建只允许在这里。
     try{
-      guard();const j=await gh(path,{method:"PUT",body:JSON.stringify(payload())});guard();
-      SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);
-      READ[path]={source,sha:j.content.sha,exists:true};return;
+      await send();return;
     }catch(err){
       if(err.status===409||err.status===422)
         throw new Error("该文件已被其他会话创建，请刷新后再试，未覆盖远端数据");
@@ -532,21 +544,18 @@ async function put(path,obj,msg,options={}){
     }
   }
   try{
-    guard();const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(SHA[path]))});guard();
-    SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);READ[path]={source,sha:j.content.sha,exists:true};
-    return;
+    await send(read.sha);return;
   }catch(e){
     const m=String(e.message);
     if(!m.startsWith("422")&&!m.startsWith("409"))throw e;
   }
   // 远端有新内容时禁止陈旧整文件覆盖；只有补发 UID 可按相同对象合并。
   const latest=await gh(path);guard();const server=JSON.parse(b64d(latest.content));
-  if(!BASE[path]||JSON.stringify(withoutUid(BASE[path]))!==JSON.stringify(withoutUid(server)))
+  if(READ[path]!==read||!BASE[path]||JSON.stringify(withoutUid(BASE[path]))!==JSON.stringify(withoutUid(server)))
     throw new Error("数据已在别处更新，请刷新后重试；本次未覆盖远端数据");
   applyRemoteUid(BASE[path],obj,server);
   try{
-    guard();const j=await gh(path,{method:"PUT",body:JSON.stringify(payload(latest.sha))});guard();
-    SHA[path]=j.content.sha;BASE[path]=copyJSON(obj);READ[path]={source,sha:j.content.sha,exists:true};
+    await send(latest.sha);
   }catch(e){
     const m=String(e.message);
     if(m.startsWith("422")||m.startsWith("409"))
@@ -641,7 +650,7 @@ function widgetFrom(id,P){
   return {project:id,name:P.project.name,focusUid:row.uid,
     q:row.q,
     writtenAt:P.current.writtenAt,
-    night:{status:P.current.night?.status||"wait",deadline:P.current.night?.deadline||null,error:P.current.night?.error||null,
+    night:{status:P.current.night?.status==="done"&&!n.c?"skip":P.current.night?.status||"wait",deadline:P.current.night?.deadline||null,error:P.current.night?.error||null,
       c:n.cs||"",r:n.r||"",x:n.recall?.[0]?.t||""}};
 }
 
@@ -683,31 +692,70 @@ function focusRowOf(P){
   return null;
 }
 const PendingFocus=id=>!!D.p[id]?.current?.focus?.syncPending;
+const isFocusRow=(P,row)=>!!row&&focusRowOf(P)===row;
+let focusWriteQueue=Promise.resolve();
+// 同一个页面的连续选择按点击顺序写入，而不是让后一次撞上上一笔的全局锁。
+function queueFocusWrite(action){
+  const source=sourceKey();
+  const run=focusWriteQueue.then(()=>{
+    if(source!==sourceKey()){toast("数据源已切换，请重新选择焦点");return false}
+    return action();
+  });
+  focusWriteQueue=run.catch(()=>{});
+  return run;
+}
+function resetNightOnFocusChange(P,next,row){
+  if(isFocusRow(P,row))return;
+  // 旧认知的排队或分析状态不能跟着换人。新记录有旧结果可展示，但不自动排队。
+  next.night={status:row.night?.c?"done":"skip"};
+}
+// 每次明确选择都记录上一份全局选择。较新提交成功后，刷新不能再重放较旧的切换。
+const newFocusIntent=()=>({id:crypto.randomUUID(),previous:D.global?.focusSelection||null});
+async function clearFocusSync(pid,P){
+  const next=copyJSON(P.current);
+  delete next.focus.syncPending;
+  delete next.focus.syncIntent;
+  delete next.focus.syncLocal;
+  await put(`projects/${pid}/current.json`,next,"完成当前焦点同步");
+  P.current=next;
+}
 async function finishFocusSync(pid){
   const P=D.p[pid];if(!P||!PendingFocus(pid))return true;
   const uid=P.current.focus.focusUid;
   if(!P.rows.some(r=>r.uid===uid))throw new Error("当前认知 UID 已失效，请重新选择");
-  if(cur()!==pid){
+  const intent=P.current.focus.syncIntent,selected=D.global?.focusSelection||null;
+  if((P.current.focus.syncLocal&&cur()!==pid)||(intent&&selected!==intent.previous&&selected!==intent.id)){
+    // 只清理废弃的同步标记，不触碰用户原来的认知，也不改小组件或当前项目。
+    await clearFocusSync(pid,P);return false;
+  }
+  if(cur()!==pid||(intent&&selected!==intent.id)){
     const next=copyJSON(D.global);next.current=pid;
+    if(intent)next.focusSelection=intent.id;
     await put("global.json",next,"恢复未完成的当前项目同步");D.global=next;
   }
   const widget=widgetFrom(pid,P);
   await put("widget.json",widget,"恢复未完成的小组件同步");D.widget=widget;
-  const next=copyJSON(P.current);delete next.focus.syncPending;
-  await put(`projects/${pid}/current.json`,next,"完成当前焦点同步");
-  P.current=next;S.focusWarning="";return true;
+  await clearFocusSync(pid,P);
+  S.focusWarning="";return true;
 }
 async function setFocus(pid,i){
-  const P=D.p[pid],r=P?.rows[i];if(!r?.uid)return toast("这条记录缺少永久 UID，无法设为当前认知");
+  const uid=D.p[pid]?.rows[i]?.uid;
+  if(!uid){toast("这条记录缺少永久 UID，无法设为当前认知");return false}
+  return queueFocusWrite(()=>writeFocus(pid,uid));
+}
+async function writeFocus(pid,uid){
+  const P=D.p[pid],r=P?.rows.find(x=>x.uid===uid);
+  if(!r){toast("这条认知已不能定位，请重新选择");return false}
   const next=copyJSON(P.current);
+  resetNightOnFocusChange(P,next,r);
   next.focus={focusUid:r.uid,date:r.date||null,q:r.q||"",manual:true,
-    at:new Date().toISOString(),syncPending:true};
+    at:new Date().toISOString(),syncPending:true,syncIntent:newFocusIntent()};
   next.rowDate=r.date||next.rowDate;next.q=r.q||"";
   // 第一笔提交成功才更新正式内存；后续失败保留可由刷新继续的 syncPending。
   try{
     await put(`projects/${pid}/current.json`,next,"今日焦点：用户手动选定");
     P.current=next;S.focusWarning="焦点已保存，正在同步项目与小组件";
-    await finishFocusSync(pid);
+    if(!(await finishFocusSync(pid)))throw new Error("已有较新的焦点选择");
     S.screen="today";S.arg=null;toast("今日焦点与小组件已同步");render();return true;
   }catch(e){
     // 之前写成功的 current.json 不回滚伪装失败，而是明确标为待恢复。
@@ -725,7 +773,9 @@ async function syncFocus(id){
   const row=focusRow(P);if(!row?.uid)return;
   if(P.current.focus?.focusUid===row.uid)return;
   const next=copyJSON(P.current);
+  resetNightOnFocusChange(P,next,row);
   next.focus={focusUid:row.uid,date:row.date||null,q:row.q||"",syncPending:id===cur()};
+  if(next.focus.syncPending)next.focus.syncLocal=true;
   next.rowDate=row.date||next.rowDate;next.q=row.q||"";
   try{
     await put(`projects/${id}/current.json`,next,"更新当前认知 UID");
@@ -813,7 +863,7 @@ function sheet(){
 }
 function nightBlock(P,row,ri){
   const n=row.night;
-  if(!n||!n.c) return `<div class="small" style="padding:10px 0">${row.date===P.current.rowDate?({wait:"等待 AI 分析",run:"AI 分析中…",fail:"夜间分析未完成"}[nightState(P.current)]||""):"这一行没有夜间分析"}</div>`;
+  if(!n||!n.c) return `<div class="small" style="padding:10px 0">${isFocusRow(P,row)?({wait:"等待 AI 分析",run:"AI 分析中…",fail:"夜间分析未完成"}[nightState(P.current)]||""):"这一行没有夜间分析"}</div>`;
   return `${n.note?`<div class="meta" style="padding-top:8px">${esc(n.note)}</div>`:""}
   <div class="line3 tap" data-go="detail" data-arg="c|${row.date}|${ri}"><span class="lbl">矛盾</span><span class="txt">${esc(n.cs)}</span><span class="chev">›</span></div>
   <div class="line3 tap" data-go="detail" data-arg="r|${row.date}|${ri}"><span class="lbl">结果</span><span class="txt">${esc(n.r)}</span><span class="chev">›</span></div>
@@ -839,7 +889,7 @@ function rowPage(){
   const isSt=(pj.labels?.f||"")==="状态";
   return `<div class="body">${topBar("",pj.name)}
     <div class="row" style="flex-wrap:wrap;gap:8px">
-      <span class="meta">${row.date}${row.date===P.current.rowDate?" · 当前问题来自这一条":""}</span>
+      <span class="meta">${row.date}${isFocusRow(P,row)?" · 当前问题来自这一条":""}</span>
       <span class="pw" style="margin-left:auto">优先 <input class="pin" value="${esc(row.cols?.[PRI]||"")}" placeholder="–" data-pri="${i}" inputmode="decimal"> / 10</span>
     </div>
     <div class="card">
@@ -866,7 +916,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-11-24b";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-25a";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -966,7 +1016,7 @@ function subTable(P,mid,pid){
       ||'<tr><td colspan="8" class="meta" style="padding:0 10px">这条主线下还没有记录</td></tr>'}
     <tr class="add" data-addrow><td colspan="8">＋ 今天这一条</td></tr></tbody></table></div>`;
 }
-function topRowIdx(P){const row=focusRow(P);return row?P.rows.indexOf(row):-1}
+function topRowIdx(P){const row=focusRowOf(P);return row?P.rows.indexOf(row):-1}
 function mainPage(){
   const [pid,mid]=String(S.arg).split("|");const P=D.p[pid];
   if(!P) return `<div class="center">加载中…</div>`;
@@ -1530,17 +1580,9 @@ function treeMark(s){const M={done:'<circle cx="8" cy="8" r="6.3"/><path d="m5 8
   active:'<circle cx="8" cy="8" r="5.8"/><circle cx="8" cy="8" r="3" fill="currentColor" stroke="none"/>',
   failed:'<path d="m4.5 4.5 7 7m0-7-7 7"/>',pending:'<circle cx="8" cy="8" r="6"/>'};
   return s?`<span class="tmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${M[s]}</svg></span>`:""}
-// 当前停在哪一条：先认永久 UID，认不到才退回日期和正文，最后才用下标
+// 树和 Today 使用同一个已验证的永久焦点，不能各自猜测旧指针。
 function curUid(){
-  const P=D.p[cur()];if(!P)return"";
-  const f=P.current?.focus||{};
-  // 有永久 UID 时只认它；失效也绝不回退到可能漂移的数组位置。
-  if(f.focusUid)return P.rows.some(r=>r.uid===f.focusUid)?f.focusUid:"";
-  if(f.date||f.q){
-    const matches=P.rows.filter(r=>(!f.date||r.date===f.date)&&(!f.q||r.q===f.q));
-    if(matches.length===1)return matches[0].uid||"";
-  }
-  return ""; // 无唯一可验证身份，不猜测当前认知
+  const P=D.p[cur()];return P?focusRowOf(P)?.uid||"":"";
 }
 function openPath(){
   const t=TREE||buildTree(),u=t.inChain[curUid()]||curUid();if(!u)return[];
@@ -1777,7 +1819,10 @@ function askRel(from,to){
     REL6.slice(3).map((r,i)=>'<button class="relbtn" data-i="'+(i+3)+'">'+r[0]+'<em>'+r[1]+'</em></button>').join("")+
     '<button class="relbtn cancel">取消</button>',
    (ev,m)=>{const b=ev.target.closest(".relbtn");if(!b)return;m.remove();
-     if(!b.classList.contains("cancel"))askDirection(from,to,REL6[+b.dataset.i][0])});
+     if(!b.classList.contains("cancel")){
+       const rel=REL6[+b.dataset.i][0];
+       if(rel==="关联")confirmRel(from,to,rel);else askDirection(from,to,rel);
+     }});
 }
 async function confirmRel(from,to,rel){
   if(!realCogUid(from)||!realCogUid(to)||from===to||!RELD[rel]){
@@ -1786,11 +1831,13 @@ async function confirmRel(from,to,rel){
   const t=TREE||buildTree(),an=t.T[from]?.name||from,bn=t.T[to]?.name||to;
   const cf=chainOfUid(from),ct=chainOfUid(to),cross=cf&&ct&&cf.id!==ct.id,
     crossProject=cogProject(from)!==cogProject(to);
-  if(!confirm(an+"\n  └ "+rel+" → "+bn+
+  if(!confirm(an+"\n  └ "+rel+(rel==="关联"?" ↔ ":" → ")+bn+
     ((cross||crossProject)&&isEvo(rel)?"\n不同演化链或项目仍保持原有归属，不会自动合并。":"")+
-    "\n\n确认保存这个方向的关系吗？"))return false;
+    "\n\n"+(rel==="关联"?"确认保存这条无向关联吗？":"确认保存这个方向的关系吗？")))return false;
   let next=copyJSON(D.rels);next.chains=next.chains||[];next.rels=next.rels||[];
-  const hit=next.rels.find(r=>r.from===from&&r.to===to&&r.rel===rel);
+  const hit=next.rels.find(r=>r.rel===rel&&((r.from===from&&r.to===to)||
+    (rel==="关联"&&r.from===to&&r.to===from)));
+  if(hit?.state==="已确认")return true;
   if(isEvo(rel)&&!cross&&!crossProject&&!(cf&&ct&&cf.id===ct.id)){
     const nm=(prompt("这条演化链叫什么？\n\n"+an+"\n  └ "+rel+"\n"+bn,cf?.name||ct?.name||"")||"").trim();
     if(!nm)return false;
@@ -1798,7 +1845,7 @@ async function confirmRel(from,to,rel){
     try{mergeChain(from,to,nm)}finally{next=D.rels;D.rels=keep}
   }
   if(hit){hit.state="已确认";hit.at=new Date().toISOString().slice(0,10)}
-  else next.rels.push({from,to,rel,dir:RELD[rel],why:"在认知树上选择端点和方向后确认",
+  else next.rels.push({from,to,rel,dir:rel==="关联"?"无方向":RELD[rel],why:"在认知树上选择端点后确认",
     src:"手动确认（"+new Date().toISOString().slice(0,10)+"）",state:"已确认",
     at:new Date().toISOString().slice(0,10)});
   const saved=await saveRels(next,"确认关系："+from+" "+rel+" "+to);
@@ -2016,7 +2063,10 @@ async function reanalyze(id){
   if(!next.focus?.focusUid)next.focus={...(next.focus||{}),focusUid:row.uid};
   next.night={status:"wait",deadline:next8(),retries:0,error:null,
               requestedAt:new Date().toISOString(),requestedBy:"在网页上点了重新分析"};
-  if(id===cur())next.focus.syncPending=true;
+  if(id===cur()){
+    next.focus.syncPending=true;
+    next.focus.syncLocal=true;
+  }
   try{
     await put(`projects/${id}/current.json`,next,"标为待分析（用户点了重新分析）");
     P.current=next;
@@ -2206,6 +2256,9 @@ document.addEventListener("pointerup",()=>{
 
 /* ============ 操作 ============ */
 async function pick(id){
+  return queueFocusWrite(()=>writePickedProject(id));
+}
+async function writePickedProject(id){
   S.sheet=false;
   try{
     const P=await loadProject(id,true,true);
@@ -2213,10 +2266,11 @@ async function pick(id){
     if(!row?.uid)throw new Error("目标项目焦点 UID 无效，请先重新选择");
     // 先将切换意图写入目标 current.json；多文件后续失败由 syncPending 恢复。
     const next=copyJSON(P.current);
-    next.focus={...(next.focus||{}),focusUid:row.uid,syncPending:true};
+    next.focus={...(next.focus||{}),focusUid:row.uid,syncPending:true,syncIntent:newFocusIntent()};
+    delete next.focus.syncLocal;
     await put(`projects/${id}/current.json`,next,`准备切换当前项目：${P.project.name}`);
     P.current=next;
-    await finishFocusSync(id);
+    if(!(await finishFocusSync(id)))throw new Error("已有较新的焦点选择");
     S.screen="today";S.arg=null;
     toast("已切换，小组件同步为「"+P.project.name+"」");return true;
   }catch(e){
@@ -2237,13 +2291,27 @@ async function setStatus(i,st){
 }
 
 async function delRow(i){
-  const id=projId(),P=D.p[id];const r=P.rows[i];
-  if(!confirmDel){confirmDel=true;toast("再点一次「删除这一条」才真的删");setTimeout(()=>confirmDel=false,4000);return}
-  confirmDel=false;P.rows.splice(i,1);
+  const id=projId(),P=D.p[id],r=P?.rows[i];
+  if(!r)return false;
+  const uid=r.uid;
+  if(uid&&(relsOf().some(x=>x.from===uid||x.to===uid)||
+      chainsOf().some(x=>x.members?.includes(uid))||
+      Object.hasOwn(D.cogtree?.up||{},uid))){
+    toast("这条认知仍被关系或认知树引用，未删除原记录");
+    return false;
+  }
+  if(!confirmDeletion(r,"再点一次同一条记录的删除按钮才真的删"))return;
+  P.rows.splice(i,1);
   try{await put(`projects/${id}/rows.json`,P.rows,`删除一条：${(r.q||"").slice(0,20)}`);toast("已删除");go("list",id)}
   catch(e){toast("删除失败："+e.message);P.rows.splice(i,0,r)}
 }
-let confirmDel=false,IME=false;
+let pendingDeletion=null,IME=false;
+function confirmDeletion(key,message){
+  if(pendingDeletion?.key===key){pendingDeletion=null;return true}
+  const request={key};pendingDeletion=request;
+  toast(message);setTimeout(()=>{if(pendingDeletion===request)pendingDeletion=null},4000);
+  return false;
+}
 document.addEventListener("compositionstart",e=>{if(e.target.id==="msrch")IME=true});
 document.addEventListener("compositionend",e=>{
   if(e.target.id!=="msrch") return;
@@ -2406,8 +2474,7 @@ async function saveMethod(id){
   }
 }
 async function delMethod(id){
-  if(!confirmDel){confirmDel=true;toast("再点一次「删除这条方法」才真的删除");setTimeout(()=>confirmDel=false,4000);return}
-  confirmDel=false;
+  if(!confirmDeletion("method:"+id,"再点一次同一条方法的删除按钮才会归档"))return;
   if(S.newMethodId===id){D.meth.methods=D.meth.methods.filter(x=>x.id!==id);
     S.newMethodId=null;S.edit=false;return tab("tree")}
   const next=copyJSON(D.meth),m=next.methods.find(x=>x.id===id);if(!m)return;

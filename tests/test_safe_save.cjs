@@ -41,7 +41,9 @@ function make(initial,production=false,file=path) {
       server.exists=true;
       server.data=JSON.parse(Buffer.from(input.content,"base64").toString("utf8"));
       server.rev++;
-      return {ok:true,json:async()=>({content:{sha:"rev"+server.rev}})};
+      const sha="rev"+server.rev;
+      if(server.afterWrite) await server.afterWrite();
+      return {ok:true,json:async()=>({content:{sha}})};
     }
     if(server.readStatus)return {ok:false,text:async()=>"simulated read error",status:server.readStatus};
     if(!server.exists)return {ok:false,text:async()=>"not found",status:404};
@@ -240,6 +242,16 @@ async function expectReject(action,label){
       assertions+=2;
     }
   }
+  // 预览允许明确指定开发分支，但不能使用遗留设置写入正式 main。
+  {
+    const {server,io}=make([{id:"r1",q:"正式数据"}]);
+    io.cfg.branch="main";server.expectedBranch="main";
+    const rows=await io.get(path);rows[0].q="预览编辑";
+    await expectReject(()=>io.put(path,rows),"开发预览不得写入正式 main");
+    assert.equal(server.data[0].q,"正式数据");
+    assert.equal(server.requests.some(x=>x.method==="PUT"),false);
+    assertions+=2;
+  }
   // 已经成功加载后再次读失败，旧 SHA 也必须失去写入资格。
   {
     const {server,io}=make([{id:"r1",q:"原始"}]);
@@ -249,6 +261,41 @@ async function expectReject(action,label){
     server.readStatus=0;
     await expectReject(()=>io.put(path,[{id:"r1",q:"危险覆盖"}]),"旧 SHA 不能写");
     assert.equal(server.data[0].q,original[0].q);assertions++;
+  }
+  // 输入框可以在 API 已接收第一笔请求、但响应尚未抵达时继续修改。
+  {
+    const {server,io}=make([{id:"r1",q:"原始"}]);
+    const rows=await io.get(path);
+    let sent, release;
+    const dispatched=new Promise(r=>sent=r),holdResponse=new Promise(r=>release=r);
+    server.afterWrite=()=>{sent();return holdResponse};
+    rows[0].q="第一笔保存";
+    const saved=io.put(path,rows,"第一笔保存");
+    await dispatched;
+    rows[0].q="还在输入，尚未保存";
+    release();
+    await saved;
+    assert.equal(server.data[0].q,"第一笔保存");
+    assert.equal(io.BASE[path][0].q,server.data[0].q,
+      "响应期间的编辑不能被记成同一 SHA 已提交的内容");
+    assertions+=2;
+  }
+  // 同一页面的第二份整文件草稿尚未看到正在提交的第一笔操作。
+  {
+    const {server,io}=make([{id:"r1",q:"原始"},{id:"r2",q:"原始"}]);
+    const before=await io.get(path);
+    let sent, release;
+    const dispatched=new Promise(r=>sent=r),holdResponse=new Promise(r=>release=r);
+    server.afterWrite=()=>{sent();return holdResponse};
+    const first=io.put(path,[{...before[0],q:"第一处修改"},before[1]],"第一笔保存");
+    await dispatched;
+    const second=io.put(path,[before[0],{...before[1],q:"第二处修改"}],"第二笔保存")
+      .then(()=>false,()=>true);
+    release();
+    await first;
+    assert(await second,"并行整文件草稿不得用另一笔保存后的 SHA 覆盖");
+    assert.equal(server.data[0].q,"第一处修改");
+    assertions+=2;
   }
   console.log("RL-app 安全保存模拟测试通过：",assertions,"项断言");
 })().catch(e=>{console.error(e);process.exitCode=1});

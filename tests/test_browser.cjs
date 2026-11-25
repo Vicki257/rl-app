@@ -72,6 +72,25 @@ async function scenario(browser,device){
   await page.locator('[data-tab="tree"]').click();
   await page.locator("#tree .item[data-id='chain-browser']").waitFor();
   await page.waitForFunction(()=>D.index.filter(x=>x.state!=="archived").every(x=>!!D.p[x.id]));
+  // 删除记录不能让现有认知关系悬空，也不能破坏之后的关系保存。仅操作本地模拟仓库。
+  const linkedRow=rows.find(r=>rels.rels.some(x=>x.from===r.uid||x.to===r.uid));
+  assert(linkedRow?.uid,"真实数据中必须有被关系引用的 RL 记录");
+  await page.evaluate(async uid=>{
+    const i=D.p.rl.rows.findIndex(r=>r.uid===uid);
+    await delRow(i);
+    await delRow(i);
+  },linkedRow.uid);
+  assert(store.get("projects/rl/rows.json").some(r=>r.uid===linkedRow.uid),
+    device+": 已关联原始认知不能被删除并留下无效关系");
+  assert(!putFiles.includes("projects/rl/rows.json"),device+": 被拒绝的删除不得写入");
+  const unlinked=rows.filter(r=>r.uid!==focus&&!read("cogtree.json").up[r.uid]&&
+    !rels.rels.some(x=>x.from===r.uid||x.to===r.uid)&&!rels.chains.some(c=>c.members.includes(r.uid))).slice(0,2);
+  assert.equal(unlinked.length,2,"真实数据中必须有两个无关联的 RL 记录");
+  await page.evaluate(async ids=>{
+    for(const uid of ids)await delRow(D.p.rl.rows.findIndex(r=>r.uid===uid));
+  },unlinked.map(r=>r.uid));
+  assert(unlinked.every(r=>store.get("projects/rl/rows.json").some(saved=>saved.uid===r.uid)),
+    device+": 点两条不同记录的删除按钮，不能算确认删除");
   // 反例 1：手动焦点 A75 与自动最高优先 A67 不同。重新分析只更新 A75 的分析状态。
   const baselineFocus=await page.evaluate(()=>({
     chosen:focusRowOf(D.p.rl)?.uid,automatic:focusRow(D.p.rl)?.uid}));
@@ -195,7 +214,6 @@ async function scenario(browser,device){
   await activate(page.locator('#tree .item[data-id="'+outsider+'"] > .line > .name'));
   await activate(page.locator(".relsheet [data-member='0']"));
   await activate(page.locator(".relsheet [data-i='5']")); // 关联，不改变归属
-  await activate(page.locator(".relsheet [data-dir='0']"));
   await page.waitForFunction(()=>S.toast?.includes("已写回仓库"));
   assert(store.get("rels.json").rels.some(r=>r.from===focus&&r.to===outsider&&r.rel==="关联"),
     device+": 触摸点选必须建立真实 UID 关系");
@@ -326,6 +344,19 @@ async function scenario(browser,device){
   await page.waitForFunction(()=>D.global?.current==="quant"&&D.p.quant?.current?.focus?.syncPending!==true);
   assert(store.get("widget.json").focusUid===quantUID,
     device+": 刷新后同步 widget 的唯一焦点 UID");
+  // A later explicit choice must supersede a previous switch that never committed global.
+  denyFile="global.json";
+  const failedSwitch=await page.evaluate(()=>pick("rl"));
+  assert.equal(failedSwitch,false,device+": stale intent must begin with an interrupted switch");
+  assert.equal(store.get("global.json").current,"quant");
+  assert.equal(store.get("projects/rl/current.json").focus.syncPending,true);
+  denyFile=null;
+  assert(await page.evaluate(i=>setFocus("quant",i),quantIndex),device+": later explicit choice");
+  await page.reload();
+  await page.waitForFunction(()=>D.index.filter(x=>x.state!=="archived").every(x=>!!D.p[x.id])&&
+    D.p.rl&&D.p.rl.current?.focus?.syncPending!==true);
+  assert.equal(store.get("global.json").current,"quant",device+": interrupted older switch must not undo later choice");
+  assert.equal(store.get("widget.json").focusUid,quantUID,device+": older switch must not redirect widget");
   // 旧焦点只按唯一日期+正文补号，绝不能按过期 idx 猜身份。
   const oldFocus=read("projects/rl/current.json");
   delete oldFocus.focus.focusUid;oldFocus.focus.idx=9999;

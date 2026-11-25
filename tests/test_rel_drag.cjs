@@ -37,7 +37,16 @@ function check(){api.validateRels(D.rels);ok(D.rels.rels.every(x=>api.realCogUid
  reset();api.askDragRel(c,d);click("i",1);click("dir",0);await tick();
  ok(D.rels.rels.some(x=>x.from===c&&x.to===d&&x.rel==="修正"),"A 未保存真正 UID");
  ok(D.rels.chains.length===1,"A 不得产生重复链");check();
- // B：C 拖到 A→B 链，先选 B，再确认 B→C。
+ // 真数据中的同日「关联」没有方向；反过来点选仍应确认原候选并保留证据。
+ const association=J("rels.json").rels.find(x=>x.from==="A000000035"&&x.to==="A000000091"&&x.rel==="关联");
+ ok(!!association,"必须读取真实关联候选");
+ reset();D.rels.rels.push(JSON.parse(JSON.stringify(association)));
+ await api.confirmRel(association.to,association.from,"关联");
+ const linked=D.rels.rels.filter(r=>r.rel==="关联"&&
+   [r.from,r.to].includes(association.from)&&[r.from,r.to].includes(association.to));
+ ok(linked.length===1,"反向选择不得复制同一条无向关联");
+ ok(linked[0].state==="已确认"&&linked[0].why===association.why,"应确认原候选并保留原文依据");
+// B：C 拖到 A→B 链，先选 B，再确认 B→C。
  reset([{id:"chain-a",name:"A 到 B",parent:"proj:rl",members:[a,b]}]);
  api.askDragRel(c,"chain-a");ok(ctx.modal.html.includes("data-member"),"B 必须选择链内成员");
  click("member",1);click("i",1);click("dir",1);await tick();
