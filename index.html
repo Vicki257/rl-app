@@ -641,7 +641,6 @@ function nightState(c){
 }
 // 写入新问题后，分析要在下一个早上 8:00（日本时间）之前跑出来；过了就算没跑成
 function next8(){const d=new Date();const jst=new Date(d.getTime()+9*36e5);if(jst.getUTCHours()>=8)jst.setUTCDate(jst.getUTCDate()+1);jst.setUTCHours(8,0,0,0);return new Date(jst.getTime()-9*36e5).toISOString()}
-const nightPill=st=>({done:'<span class="pill ok">夜间分析已完成</span>',wait:'<span class="pill ok">等待 AI 分析</span>',run:'<span class="pill ok">AI 分析中</span>',fail:'<span class="pill bd">夜间分析未完成</span>'}[st]);
 function curRow(P){return P.rows.find(r=>r.date===P.current.rowDate)||P.rows[P.rows.length-1]}
 function widgetFrom(id,P){
   const row=focusRowOf(P),n=row?.night||{};
@@ -863,7 +862,7 @@ function sheet(){
 }
 function nightBlock(P,row,ri){
   const n=row.night;
-  if(!n||!n.c) return `<div class="small" style="padding:10px 0">${isFocusRow(P,row)?({wait:"等待 AI 分析",run:"AI 分析中…",fail:"夜间分析未完成"}[nightState(P.current)]||""):"这一行没有夜间分析"}</div>`;
+  if(!n||!n.c) return `<div class="small" style="padding:10px 0">${isFocusRow(P,row)?({wait:"等待 AI 分析",run:"AI 分析中…",fail:"夜间分析未完成",skip:"这一条没安排夜间分析"}[nightState(P.current)]||"这一条没安排夜间分析"):"这一行没有夜间分析"}</div>`;
   return `${n.note?`<div class="meta" style="padding-top:8px">${esc(n.note)}</div>`:""}
   <div class="line3 tap" data-go="detail" data-arg="c|${row.date}|${ri}"><span class="lbl">矛盾</span><span class="txt">${esc(n.cs)}</span><span class="chev">›</span></div>
   <div class="line3 tap" data-go="detail" data-arg="r|${row.date}|${ri}"><span class="lbl">结果</span><span class="txt">${esc(n.r)}</span><span class="chev">›</span></div>
@@ -916,7 +915,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-11-25a";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-25b";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词

@@ -297,5 +297,44 @@ async function expectReject(action,label){
     assert.equal(server.data[0].q,"第一处修改");
     assertions+=2;
   }
+  // cognotes.json 还不存在于任何分支：两台设备同时第一次保存补充记录。
+  // 后到的那一笔必须明确报错，先保存的内容一个字都不能被盖掉。
+  {
+    const NOTES="cognotes.json";
+    const A=make(undefined,false,NOTES);          // 设备 A：文件不存在
+    const B=make(undefined,false,NOTES);          // 设备 B：同样看到不存在
+    // 两台设备各自确认过「确实是 404」
+    assert.deepEqual(await A.io.getOptional(NOTES,{}),{},"首次读取应确认为空而不是报错");
+    assert.deepEqual(await B.io.getOptional(NOTES,{}),{},"另一台设备也应确认为空");
+    // A 先写成功
+    await A.io.put(NOTES,{A000000075:"设备 A 写的补充"},"补充认知",{create:true});
+    assert.equal(A.server.data.A000000075,"设备 A 写的补充","设备 A 应写入成功");
+    // B 的服务器此刻也已经有了 A 的内容（同一个远端文件）
+    B.server.exists=true;B.server.data={A000000075:"设备 A 写的补充"};B.server.rev=A.server.rev;
+    // B 仍以为文件不存在，照样发不带 sha 的创建请求 → GitHub 返回 409
+    await expectReject(()=>B.io.put(NOTES,{A000000075:"设备 B 写的补充"},"补充认知",{create:true}),
+      "后到的首次创建必须被拒绝，不能覆盖先写成功的内容");
+    assert.equal(B.server.data.A000000075,"设备 A 写的补充",
+      "被拒绝之后远端必须还是设备 A 的内容");
+    // 报错话术要说清「没覆盖」，否则用户不知道自己的字还在不在
+    let msg="";
+    try{await B.io.put(NOTES,{A000000075:"再试一次"},"补充认知",{create:true})}catch(e){msg=String(e.message)}
+    assert(/已被其他会话创建|未覆盖/.test(msg),"报错要说明没有覆盖远端，实际："+msg);
+    // B 重新读一次之后才允许继续写，而且是在 A 的内容之上追加
+    const latest=await B.io.get(NOTES);
+    latest.A000000076="设备 B 重读后补的";
+    await B.io.put(NOTES,latest,"补充认知");
+    assert.equal(B.server.data.A000000075,"设备 A 写的补充","重读后保存不能丢掉 A 的内容");
+    assert.equal(B.server.data.A000000076,"设备 B 重读后补的","B 的新内容应写入成功");
+    assertions+=7;
+  }
+  // 没有 create 授权时，绝不凭空创建新文件
+  {
+    const {server,io}=make(undefined,false,"cognotes.json");
+    await io.getOptional("cognotes.json",{});
+    await expectReject(()=>io.put("cognotes.json",{x:1},"没授权"),"未授权创建必须拒绝");
+    assert.equal(server.exists,false,"被拒绝时远端不该出现这个文件");
+    assertions++;
+  }
   console.log("RL-app 安全保存模拟测试通过：",assertions,"项断言");
 })().catch(e=>{console.error(e);process.exitCode=1});
