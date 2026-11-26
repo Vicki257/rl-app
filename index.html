@@ -395,8 +395,8 @@ tr.add:hover>td{background:var(--accentSoft)}
 .cog .offchain ul{margin:0;padding-left:18px;font-size:13px;line-height:1.8}
 .cog .offchain b{font-weight:600}
 .cog .nameask input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;background:none;color:var(--ink)}
-.cog .page-title[contenteditable]{outline:none;border-radius:6px}
-.cog .page-title[contenteditable]:focus{box-shadow:0 0 0 2px color-mix(in srgb,var(--yellow) 45%,transparent)}
+.cog textarea.page-title{outline:none;border-radius:6px}
+.cog textarea.page-title:focus{box-shadow:0 0 0 2px color-mix(in srgb,var(--yellow) 45%,transparent)}
 
 </style>
 </head>
@@ -536,7 +536,7 @@ async function getOptional(path,missingValue){
 }
 const writing=new Set();
 async function put(path,obj,msg,options={}){
-  if(S.newver)throw new Error("当前页面版本已过期，请刷新后再保存");
+  if(typeof S!=="undefined"&&S.newver)throw new Error("当前页面版本已过期，请刷新后再保存");
   const key=JSON.stringify([sourceKey(),path]);
   if(writing.has(key))throw new Error("上一笔保存尚未完成，请重试："+path);
   writing.add(key);
@@ -938,7 +938,7 @@ function edr(i,k,v,ph,big,row){
     <button type="button" class="back" data-rawmode="${key}">${mode==="code"?"普通文本":"代码块"}</button>
     ${preview?`<button type="button" class="back" data-rawedit="${key}">编辑原文</button>`:""}</div>
     ${preview?`<div class="raw-preview" data-rawpreview="${key}">${rawPreview(value,mode)}</div>`:""}
-    <textarea class="v raw-field${mode==="code"?" raw-code":""}" aria-label="${esc(k)}" placeholder="${esc(ph||"")}" data-rk="${key}" rows="${Math.max(2,Math.min(24,value.split("\n").length+1))}" ${mode==="code"?'wrap="off"':""} ${preview?"hidden":""}>\n${esc(value)}</textarea></div>`;
+    <textarea class="v raw-field${preview?" raw-code":""}" aria-label="${esc(k)}" placeholder="${esc(ph||"")}" data-rk="${key}" rows="${Math.max(2,Math.min(24,value.split("\n").length+1))}" ${preview?'wrap="off"':""} ${preview?"hidden":""}>\n${esc(value)}</textarea></div>`;
 }
 function colEditor(i,pj,row){
   const cols=rowColumns(pj,row);
@@ -1228,9 +1228,9 @@ function personPage(){
   const gp=((pj.gaps||[]).find(x=>x.id===p.gap)||{}).name||"";
   return `<div class="body">${topBar(p.name||"新的人",(gp||pj.name)+" · 第 "+pplStep(pj,p)+" / "+ns.length+" 步")}
     <div class="card"><label class="small" for="pp_name">名字</label>
-      <textarea id="pp_name" style="min-height:52px">${esc(p.name||"")}</textarea></div>
+      <textarea id="pp_name" style="min-height:52px">\n${esc(p.name||"")}</textarea></div>
     <div class="card">${ns.map((n,k)=>`<label class="small" for="pp_${k}">${esc(n.name)}</label>
-      <textarea id="pp_${k}" style="min-height:84px;margin-bottom:12px">${esc((p.cells||{})[n.id]||"")}</textarea>`).join("")}</div>
+      <textarea id="pp_${k}" style="min-height:84px;margin-bottom:12px">\n${esc((p.cells||{})[n.id]||"")}</textarea>`).join("")}</div>
     <button class="btn" data-saveppl="${esc(id)}|${i}">保存</button>
     <button class="btn ghost bd" data-delppl="${esc(id)}|${i}">删掉这个人</button>
   </div>`;
@@ -1264,7 +1264,7 @@ function savePerson(id,i){
   const pj=D.p[id].project,ns=pplNodes(pj),p=(pj.ppl||[])[i];if(!p) return;
   p.name=($("#pp_name")||{}).value?.trim()||"";
   p.cells=p.cells||{};
-  ns.forEach((n,k)=>{const el=$("#pp_"+k);if(el)p.cells[n.id]=el.value.trim()});
+  ns.forEach((n,k)=>{const el=$("#pp_"+k);if(el)p.cells[n.id]=el.value});
   saveProject(id,`人：${p.name||"（没名字）"}`);
 }
 function delPerson(id,i){
@@ -1790,7 +1790,7 @@ function chainPage(){
   return `<div class="cog"><section id="node-page">
     <button class="back" data-back>${BACKSVG}返回认知树</button>
     <div class="detail-path">认知演化链 · ${ms.length} 条认知 · 按记录时间排，没有时间的排在最后</div>
-    <h1 class="page-title" id="ctitle" contenteditable>${esc(c.name)}</h1>
+    <textarea class="page-title raw-field" id="ctitle" aria-label="演化链标题" rows="1">\n${esc(c.name)}</textarea>
     <div class="chainbox">${h}</div>
     ${ms.length?`<button class="btn ghost" data-addchild="${esc(c.id)}">＋ 新增子认知</button>`:""}
     ${ex.length?`<div class="offchain"><h4>这条链上还确认过这些关系（现在不相邻）</h4><ul>${ex.join("")}</ul></div>`:""}
@@ -1964,8 +1964,8 @@ function bindCog(){
   if(ct)ct.addEventListener("blur",async()=>{
     if(!editedTextFields.has(ct))return;
     editedTextFields.delete(ct);
-    const v=ct.textContent.trim(),c=chainsOf().find(x=>x.id===S.arg);
-    if(!c||!v||v===c.name)return;
+    const v=ct.value,c=chainsOf().find(x=>x.id===S.arg);
+    if(!c||!v.trim()||v===c.name)return;
     const next=JSON.parse(JSON.stringify(D.rels));
     (next.chains.find(x=>x.id===c.id)||{}).name=v;
     if(await saveRels(next,"演化链改名："+v)){toast("已写回仓库");render()}else render();
@@ -1987,7 +1987,7 @@ function bindCog(){
       if(!realCogUid(id))return msg.textContent="不是永久认知 UID，禁止保存";
       btn.disabled=true;msg.textContent="正在写入 RL-data";
       const next=copyJSON(D.notes||{});
-      if(ed.value.trim())next[id]=ed.value;else delete next[id];
+      if(ed.value!=="")next[id]=ed.value;else delete next[id];
       try{
         await put("cognotes.json",next,"补充认知："+id,{create:true});
         D.notes=next;try{localStorage.removeItem("rl.cognote:"+id)}catch(e){}
@@ -2226,10 +2226,10 @@ function methodPage(){
   const cats=D.meth?.cats||[];
   if(S.edit) return `<div class="body">${topBar(m.name,"编辑")}
     <div class="card" style="display:flex;flex-direction:column;gap:8px">
-      <label class="small" for="m_name">名字</label><textarea id="m_name" style="min-height:52px">${esc(m.name)}</textarea>
-      <label class="small" for="m_when">什么时候用得上</label><textarea id="m_when">${esc(m.when||"")}</textarea>
-      <label class="small" for="m_what">它说的是什么</label><textarea id="m_what" style="min-height:160px">${esc(m.what||"")}</textarea>
-      <label class="small" for="m_src">来源（几月几号）</label><textarea id="m_src" style="min-height:52px">${esc(m.src||"")}</textarea>
+      <label class="small" for="m_name">名字</label><textarea id="m_name" style="min-height:52px">\n${esc(m.name)}</textarea>
+      <label class="small" for="m_when">什么时候用得上</label><textarea id="m_when">\n${esc(m.when||"")}</textarea>
+      <label class="small" for="m_what">它说的是什么</label><textarea id="m_what" style="min-height:160px">\n${esc(m.what||"")}</textarea>
+      <label class="small" for="m_src">来源（几月几号）</label><textarea id="m_src" style="min-height:52px">\n${esc(m.src||"")}</textarea>
       <div class="small">放在哪一类</div><div class="row" style="gap:6px;flex-wrap:wrap">
         ${cats.map(c=>`<button class="chip${(S.methodCat||m.cat)===c?" on":""}" data-setcat="${esc(m.id)}|${esc(c)}">${esc(c)}</button>`).join("")}</div>
       <button class="btn" data-savem="${esc(m.id)}">保存</button><span class="save-method-note" role="status"></span>
@@ -2354,8 +2354,8 @@ function resPage(){
       <label class="small" for="r_proj">项目</label>
       <input id="r_proj" type="text" list="r_projs" placeholder="写哪个项目，或任何对象" value="${esc(r.proj||"")}">
       <datalist id="r_projs">${(D.index||[]).map(x=>`<option value="${esc(x.name)}">`).join("")}</datalist>
-      <label class="small" for="r_r">结果（一两句说清这次跑出来什么）</label><textarea id="r_r">${esc(r.r||"")}</textarea>
-      <label class="small" for="r_d">详细</label><textarea id="r_d" style="min-height:240px">${esc(r.detail||"")}</textarea>
+      <label class="small" for="r_r">结果（一两句说清这次跑出来什么）</label><textarea id="r_r">\n${esc(r.r||"")}</textarea>
+      <label class="small" for="r_d">详细</label><textarea id="r_d" style="min-height:240px">\n${esc(r.detail||"")}</textarea>
       <button class="btn" data-saveres="${esc(pid)}|${esc(nid)}|${i}">保存</button>
       <button class="btn ghost" data-canceledit>取消</button></div>
   </div>`;
@@ -2376,7 +2376,7 @@ function addRes(pid,nid){
 function saveRes(pid,nid,i){
   const n=findNode(D.p[pid]?.project,nid),r=((n&&n.res)||[])[i];if(!r) return;
   r.date=$("#r_date").value.trim();r.proj=$("#r_proj").value.trim();
-  r.r=$("#r_r").value.trim();r.detail=$("#r_d").value.trim();
+  r.r=$("#r_r").value;r.detail=$("#r_d").value;
   delete r._new;S.edit=false;
   return saveProject(pid,`记录：${n.name} · ${r.proj||""} ${r.date||""}`);
 }
@@ -2387,18 +2387,18 @@ function nodePage(){
   const pains=n.pains||[],how=n.how||[],LBS=lbsOf(P.project);
   if(S.edit) return `<div class="body">${topBar(n.name,"编辑")}
     <div class="card" style="display:flex;flex-direction:column;gap:8px">
-      <label class="small" for="n_whole">全体像</label><textarea id="n_whole">${esc(n.whole||"")}</textarea>
+      <label class="small" for="n_whole">全体像</label><textarea id="n_whole">\n${esc(n.whole||"")}</textarea>
       ${how.map((h,i)=>h.n
         ? `<div class="small" style="color:var(--accent);font-weight:700;margin-top:6px">${esc(h.n)}</div>`
           +["use","calc","ex","why","now","warn"].filter(k=>h[k]!=null).map(k=>
-            `<label class="small" for="n_${k}${i}" style="opacity:.65">${k==="warn"?"⚠ 注意":LBS[k]}</label><textarea id="n_${k}${i}">${esc(h[k])}</textarea>`).join("")
-        : `<label class="small" for="n_h${i}">现在怎么做到的 ${i+1}（出处 ${esc(h.wbs||"")}）</label><textarea id="n_h${i}">${esc(h.t||"")}</textarea>`).join("")}
-      ${n.concl!=null?`<label class="small" for="n_concl">结论</label><textarea id="n_concl">${esc(n.concl)}</textarea>`:""}
+            `<label class="small" for="n_${k}${i}" style="opacity:.65">${k==="warn"?"⚠ 注意":LBS[k]}</label><textarea id="n_${k}${i}">\n${esc(h[k])}</textarea>`).join("")
+        : `<label class="small" for="n_h${i}">现在怎么做到的 ${i+1}（出处 ${esc(h.wbs||"")}）</label><textarea id="n_h${i}">\n${esc(h.t||"")}</textarea>`).join("")}
+      ${n.concl!=null?`<label class="small" for="n_concl">结论</label><textarea id="n_concl">\n${esc(n.concl)}</textarea>`:""}
       ${pains.map((p,i)=>`<label class="small" for="n_p${i}">痛点 ${esc(p.ref||"")}${p.part?" "+esc(p.part):""} —— ${p.solved?"怎么消掉的":"还空着，缺什么"}</label>
         <div class="row" style="gap:8px;align-items:center"><input type="checkbox" id="n_s${i}" ${p.solved?"checked":""} style="width:auto"><label class="small" for="n_s${i}" style="margin:0">已解决</label></div>
-        <textarea id="n_p${i}">${esc(p.solved?(p.fix||""):(p.gap||""))}</textarea>`).join("")}
-      ${n.so!=null?`<label class="small" for="n_so">所以</label><textarea id="n_so">${esc(n.so)}</textarea>`:""}
-      <label class="small" for="n_judge">做完的判据</label><textarea id="n_judge">${esc(n.judge||"")}</textarea>
+        <textarea id="n_p${i}">\n${esc(p.solved?(p.fix||""):(p.gap||""))}</textarea>`).join("")}
+      ${n.so!=null?`<label class="small" for="n_so">所以</label><textarea id="n_so">\n${esc(n.so)}</textarea>`:""}
+      <label class="small" for="n_judge">做完的判据</label><textarea id="n_judge">\n${esc(n.judge||"")}</textarea>
       <button class="btn" data-savenode="${esc(pid)}|${esc(nid)}">保存</button><button class="btn ghost" data-canceledit>取消</button></div>
   </div>`;
   const done=pains.filter(p=>p.solved).length;
@@ -2822,14 +2822,14 @@ document.addEventListener("blur",e=>{
 },true);
 function saveNode(pid,nid){
   const n=findNode(D.p[pid].project,nid);if(!n) return;
-  n.whole=$("#n_whole").value.trim();n.judge=$("#n_judge").value.trim();
-  ["concl","so"].forEach(k=>{const el=$("#n_"+k);if(el)n[k]=el.value.trim()});
+  n.whole=$("#n_whole").value;n.judge=$("#n_judge").value;
+  ["concl","so"].forEach(k=>{const el=$("#n_"+k);if(el)n[k]=el.value});
   (n.how||[]).forEach((h,i)=>{
-    if(h.n){["use","calc","ex","why","now","warn"].forEach(k=>{const el=$("#n_"+k+i);if(el)h[k]=el.value.trim()})}
-    else{const el=$("#n_h"+i);if(el)h.t=el.value.trim()}
+    if(h.n){["use","calc","ex","why","now","warn"].forEach(k=>{const el=$("#n_"+k+i);if(el)h[k]=el.value})}
+    else{const el=$("#n_h"+i);if(el)h.t=el.value}
   });
   (n.pains||[]).forEach((p,i)=>{
-    const v=($("#n_p"+i)?.value||"").trim(),sol=$("#n_s"+i)?.checked;
+    const v=($("#n_p"+i)?.value||""),sol=$("#n_s"+i)?.checked;
     p.solved=!!sol; if(sol){p.fix=v;delete p.gap}else{p.gap=v;delete p.fix}
   });
   return saveProject(pid,`修改 SOP 节点：${n.name}`);
@@ -2853,8 +2853,8 @@ async function saveMethod(id){
   const next=copyJSON(D.meth),m=next.methods.find(x=>x.id===id);
   if(!m)return false;
   m.name=$("#m_name").value.trim()||"未命名";
-  m.what=$("#m_what").value.trim();m.when=$("#m_when").value.trim();
-  m.src=$("#m_src").value.trim();m.cat=S.methodCat||m.cat;
+  m.what=$("#m_what").value;m.when=$("#m_when").value;
+  m.src=$("#m_src").value;m.cat=S.methodCat||m.cat;
   // 未更改来源时不重算 refs，避免把历史跨年引用误改成 2026 或清空。
   if(m.src!==original.src){
     const found=(m.src.match(/(\d{1,2})\/(\d{1,2})/g)||[]).map(t=>{
