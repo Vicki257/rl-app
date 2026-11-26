@@ -945,6 +945,7 @@ function rowPage(){
         : edr(i,c,row.cols?.[c],"")).join("")}
       ${S.colEdit===i?colEditor(i,pj,row):`<button class="back" data-coledit="${i}" style="margin-top:6px">改这一条的栏目</button>`}
     </div>
+    ${row.uid?`<button class="btn ghost" data-addchild="${esc(row.uid)}">＋ 新增子认知</button>`:""}
     <div class="h2">夜间分析</div>
     <div class="card" style="padding:4px 14px">${nightBlock(P,row,i)}</div>
     <div class="h2">${esc(pj.tableName||"复盘表")} · 全部记录</div>
@@ -958,7 +959,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-11-25h";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-26a";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1629,6 +1630,34 @@ function buildTree(){
   });
   if(Object.keys(inChain).length)Object.values(T).forEach(n=>{
     if(n.chain)return;n.children=n.children.filter(c=>!inChain[c])});
+  // 研究分支不是演化关系：子记录独立保存，以父认知 UID 定位。
+  // 父认知进入演化链后，分支仍在该链下可见；不修改任何链成员或关系。
+  const reaches=(from,to,seen=new Set())=>{
+    if(from===to)return true;
+    if(seen.has(from))return false;seen.add(from);
+    return (T[from]?.children||[]).some(c=>reaches(c,to,seen));
+  };
+  const attach=(child,parent)=>{
+    if(!T[child]||!T[parent]||child===parent||reaches(child,parent))return false;
+    for(const n of Object.values(T))n.children=n.children.filter(c=>c!==child);
+    T[parent].children.push(child);return true;
+  };
+  // 旧链若挂在后来被另一条链收纳的认知下，仍需可达。
+  for(const c of chainsOf()){
+    const p=inChain[c.parent];
+    if(p&&p!==c.id)attach(c.id,p);
+    else if(p===c.id){
+      const pid=cogProject(c.parent);
+      if(T["proj:"+pid])attach(c.id,"proj:"+pid);
+    }
+  }
+  for(const [pid,P] of Object.entries(D.p||{}))for(const r of P.rows||[]){
+    if(!r.uid||!r.parentUid||inChain[r.uid])continue;
+    const parent=inChain[r.parentUid]||r.parentUid;
+    const owner=cogProject(r.parentUid);
+    if((owner===pid||(owner==="通用"&&pid==="rl"))&&realCogUid(r.parentUid))
+      attach(r.uid,parent); // 非法/循环引用保留原位置，不丢记录
+  }
   TREE={T:T,roots:roots,inChain:inChain,missing:missing};
   return TREE;
 }
@@ -1637,7 +1666,7 @@ function rowNode(T,add,r,i,pid){
   const LQ=pj.labels?.q||"哪里不够用";
   if(!cols[LQ]&&r.q)det.push([LQ,r.q]);
   rowColumns(pj,r).forEach(k=>{if(String(cols[k]??"").trim())det.push([k,String(cols[k])])});
-  return add(r.uid,{name:(r.q||"").slice(0,40),status:ST_ROW(r.f),fs:r.f||"",d:r.date||"",
+  return add(r.uid,{name:r.todayTitle||(r.q||"").slice(0,40),status:ST_ROW(r.f),fs:r.f||"",d:r.date||"",
     detail:det,go:"row",arg:[r.date||"",i,pid].join("|")});
 }
 function chainOfUid(u){return chainsOf().find(c=>(c.members||[]).includes(u))}
@@ -1727,6 +1756,7 @@ function chainPage(){
     <div class="detail-path">认知演化链 · ${ms.length} 条认知 · 按记录时间排，没有时间的排在最后</div>
     <h1 class="page-title" id="ctitle" contenteditable>${esc(c.name)}</h1>
     <div class="chainbox">${h}</div>
+    ${ms.length?`<button class="btn ghost" data-addchild="${esc(c.id)}">＋ 新增子认知</button>`:""}
     ${ex.length?`<div class="offchain"><h4>这条链上还确认过这些关系（现在不相邻）</h4><ul>${ex.join("")}</ul></div>`:""}
     <div class="page-note">每段关系都来自 rels.json 里确认过的那一条，不按时间倒推。点任一条进它原本的页面。改标题后点页面别处即保存。</div>
   </section></div>${nav("tree")}`;
@@ -1753,6 +1783,7 @@ function cogPage(){
     ${side.length?`<div class="offchain"><h4>和别的认知的横向关系</h4><ul>${side.map(r=>{
       const o=r.from===S.arg?r.to:r.from,on=TREE.T[o];
       return `<li><b>${esc(r.rel)}</b>　<button class="crumblink" data-cogjump="${esc(o)}">${esc(on?on.name:o)}</button>　${esc(r.dir||RELD[r.rel])}</li>`}).join("")}</ul></div>`:""}
+    ${realCogUid(S.arg)?`<button class="btn ghost" data-addchild="${esc(S.arg)}">＋ 新增子认知</button>`:""}
     <div class="detail-card"><div class="small">补充认知 · 正式内容保存到 RL-data，未提交草稿只留本机</div>
       <textarea class="record-editor" aria-label="补充记录" placeholder="要补充什么，写在这里…"></textarea>
       <div class="record-actions"><span class="save-note" role="status"></span><button class="save-record" disabled>保存</button></div></div>
@@ -2585,13 +2616,33 @@ async function setStatus(i,st){
   await syncFocus(id);return true;
 }
 
+// 链的子认知以真实成员 UID 为锚点，链改名/合并不需要重写子记录。
+async function addCogChild(target){
+  const chain=chainsOf().find(c=>c.id===target);
+  const parentUid=chain?chain.members.find(realCogUid):target;
+  if(!realCogUid(parentUid))return toast("父认知不存在");
+  const owner=cogProject(parentUid),id=owner==="通用"?"rl":owner,P=D.p[id];
+  if(!P||!P.project)return toast("找不到父认知所属项目");
+  const q=(prompt("子认知的标题或研究问题")||"").trim();if(!q)return;
+  const cols={};(P.project.columns||[]).forEach(k=>cols[k]="");
+  const date=new Date(Date.now()+9*36e5).toISOString().slice(0,10);
+  const row={date,f:"待改",q,parentUid,cols,night:null};
+  P.rows.push(row);
+  const i=P.rows.length-1;
+  try{await put(`projects/${id}/rows.json`,P.rows,"新增子认知："+q)}
+  catch(e){P.rows=P.rows.filter(r=>r!==row);return toast("新增失败："+e.message)}
+  treeDirty();
+  toast("已保存，永久 ID 由仓库自动补发");
+  go("row",date+"|"+i+"|"+id);
+}
 async function delRow(i){
   const id=projId(),P=D.p[id],r=P?.rows[i];
   if(!r)return false;
   const uid=r.uid;
   if(uid&&(relsOf().some(x=>x.from===uid||x.to===uid)||
       chainsOf().some(x=>x.members?.includes(uid))||
-      Object.hasOwn(D.cogtree?.up||{},uid))){
+      Object.hasOwn(D.cogtree?.up||{},uid)||
+      Object.values(D.p||{}).some(p=>(p.rows||[]).some(x=>x.parentUid===uid)))){
     toast("这条认知仍被关系或认知树引用，未删除原记录");
     return false;
   }
@@ -2787,7 +2838,7 @@ async function decide(id,i,opt){
 }
 document.addEventListener("click",async e=>{
   if(e.target.closest("[data-stop]")&&!e.target.closest("[data-pick]")) return;
-  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-rpick],[data-relok],[data-coledit],[data-colsave],[data-colcancel],[data-coldel],[data-chaingo],[data-cogjump],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
+  const t=e.target.closest("[data-copysop],[data-copyfive],[data-go],[data-back],[data-tab],[data-sheet],[data-closesheet],[data-pick],[data-open],[data-toggle],[data-edit],[data-canceledit],[data-decide],[data-savecfg],[data-reload],[data-savenode],[data-addres],[data-saveres],[data-saveboard],[data-zoom],[data-node],[data-filter],[data-savepri],[data-newver],[data-addrow],[data-addchild],[data-tofilter],[data-setst],[data-delrow],[data-setreal],[data-rfilter],[data-addm],[data-savem],[data-delm],[data-setcat],[data-ttoggle],[data-topen],[data-tcollapse],[data-tfocus],[data-rpick],[data-relok],[data-coledit],[data-colsave],[data-colcancel],[data-coldel],[data-chaingo],[data-cogjump],[data-track],[data-sop],[data-ost],[data-ogp],[data-setfocus],[data-cof],[data-coall],[data-gap],[data-newgap],[data-savegap],[data-cancelgap],[data-delgap],[data-setth],[data-reanalyze],[data-addppl],[data-saveppl],[data-delppl]");
   if(!t) return;const d=t.dataset;
   if(d.copysop){
     const id=S.arg||cur(),so=curSop(D.p[id]?.project);
@@ -2847,6 +2898,7 @@ document.addEventListener("click",async e=>{
     r.cols=r.cols||{};r.cols[REALC]=r.cols[REALC]===v?"":v;render();
     return saveRows(cur(),`碰现实了吗：${r.cols[REALC]||"清空"}`)}
   if(d.delrow!=null) return delRow(+d.delrow);
+  if(d.addchild)return addCogChild(d.addchild);
   if("addrow" in d){
     const id=projId(),P=D.p[id],c={};(P.project.columns||[]).forEach(k=>c[k]="");
     const date=new Date(Date.now()+9*36e5).toISOString().slice(0,10);
