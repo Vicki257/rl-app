@@ -492,6 +492,7 @@ async function scenario(browser,device){
   assert(badResult===false&&writeCount===beforeBad,
     device+": 失效 UID 拒绝重新分析，不能退回数组 idx");
   console.log("Chromium "+device+"：失效 UID 阻止重新分析与写入");
+  {
   // 原始文本的空行、行首缩进、连续空格、行末空格必须跨保存/刷新保留。
   const paper=store.get("projects/rl/rows.json").find(r=>r.parentUid==="A000000075"&&r.q.startsWith("A-MEM"));
   assert(paper?.uid,"需真实 A-MEM 研究记录");
@@ -521,6 +522,7 @@ async function scenario(browser,device){
   await ed.waitFor({state:"visible"});
   assert.equal(await ed.inputValue(),raw,device+": 普通模式也不能吞掉原文");
 
+  }
   console.log("Chromium "+device+"：方法增改归档、正式补充、触摸点选、部分失败恢复通过");
   await context.close();
   console.log("Chromium "+device+"：当前定位、链成员拖动、方向、保存、刷新与失败回滚通过");
