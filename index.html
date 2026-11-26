@@ -536,6 +536,7 @@ async function getOptional(path,missingValue){
 }
 const writing=new Set();
 async function put(path,obj,msg,options={}){
+  if(S.newver)throw new Error("当前页面版本已过期，请刷新后再保存");
   const key=JSON.stringify([sourceKey(),path]);
   if(writing.has(key))throw new Error("上一笔保存尚未完成，请重试："+path);
   writing.add(key);
@@ -994,7 +995,7 @@ const PRI="优先程度";
 const projId=()=>{const a=String(S.arg||"").split("|");
   if(a[2]&&D.p[a[2]])return a[2];
   return (S.arg&&D.p[S.arg])?S.arg:cur()};
-const APPVER="v2026-11-26b";   // 改代码就改这里，页面会自己发现有新版
+const APPVER="v2026-11-26c";   // 改代码就改这里，页面会自己发现有新版
 const REALC="碰现实了吗";   // 迭代清单里那一列：这次改动是不是现实逼出来的
 function priNum(r){const v=String(r.cols?.[PRI]??"").trim();return v!==""&&!isNaN(v)?parseFloat(v):-1}
 const DONE={"够用了":1,"不做":2,"已确认":1,"已被推翻":2};   // 量化项目用后两个词
@@ -1961,6 +1962,8 @@ function bindCog(){
   }
   const ct=host.querySelector("#ctitle");
   if(ct)ct.addEventListener("blur",async()=>{
+    if(!editedTextFields.has(ct))return;
+    editedTextFields.delete(ct);
     const v=ct.textContent.trim(),c=chainsOf().find(x=>x.id===S.arg);
     if(!c||!v||v===c.name)return;
     const next=JSON.parse(JSON.stringify(D.rels));
@@ -2248,7 +2251,7 @@ function fold(key,title,preview,inner){
     <b>${esc(title)}</b><span class="chev">${on?"⌄":"›"}</span></div>
     ${on?inner:`<div class="prev">${preview||""}</div>`}</div>`;
 }
-function edv(k,v,ph){return `<div class="kv"><span class="k">${esc(k)}</span><div class="v ed" contenteditable data-ph="${esc(ph||"")}" data-p="${esc(k)}">${esc(v||"")}</div></div>`}
+function edv(k,v,ph){return `<div class="kv"><span class="k">${esc(k)}</span><textarea class="v raw-field" placeholder="${esc(ph||"")}" data-p="${esc(k)}" rows="${Math.max(2,Math.min(24,String(v??"").split("\n").length+1))}">\n${esc(v??"")}</textarea></div>`}
 function verPill(o){const v=(o&&o.sop&&o.sop.version)||"";
   if(!v) return `<span class="pill soft">还没建</span>`;
   return `<span class="pill ${/候选|未验证|探索/.test(v)?"soft":"ok"}">${esc(v.split("·")[0].trim())}</span>`}
@@ -2268,7 +2271,7 @@ function project(){
         }<button class="chip add" data-sop="new">＋</button></div>
       <div class="row" style="gap:10px;flex-wrap:wrap"><b style="font-size:16px">${esc((SO&&SO.name)||"")}</b>${verPill(SO)}</div>`
       :`<div class="row"><b>${esc((SO&&SO.sop&&SO.sop.version)||(SO&&SO.name)||"")}</b></div>`}
-      ${TS?`<div class="how"><b>这套 SOP 适用于什么情况</b><div class="ed" contenteditable data-ph="还没写。等你分析清楚之后填在这里——同一条路线下有多套 SOP，这一格决定什么时候该用哪一套。" data-p="这套 SOP 适用于什么情况">${esc((SO&&SO.when)||"")}</div></div>`:""}
+      ${TS?`<div class="how"><b>这套 SOP 适用于什么情况</b><textarea class="v raw-field" placeholder="还没写。等你分析清楚之后填在这里——同一条路线下有多套 SOP，这一格决定什么时候该用哪一套。" data-p="这套 SOP 适用于什么情况">\n${esc((SO&&SO.when)||"")}</textarea></div>`:""}
       ${boardHTML(SO&&SO.sop)}
       ${(SO&&SO.sop&&SO.sop.prompt)?`<details class="sop-prompt"><summary>可复用语音对话提示词</summary><div class="prompt-text">${esc(SO.sop.prompt)}</div><button class="btn ghost" data-copysop="1" style="margin-top:12px">复制提示词</button></details>`:""}
       ${analysisListHTML(id,SO&&SO.sop)}
@@ -2548,7 +2551,8 @@ async function checkVer(){
     if(m&&m[1]!==APPVER&&S.newver!==m[1]){S.newver=m[1];render()}
   }catch(e){}
 }
-checkVer();setInterval(checkVer,600000);
+checkVer();setInterval(checkVer,60000);
+window.addEventListener("focus",checkVer);
 let K=1,ZOOM=1;
 function fitBoard(){
   const b=document.getElementById("board"),c=document.getElementById("cvs");if(!b||!c) return;
@@ -2698,8 +2702,19 @@ document.addEventListener("compositionend",e=>{
   if(e.target.id!=="msrch") return;
   IME=false;S.q=e.target.value;
 });
+// 只有真实输入事件才授权自动保存。聚焦、选择、点击、失焦均不得改变原文。
+const editedTextFields=new WeakSet();
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(e.isTrusted&&t?.matches?.("textarea[data-rk],textarea[data-p],#ctitle"))editedTextFields.add(t);
+},true);
 document.addEventListener("blur",e=>{
   const t=e.target,k=t?.dataset?.rk;if(!k) return;
+  if(!editedTextFields.has(t)){
+    const pv=t.closest(".kv")?.querySelector(".raw-preview");
+    if(pv){t.hidden=true;pv.hidden=false}return;
+  }
+  editedTextFields.delete(t);
   const sep=k.indexOf("|"),key=k.slice(sep+1),i=+k.slice(0,sep),id=projId(),P=D.p[id];if(!P||!P.rows[i]) return;
   const row=P.rows[i],pj=P.project,v=t.value;
   const LF=pj.labels?.f||"今日发现",LQ=pj.labels?.q||"留给明天的问题";
@@ -2788,7 +2803,9 @@ async function saveProject(id,msg,quiet){
 document.addEventListener("blur",e=>{
   const t=e.target,k=t?.dataset?.p;if(!k||S.screen!=="project") return;
   const id=S.arg||cur(),pj=D.p[id]?.project;if(!pj) return;
-  const v=t.innerText.trim(),m=pj.mainline=pj.mainline||{},d=pj.doing=pj.doing||{};
+  if(!editedTextFields.has(t))return;
+  editedTextFields.delete(t);
+  const v=t.value,m=pj.mainline=pj.mainline||{},d=pj.doing=pj.doing||{};
   const sp=s=>s.split(/[；;]/).map(x=>x.trim()).filter(Boolean);
   const before=JSON.stringify([pj.goal,pj.reward,pj.reality,pj.tracks,d.what,d.reality,d.evidence,m.main,m.evolved,m.branches]);
   const tw=(key,val)=>{const t=curTrack(pj);
