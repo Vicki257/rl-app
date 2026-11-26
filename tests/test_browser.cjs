@@ -503,7 +503,19 @@ async function scenario(browser,device){
   assert.equal(await ed.inputValue(),original,device+": 原论文完整内容未改变");
   assert((await box.locator("pre.raw-code").textContent()).includes("STAGE 1:"),device+": 自动显示原流程图");
   assert.equal(await box.locator("pre.raw-code").evaluate(e=>getComputedStyle(e).whiteSpace),"pre");
-  assert(await box.locator("pre.raw-code").evaluate(e=>e.scrollWidth>e.clientWidth),device+": 长行横向滚动而非折行");
+  // 宽屏可能已经容得下原图，不应强制出现滚动条。用同一个真实元素加入确定超宽的一行，验证实际滚动。
+  const geometry=await box.locator("pre.raw-code").evaluate(e=>{
+    const original={client:e.clientWidth,scroll:e.scrollWidth,wrap:getComputedStyle(e).whiteSpace,overflow:getComputedStyle(e).overflowX};
+    const c=e.querySelector("code"),saved=c.textContent;
+    c.textContent=saved+"\n"+"W".repeat(512);
+    e.scrollLeft=e.scrollWidth;
+    const forced={client:e.clientWidth,scroll:e.scrollWidth,left:e.scrollLeft};
+    c.textContent=saved;e.scrollLeft=0;
+    return {original,forced};
+  });
+  console.log(device+" 代码块布局："+JSON.stringify(geometry));
+  assert(geometry.original.client>0&&["auto","scroll"].includes(geometry.original.overflow),device+": 代码块应有有限宽度及横向滚动能力");
+  assert(geometry.forced.scroll>geometry.forced.client&&geometry.forced.left>0,device+": 确定超宽的原文必须实际横向滚动，不得折行");
   await box.locator("[data-rawedit]").click();
   const raw="\n  首行  中间空格  \n\n\t缩进\n┌────┐\n│ A  │\n└────┘\n\n";
   await ed.fill(raw);await ed.blur();
