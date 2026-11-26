@@ -538,6 +538,19 @@ async function scenario(browser,device){
   await box.locator("[data-rawmode]").click();
   await ed.waitFor({state:"visible"});
   assert.equal(await ed.inputValue(),raw,device+": 普通模式也不能吞掉原文");
+  const beforePlainClick=writeCount;
+  await ed.click();await ed.blur();
+  assert.equal(writeCount,beforePlainClick,device+": 普通文本点击不能写入");
+  assert.equal(await ed.inputValue(),raw,device+": 普通文本聚焦前后保真");
+  const pasted="\n\n  原始文章    保留空格\n\n\t第二段\n\n";
+  await ed.fill(pasted);await ed.blur();
+  await page.waitForFunction(()=>S.toast==="已保存");
+  assert.equal(store.get("projects/rl/rows.json").find(r=>r.uid===paper.uid).cols[key],pasted,device+": 普通文本编辑保存原文");
+  await page.reload();await page.waitForFunction(()=>!!D.p.rl);
+  await page.evaluate(uid=>{const P=D.p.rl,i=P.rows.findIndex(r=>r.uid===uid);go("row",P.rows[i].date+"|"+i+"|rl")},paper.uid);
+  assert.equal(await ed.inputValue(),pasted,device+": 普通文本重新打开逐字符保真");
+  assert.equal(await page.locator("[contenteditable]").count(),0,device+": 不再使用富文本编辑器");
+
 
   }
   console.log("Chromium "+device+"：方法增改归档、正式补充、触摸点选、部分失败恢复通过");
