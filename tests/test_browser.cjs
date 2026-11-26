@@ -516,6 +516,11 @@ async function scenario(browser,device){
   console.log(device+" 代码块布局："+JSON.stringify(geometry));
   assert(geometry.original.client>0&&["auto","scroll"].includes(geometry.original.overflow),device+": 代码块应有有限宽度及横向滚动能力");
   assert(geometry.forced.scroll>geometry.forced.client&&geometry.forced.left>0,device+": 确定超宽的原文必须实际横向滚动，不得折行");
+  const writesBefore=writeCount;
+  await box.locator("[data-rawedit]").click();
+  await ed.blur();
+  assert.equal(writeCount,writesBefore,device+": 仅点击/失焦绝不能写入");
+  assert.equal(await ed.inputValue(),original,device+": 未编辑原文完全不变");
   await box.locator("[data-rawedit]").click();
   const raw="\n  首行  中间空格  \n\n\t缩进\n┌────┐\n│ A  │\n└────┘\n\n";
   await ed.fill(raw);await ed.blur();
