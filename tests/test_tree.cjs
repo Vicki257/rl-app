@@ -298,6 +298,32 @@ if(has){
     });
   }
 }
+// 独立研究分支和演化链分开：不改变原有认知的永久 UID 和关系。
+{
+  const P=D.p.rl, savedRows=P.rows.slice(), savedChains=D.rels.chains;
+  const parent=P.rows.find(r=>r.uid==="A000000075")||P.rows.find(r=>r.uid);
+  const other=P.rows.find(r=>r.uid&&r.uid!==parent.uid);
+  const child={uid:"A999999991",date:"2026-11-26",q:"候选方案",parentUid:parent.uid,f:"待改",cols:{}};
+  const grand={uid:"A999999992",date:"2026-11-26",q:"候选方案的细节",parentUid:child.uid,f:"待改",cols:{}};
+  D.rels.chains=[];
+  P.rows.push(child,grand);
+  let tr=buildTree();
+  ok(tr.T[parent.uid].children.includes(child.uid),"普通认知应有独立子节点");
+  ok(tr.T[child.uid].children.includes(grand.uid),"子节点也能继续分枝");
+  ok(Object.values(tr.T).filter(x=>x.children.includes(child.uid)).length===1,"子认知不可重复出现在树上");
+  D.rels.chains=[{id:"chain-child-test",name:"有分支的演化链",parent:"proj:rl",members:[parent.uid,other.uid]}];
+  tr=buildTree();
+  ok(tr.T["chain-child-test"].children.includes(child.uid),"父认知合入演化链后分支仍可见");
+  ok(tr.T[child.uid].children.includes(grand.uid),"演化链下仍保留多层分支");
+  ok(!tr.T["chain-child-test"].children.includes(parent.uid),"不改变链成员原有展示语义");
+  child.parentUid=grand.uid; // 制造循环引用：不能让两条记录消失
+  D.rels.chains=[];
+  tr=buildTree();
+  const reachable=new Set(),visit=u=>{if(reachable.has(u))return;reachable.add(u);(tr.T[u]?.children||[]).forEach(visit)};
+  tr.roots.forEach(visit);
+  ok(reachable.has(child.uid)&&reachable.has(grand.uid),"循环引用必须安全退回原位置");
+  P.rows=savedRows;D.rels.chains=savedChains;buildTree();
+}
 if(!has){
   const strict=process.env.TREE_TEST_REQUIRE_REAL_DATA==="1"||process.argv.includes("--require-real-data");
   const msg="找不到相邻的 rl-data 仓库（"+DD+"），这一轮跑的是内置样本，不能当作真实数据的验证。";
